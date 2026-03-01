@@ -92,7 +92,7 @@ export function Sidebar() {
 
   return (
     <aside className="hidden md:flex md:flex-col md:w-60 bg-white border-r border-slate-200 min-h-0">
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      <nav aria-label="Main navigation" className="flex-1 p-3 space-y-1 overflow-y-auto">
         {visibleItems.map((item) => {
           const isActive = !!matchRoute({ to: item.to, fuzzy: true });
 

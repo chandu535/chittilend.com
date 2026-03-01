@@ -51,7 +51,7 @@ export function BottomNav() {
   const matchRoute = useMatchRoute();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 md:hidden safe-area-bottom">
+    <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 md:hidden safe-area-bottom">
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
           const isActive = !!matchRoute({ to: item.to, fuzzy: true });

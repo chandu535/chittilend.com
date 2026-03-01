@@ -65,7 +65,7 @@ body {
 }
 
 /* 5. Bottom navigation labels: Telugu text is wider */
-[lang="te"] .bottom-nav-label {
+[lang="te"] .nav-label {
   font-size: 0.625rem;
 }
 
@@ -79,4 +79,12 @@ body {
 /* 7. Telugu card titles may need slight size reduction */
 [lang="te"] .card-title {
   font-size: 0.9em;
+}
+
+/* ========================================
+   Safe Area / PWA
+   ======================================== */
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
