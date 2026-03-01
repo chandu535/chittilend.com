@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', 'Noto Sans Telugu', 'Mandali', system-ui, sans-serif;
+
+  --color-primary: #2563EB;
+  --color-secondary: #7C3AED;
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-danger: #DC2626;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: #f8fafc;
+  color: #0f172a;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "liga" 1, "calt" 1;
+}
+
+/* ========================================
+   Telugu Language Rules (Extension Section 7)
+   ======================================== */
+
+/* 1. NEVER use letter-spacing on Telugu text.
+      Telugu conjuncts (vattu forms) BREAK with letter-spacing. */
+[lang="te"] * {
+  letter-spacing: 0 !important;
+}
+
+/* 2. Telugu text needs more line-height than English.
+      Telugu glyphs have taller ascenders and descenders. */
+[lang="te"] {
+  line-height: 1.8;
+}
+
+/* 3. Input fields: Telugu text needs more height */
+[lang="te"] input,
+[lang="te"] textarea,
+[lang="te"] select {
+  min-height: 52px;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+/* 4. Badge text: Telugu labels are wider */
+[lang="te"] .badge {
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+/* 5. Bottom navigation labels: Telugu text is wider */
+[lang="te"] .bottom-nav-label {
+  font-size: 0.625rem;
+}
+
+/* 6. Table cells: prevent Telugu text wrapping in narrow columns */
+[lang="te"] td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 7. Telugu card titles may need slight size reduction */
+[lang="te"] .card-title {
+  font-size: 0.9em;
+}
