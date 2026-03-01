@@ -19,6 +19,9 @@ import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedLoansIndexRouteImport } from './routes/_authenticated/loans/index'
 import { Route as AuthenticatedBorrowersIndexRouteImport } from './routes/_authenticated/borrowers/index'
 import { Route as AuthenticatedLoansNewRouteImport } from './routes/_authenticated/loans/new'
+import { Route as AuthenticatedLoansLoanIdRouteImport } from './routes/_authenticated/loans/$loanId'
+import { Route as AuthenticatedBorrowersNewRouteImport } from './routes/_authenticated/borrowers/new'
+import { Route as AuthenticatedBorrowersBorrowerIdRouteImport } from './routes/_authenticated/borrowers/$borrowerId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -70,6 +73,24 @@ const AuthenticatedLoansNewRoute = AuthenticatedLoansNewRouteImport.update({
   path: '/loans/new',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedLoansLoanIdRoute =
+  AuthenticatedLoansLoanIdRouteImport.update({
+    id: '/loans/$loanId',
+    path: '/loans/$loanId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBorrowersNewRoute =
+  AuthenticatedBorrowersNewRouteImport.update({
+    id: '/borrowers/new',
+    path: '/borrowers/new',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBorrowersBorrowerIdRoute =
+  AuthenticatedBorrowersBorrowerIdRouteImport.update({
+    id: '/borrowers/$borrowerId',
+    path: '/borrowers/$borrowerId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -78,6 +99,9 @@ export interface FileRoutesByFullPath {
   '/capital': typeof AuthenticatedCapitalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/borrowers/$borrowerId': typeof AuthenticatedBorrowersBorrowerIdRoute
+  '/borrowers/new': typeof AuthenticatedBorrowersNewRoute
+  '/loans/$loanId': typeof AuthenticatedLoansLoanIdRoute
   '/loans/new': typeof AuthenticatedLoansNewRoute
   '/borrowers/': typeof AuthenticatedBorrowersIndexRoute
   '/loans/': typeof AuthenticatedLoansIndexRoute
@@ -89,6 +113,9 @@ export interface FileRoutesByTo {
   '/capital': typeof AuthenticatedCapitalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/borrowers/$borrowerId': typeof AuthenticatedBorrowersBorrowerIdRoute
+  '/borrowers/new': typeof AuthenticatedBorrowersNewRoute
+  '/loans/$loanId': typeof AuthenticatedLoansLoanIdRoute
   '/loans/new': typeof AuthenticatedLoansNewRoute
   '/borrowers': typeof AuthenticatedBorrowersIndexRoute
   '/loans': typeof AuthenticatedLoansIndexRoute
@@ -102,6 +129,9 @@ export interface FileRoutesById {
   '/_authenticated/capital': typeof AuthenticatedCapitalRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/borrowers/$borrowerId': typeof AuthenticatedBorrowersBorrowerIdRoute
+  '/_authenticated/borrowers/new': typeof AuthenticatedBorrowersNewRoute
+  '/_authenticated/loans/$loanId': typeof AuthenticatedLoansLoanIdRoute
   '/_authenticated/loans/new': typeof AuthenticatedLoansNewRoute
   '/_authenticated/borrowers/': typeof AuthenticatedBorrowersIndexRoute
   '/_authenticated/loans/': typeof AuthenticatedLoansIndexRoute
@@ -115,6 +145,9 @@ export interface FileRouteTypes {
     | '/capital'
     | '/dashboard'
     | '/settings'
+    | '/borrowers/$borrowerId'
+    | '/borrowers/new'
+    | '/loans/$loanId'
     | '/loans/new'
     | '/borrowers/'
     | '/loans/'
@@ -126,6 +159,9 @@ export interface FileRouteTypes {
     | '/capital'
     | '/dashboard'
     | '/settings'
+    | '/borrowers/$borrowerId'
+    | '/borrowers/new'
+    | '/loans/$loanId'
     | '/loans/new'
     | '/borrowers'
     | '/loans'
@@ -138,6 +174,9 @@ export interface FileRouteTypes {
     | '/_authenticated/capital'
     | '/_authenticated/dashboard'
     | '/_authenticated/settings'
+    | '/_authenticated/borrowers/$borrowerId'
+    | '/_authenticated/borrowers/new'
+    | '/_authenticated/loans/$loanId'
     | '/_authenticated/loans/new'
     | '/_authenticated/borrowers/'
     | '/_authenticated/loans/'
@@ -221,6 +260,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLoansNewRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/loans/$loanId': {
+      id: '/_authenticated/loans/$loanId'
+      path: '/loans/$loanId'
+      fullPath: '/loans/$loanId'
+      preLoaderRoute: typeof AuthenticatedLoansLoanIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/borrowers/new': {
+      id: '/_authenticated/borrowers/new'
+      path: '/borrowers/new'
+      fullPath: '/borrowers/new'
+      preLoaderRoute: typeof AuthenticatedBorrowersNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/borrowers/$borrowerId': {
+      id: '/_authenticated/borrowers/$borrowerId'
+      path: '/borrowers/$borrowerId'
+      fullPath: '/borrowers/$borrowerId'
+      preLoaderRoute: typeof AuthenticatedBorrowersBorrowerIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -229,6 +289,9 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCapitalRoute: typeof AuthenticatedCapitalRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedBorrowersBorrowerIdRoute: typeof AuthenticatedBorrowersBorrowerIdRoute
+  AuthenticatedBorrowersNewRoute: typeof AuthenticatedBorrowersNewRoute
+  AuthenticatedLoansLoanIdRoute: typeof AuthenticatedLoansLoanIdRoute
   AuthenticatedLoansNewRoute: typeof AuthenticatedLoansNewRoute
   AuthenticatedBorrowersIndexRoute: typeof AuthenticatedBorrowersIndexRoute
   AuthenticatedLoansIndexRoute: typeof AuthenticatedLoansIndexRoute
@@ -239,6 +302,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCapitalRoute: AuthenticatedCapitalRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedBorrowersBorrowerIdRoute: AuthenticatedBorrowersBorrowerIdRoute,
+  AuthenticatedBorrowersNewRoute: AuthenticatedBorrowersNewRoute,
+  AuthenticatedLoansLoanIdRoute: AuthenticatedLoansLoanIdRoute,
   AuthenticatedLoansNewRoute: AuthenticatedLoansNewRoute,
   AuthenticatedBorrowersIndexRoute: AuthenticatedBorrowersIndexRoute,
   AuthenticatedLoansIndexRoute: AuthenticatedLoansIndexRoute,
