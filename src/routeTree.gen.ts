@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCapitalRouteImport } from './routes/_authenticated/capital'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
@@ -40,6 +41,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPaymentsRoute = AuthenticatedPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/capital': typeof AuthenticatedCapitalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/payments': typeof AuthenticatedPaymentsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/borrowers/$borrowerId': typeof AuthenticatedBorrowersBorrowerIdRoute
   '/borrowers/new': typeof AuthenticatedBorrowersNewRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/capital': typeof AuthenticatedCapitalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/payments': typeof AuthenticatedPaymentsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/borrowers/$borrowerId': typeof AuthenticatedBorrowersBorrowerIdRoute
   '/borrowers/new': typeof AuthenticatedBorrowersNewRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/capital': typeof AuthenticatedCapitalRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/borrowers/$borrowerId': typeof AuthenticatedBorrowersBorrowerIdRoute
   '/_authenticated/borrowers/new': typeof AuthenticatedBorrowersNewRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/capital'
     | '/dashboard'
+    | '/payments'
     | '/settings'
     | '/borrowers/$borrowerId'
     | '/borrowers/new'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/capital'
     | '/dashboard'
+    | '/payments'
     | '/settings'
     | '/borrowers/$borrowerId'
     | '/borrowers/new'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics'
     | '/_authenticated/capital'
     | '/_authenticated/dashboard'
+    | '/_authenticated/payments'
     | '/_authenticated/settings'
     | '/_authenticated/borrowers/$borrowerId'
     | '/_authenticated/borrowers/new'
@@ -216,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/payments': {
+      id: '/_authenticated/payments'
+      path: '/payments'
+      fullPath: '/payments'
+      preLoaderRoute: typeof AuthenticatedPaymentsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -288,6 +307,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedCapitalRoute: typeof AuthenticatedCapitalRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedBorrowersBorrowerIdRoute: typeof AuthenticatedBorrowersBorrowerIdRoute
   AuthenticatedBorrowersNewRoute: typeof AuthenticatedBorrowersNewRoute
@@ -301,6 +321,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedCapitalRoute: AuthenticatedCapitalRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedBorrowersBorrowerIdRoute: AuthenticatedBorrowersBorrowerIdRoute,
   AuthenticatedBorrowersNewRoute: AuthenticatedBorrowersNewRoute,

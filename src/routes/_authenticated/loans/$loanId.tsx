@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getLoanById } from '@/server/functions/loans';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -8,32 +8,45 @@ import { Spinner } from '@/components/ui/Spinner';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { PaymentTimeline } from '@/components/loans/PaymentTimeline';
+import { PaymentMarkModal } from '@/components/loans/PaymentMarkModal';
 import { formatPhone } from '@/lib/formatters';
 
 export const Route = createFileRoute('/_authenticated/loans/$loanId')({
   component: LoanDetailPage,
 });
 
+type PaymentItem = {
+  id: string;
+  installmentNumber: number;
+  dueDate: string;
+  amountDue: string;
+  amountPaid: string;
+  paidDate: string | null;
+  status: 'pending' | 'paid' | 'partial' | 'overdue' | 'waived';
+};
+
 function LoanDetailPage() {
   const { loanId } = Route.useParams();
   const { t } = useTranslation();
   const [loan, setLoan] = useState<Awaited<ReturnType<typeof getLoanById>> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(null);
+
+  const fetchLoan = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getLoanById({ data: { id: loanId } });
+      setLoan(data);
+    } catch {
+      // error boundary
+    } finally {
+      setLoading(false);
+    }
+  }, [loanId]);
 
   useEffect(() => {
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const data = await getLoanById({ data: { id: loanId } });
-        setLoan(data);
-      } catch {
-        // error boundary
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
-  }, [loanId]);
+    fetchLoan();
+  }, [fetchLoan]);
 
   if (loading) {
     return (
@@ -138,13 +151,22 @@ function LoanDetailPage() {
         <div className="mt-3">
           <PaymentTimeline
             payments={loan.payments}
-            onPaymentTap={(payment) => {
-              // Will be wired to PaymentMarkModal in Phase 4
-              console.log('Payment tapped:', payment.id);
-            }}
+            onPaymentTap={(payment) => setSelectedPayment(payment as PaymentItem)}
           />
         </div>
       </Card>
+
+      {/* Payment Mark Modal */}
+      {selectedPayment && (
+        <PaymentMarkModal
+          payment={selectedPayment}
+          onClose={() => setSelectedPayment(null)}
+          onSuccess={() => {
+            setSelectedPayment(null);
+            fetchLoan();
+          }}
+        />
+      )}
     </div>
   );
 }
