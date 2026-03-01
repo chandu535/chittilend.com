@@ -1,23 +1,94 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileUpload } from '@/components/ui/FileUpload';
+import { CameraCapture } from '@/components/ui/CameraCapture';
+import { toast } from '@/components/ui/Toast';
+import { getPresignedUploadUrl, confirmUpload } from '@/server/functions/upload';
 
 interface DocumentUploadProps {
+  borrowerId?: string;
   onProfilePhoto: (file: File | null) => void;
   onAadhaarPhoto: (file: File | null) => void;
+  onLocation?: (lat: number, lng: number) => void;
 }
 
-export function DocumentUpload({ onProfilePhoto, onAadhaarPhoto }: DocumentUploadProps) {
+export function DocumentUpload({ borrowerId, onProfilePhoto, onAadhaarPhoto, onLocation }: DocumentUploadProps) {
   const { t } = useTranslation();
+  const [uploading, setUploading] = useState<'profile' | 'aadhaar' | null>(null);
+
+  const handleUpload = async (file: File, docType: 'profile' | 'aadhaar') => {
+    if (!borrowerId) {
+      // No borrower yet — just store the file locally
+      if (docType === 'profile') onProfilePhoto(file);
+      else onAadhaarPhoto(file);
+      return;
+    }
+
+    setUploading(docType);
+    try {
+      // Get presigned URL
+      const { uploadUrl, fileKey } = await getPresignedUploadUrl({
+        data: {
+          fileType: docType,
+          contentType: file.type,
+          borrowerId,
+        },
+      });
+
+      // Upload directly to R2
+      await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+
+      // Confirm upload in DB
+      await confirmUpload({
+        data: { fileKey, borrowerId, docType },
+      });
+
+      toast(t('common.save'), 'success');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : t('errors.generic'), 'error');
+    } finally {
+      setUploading(null);
+    }
+
+    if (docType === 'profile') onProfilePhoto(file);
+    else onAadhaarPhoto(file);
+  };
 
   return (
     <div className="space-y-4">
-      <FileUpload
-        label={t('borrowers.profilePhoto')}
-        onFileSelect={onProfilePhoto}
-      />
+      {/* Profile Photo — with camera option */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          {t('borrowers.profilePhoto')}
+        </label>
+        <CameraCapture
+          onCapture={(file) => handleUpload(file, 'profile')}
+          onLocation={onLocation}
+        />
+        <div className="mt-2">
+          <FileUpload
+            label={t('borrowers.uploadPhoto')}
+            onFileSelect={(file) => {
+              if (file) handleUpload(file, 'profile');
+              else onProfilePhoto(null);
+            }}
+            loading={uploading === 'profile'}
+          />
+        </div>
+      </div>
+
+      {/* Aadhaar Photo */}
       <FileUpload
         label={t('borrowers.aadhaarPhoto')}
-        onFileSelect={onAadhaarPhoto}
+        onFileSelect={(file) => {
+          if (file) handleUpload(file, 'aadhaar');
+          else onAadhaarPhoto(null);
+        }}
+        loading={uploading === 'aadhaar'}
       />
     </div>
   );
