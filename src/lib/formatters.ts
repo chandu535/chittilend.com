@@ -6,36 +6,33 @@ interface FormatOptions {
 }
 
 // ============================================================
-// NUMBER FORMATTING
+// NUMBER FORMATTING (always Latin numerals)
 // ============================================================
 
 export function formatNumber(
   amount: number | string,
-  { lang, useNativeNumerals = true }: FormatOptions,
+  { lang }: FormatOptions,
 ): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
   if (isNaN(num)) return '—';
 
   const locale = lang === 'te' ? 'te-IN' : 'en-IN';
-  const numberingSystem = (lang === 'te' && useNativeNumerals) ? 'telu' : 'latn';
-
-  return new Intl.NumberFormat(locale, { numberingSystem }).format(num);
+  return new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).format(num);
 }
 
 export function formatINR(
   amount: number | string,
-  { lang, useNativeNumerals = true }: FormatOptions,
+  { lang }: FormatOptions,
 ): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
   if (isNaN(num)) return '₹—';
 
   const locale = lang === 'te' ? 'te-IN' : 'en-IN';
-  const numberingSystem = (lang === 'te' && useNativeNumerals) ? 'telu' : 'latn';
 
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'INR',
-    numberingSystem,
+    numberingSystem: 'latn',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(num);
@@ -43,18 +40,17 @@ export function formatINR(
 
 export function formatINRDecimal(
   amount: number | string,
-  { lang, useNativeNumerals = true }: FormatOptions,
+  { lang }: FormatOptions,
 ): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
   if (isNaN(num)) return '₹—';
 
   const locale = lang === 'te' ? 'te-IN' : 'en-IN';
-  const numberingSystem = (lang === 'te' && useNativeNumerals) ? 'telu' : 'latn';
 
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'INR',
-    numberingSystem,
+    numberingSystem: 'latn',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(num);
@@ -62,7 +58,7 @@ export function formatINRDecimal(
 
 export function formatINRCompact(
   amount: number | string,
-  { lang, useNativeNumerals = true }: FormatOptions,
+  { lang }: FormatOptions,
 ): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
   if (isNaN(num)) return '₹—';
@@ -94,68 +90,65 @@ export function formatINRCompact(
     value = num / d.thousand.threshold;
     label = value === 1 ? d.thousand.singular : d.thousand.plural;
   } else {
-    return formatINR(num, { lang, useNativeNumerals });
+    return formatINR(num, { lang });
   }
 
   const formattedValue = formatNumber(
     Math.round(value * 10) / 10,
-    { lang, useNativeNumerals },
+    { lang },
   );
 
   return `₹${formattedValue} ${label}`;
 }
 
 // ============================================================
-// DATE FORMATTING
+// DATE FORMATTING (Telugu text for months, Latin numerals for digits)
 // ============================================================
 
 export function formatDate(
   date: string | Date,
-  { lang, useNativeNumerals = true }: FormatOptions,
+  { lang }: FormatOptions,
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   const locale = lang === 'te' ? 'te-IN' : 'en-IN';
-  const numberingSystem = (lang === 'te' && useNativeNumerals) ? 'telu' : 'latn';
 
   return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
     timeZone: 'Asia/Kolkata',
-    numberingSystem,
+    numberingSystem: 'latn',
   }).format(d);
 }
 
 export function formatDateLong(
   date: string | Date,
-  { lang, useNativeNumerals = true }: FormatOptions,
+  { lang }: FormatOptions,
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   const locale = lang === 'te' ? 'te-IN' : 'en-IN';
-  const numberingSystem = (lang === 'te' && useNativeNumerals) ? 'telu' : 'latn';
 
   return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     timeZone: 'Asia/Kolkata',
-    numberingSystem,
+    numberingSystem: 'latn',
   }).format(d);
 }
 
 export function formatMonthYear(
   date: string | Date,
-  { lang, useNativeNumerals = true }: FormatOptions,
+  { lang }: FormatOptions,
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   const locale = lang === 'te' ? 'te-IN' : 'en-IN';
-  const numberingSystem = (lang === 'te' && useNativeNumerals) ? 'telu' : 'latn';
 
   return new Intl.DateTimeFormat(locale, {
     month: 'long',
     year: 'numeric',
     timeZone: 'Asia/Kolkata',
-    numberingSystem,
+    numberingSystem: 'latn',
   }).format(d);
 }
 
@@ -199,14 +192,13 @@ export function formatPhone(mobile: string): string {
 
 export function formatPercent(
   value: number,
-  { lang, useNativeNumerals = true }: FormatOptions,
+  { lang }: FormatOptions,
 ): string {
   const locale = lang === 'te' ? 'te-IN' : 'en-IN';
-  const numberingSystem = (lang === 'te' && useNativeNumerals) ? 'telu' : 'latn';
 
   return new Intl.NumberFormat(locale, {
     style: 'percent',
-    numberingSystem,
+    numberingSystem: 'latn',
     minimumFractionDigits: 0,
     maximumFractionDigits: 1,
   }).format(value / 100);

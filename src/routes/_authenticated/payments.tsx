@@ -8,6 +8,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
+import { NameDisplay } from '@/components/shared/NameDisplay';
 import { PaymentMarkModal } from '@/components/loans/PaymentMarkModal';
 import {
   listUpcomingPayments,
@@ -121,7 +122,7 @@ function PaymentsPage() {
                     params={{ loanId: p.loanId }}
                     className="font-medium text-slate-900 hover:text-primary"
                   >
-                    {p.borrowerName}
+                    <NameDisplay name={p.borrowerName} />
                   </Link>
                   <Badge status={p.status}>{t(`payments.${p.status}`)}</Badge>
                 </div>
@@ -173,7 +174,7 @@ function PaymentsPage() {
                         params={{ loanId: p.loanId }}
                         className="font-medium text-slate-900 hover:text-primary"
                       >
-                        {p.borrowerName}
+                        <NameDisplay name={p.borrowerName} />
                       </Link>
                     </td>
                     <td className="py-3 text-slate-600">

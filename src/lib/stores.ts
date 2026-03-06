@@ -9,7 +9,7 @@ export const authStore = new Store({
 // UI preferences
 export const uiStore = new Store({
   language: 'en' as 'en' | 'te',
-  useNativeNumerals: true,
+  useNativeNumerals: false,
   sidebarOpen: false,
   activeFilters: {
     loanStatus: 'all' as string,

@@ -6,6 +6,7 @@ import { PortalHeader } from '@/components/portal/PortalHeader';
 import { PortalLoanCard } from '@/components/portal/PortalLoanCard';
 import { PortalPaymentList } from '@/components/portal/PortalPaymentList';
 import { getPortalData } from '@/server/functions/portal';
+import { useLocalizedName } from '@/components/shared/NameDisplay';
 
 export const Route = createFileRoute('/portal/$token')({
   component: PortalPage,
@@ -19,6 +20,7 @@ function PortalPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<PortalData | null>(null);
+  const borrowerName = useLocalizedName(data?.borrower?.name || '');
 
   useEffect(() => {
     const fetch = async () => {
@@ -72,7 +74,7 @@ function PortalPage() {
         {/* Welcome */}
         <div className="text-center">
           <p className="text-lg font-semibold text-slate-900">
-            {t('portal.welcome', { name: data.borrower.name })}
+            {t('portal.welcome', { name: borrowerName })}
           </p>
         </div>
 

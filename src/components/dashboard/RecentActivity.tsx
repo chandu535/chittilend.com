@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from '@tanstack/react-router';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
+import { NameDisplay } from '@/components/shared/NameDisplay';
 
 interface ActivityItem {
   id: string;
@@ -44,7 +45,7 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
                 <p className="text-sm font-medium text-slate-700 truncate">
                   {t(`capital.${item.eventType}`)}
                   {item.borrowerName && (
-                    <span className="text-slate-400"> — {item.borrowerName}</span>
+                    <span className="text-slate-400"> — <NameDisplay name={item.borrowerName} /></span>
                   )}
                 </p>
                 <DateDisplay date={dateStr} className="text-xs text-slate-400" />

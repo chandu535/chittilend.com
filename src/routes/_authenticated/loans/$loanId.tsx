@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
+import { useLocalizedName } from '@/components/shared/NameDisplay';
 import { PaymentTimeline } from '@/components/loans/PaymentTimeline';
 import { PaymentMarkModal } from '@/components/loans/PaymentMarkModal';
 import { formatPhone } from '@/lib/formatters';
@@ -60,6 +61,7 @@ function LoanDetailPage() {
     return <p className="text-center text-slate-500 py-12">{t('errors.notFound')}</p>;
   }
 
+  const borrowerDisplayName = useLocalizedName(loan.borrower.name);
   const paidCount = loan.payments.filter((p) => p.status === 'paid').length;
   const progress = loan.totalInstallments > 0 ? (paidCount / loan.totalInstallments) * 100 : 0;
 
@@ -82,10 +84,10 @@ function LoanDetailPage() {
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold shrink-0">
-            {loan.borrower.name.charAt(0).toUpperCase()}
+            {borrowerDisplayName.charAt(0).toUpperCase()}
           </div>
           <div>
-            <p className="font-medium text-slate-900">{loan.borrower.name}</p>
+            <p className="font-medium text-slate-900">{borrowerDisplayName}</p>
             <p className="text-sm text-slate-500">{formatPhone(loan.borrower.mobile)}</p>
           </div>
         </Link>

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { NameDisplay } from '@/components/shared/NameDisplay';
 import { searchBorrowers } from '@/server/functions/borrowers';
 
 interface BorrowerFormData {
@@ -146,7 +147,7 @@ export function BorrowerForm({ initialData, onSubmit, loading }: BorrowerFormPro
                       setSuretyResults([]);
                     }}
                   >
-                    {b.name} — {b.mobile}
+                    <NameDisplay name={b.name} /> — {b.mobile}
                   </button>
                 </li>
               ))}

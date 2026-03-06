@@ -24,7 +24,7 @@ i18n.use(initReactI18next).init({
       if (typeof value !== 'number') return String(value);
 
       const locale = lng === 'te' ? 'te-IN' : 'en-IN';
-      const ns = lng === 'te' ? 'telu' : 'latn';
+      const ns = 'latn';
 
       if (format === 'number') {
         return new Intl.NumberFormat(locale, { numberingSystem: ns }).format(value);

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/Badge';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
+import { useLocalizedName } from '@/components/shared/NameDisplay';
 
 interface LoanCardProps {
   id: string;
@@ -24,6 +25,7 @@ export function LoanCard({
   dateGiven,
 }: LoanCardProps) {
   const { t } = useTranslation();
+  const displayName = useLocalizedName(borrowerName);
   const progress = totalInstallments > 0 ? (paidInstallments / totalInstallments) * 100 : 0;
 
   return (
@@ -34,7 +36,7 @@ export function LoanCard({
     >
       <div className="flex items-start justify-between mb-2">
         <div className="min-w-0">
-          <p className="font-medium text-slate-900 truncate">{borrowerName}</p>
+          <p className="font-medium text-slate-900 truncate">{displayName}</p>
           <CurrencyDisplay
             amount={parseFloat(primaryAmount)}
             className="text-lg font-bold text-slate-900"

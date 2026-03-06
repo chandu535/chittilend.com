@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { LoanCard } from '@/components/loans/LoanCard';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
+import { NameDisplay } from '@/components/shared/NameDisplay';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -149,7 +150,7 @@ function LoansPage() {
               <tbody className="divide-y divide-slate-100">
                 {result.items.map((loan) => (
                   <tr key={loan.id} className="hover:bg-slate-50">
-                    <td className="py-3 font-medium text-slate-900">{loan.borrowerName}</td>
+                    <td className="py-3 font-medium text-slate-900"><NameDisplay name={loan.borrowerName} /></td>
                     <td className="py-3">
                       <CurrencyDisplay amount={parseFloat(loan.primaryAmount)} />
                     </td>

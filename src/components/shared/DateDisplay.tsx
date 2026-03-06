@@ -9,11 +9,10 @@ interface DateDisplayProps {
 
 export function DateDisplay({ date, className }: DateDisplayProps) {
   const language = useStore(uiStore, (s) => s.language);
-  const useNativeNumerals = useStore(uiStore, (s) => s.useNativeNumerals);
 
   return (
     <span className={className}>
-      {formatDate(date, { lang: language, useNativeNumerals })}
+      {formatDate(date, { lang: language })}
     </span>
   );
 }

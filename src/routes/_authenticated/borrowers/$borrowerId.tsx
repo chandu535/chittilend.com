@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { MagicLinkGenerator } from '@/components/borrowers/MagicLinkGenerator';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
+import { useLocalizedName } from '@/components/shared/NameDisplay';
 import { formatPhone } from '@/lib/formatters';
 
 export const Route = createFileRoute('/_authenticated/borrowers/$borrowerId')({
@@ -47,6 +48,8 @@ function BorrowerDetailPage() {
     return <p className="text-center text-slate-500 py-12">{t('errors.notFound')}</p>;
   }
 
+  const displayName = useLocalizedName(borrower.name);
+
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <div className="flex items-center gap-2">
@@ -55,17 +58,17 @@ function BorrowerDetailPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
-        <h2 className="text-2xl font-bold text-slate-900">{borrower.name}</h2>
+        <h2 className="text-2xl font-bold text-slate-900">{displayName}</h2>
       </div>
 
       {/* Profile Card */}
       <Card>
         <div className="flex items-start gap-4">
           <div className="h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-semibold shrink-0">
-            {borrower.name.charAt(0).toUpperCase()}
+            {displayName.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0 space-y-1">
-            <p className="text-lg font-semibold text-slate-900">{borrower.name}</p>
+            <p className="text-lg font-semibold text-slate-900">{displayName}</p>
             <p className="text-sm text-slate-600">{formatPhone(borrower.mobile)}</p>
             {borrower.area && (
               <p className="text-sm text-slate-500">{borrower.area}</p>

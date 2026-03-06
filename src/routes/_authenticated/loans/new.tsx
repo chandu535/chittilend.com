@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { AutoCalcPreview } from '@/components/loans/AutoCalcPreview';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
+import { NameDisplay } from '@/components/shared/NameDisplay';
 import { toast } from '@/components/ui/Toast';
 import { searchBorrowers } from '@/server/functions/borrowers';
 import { createLoan } from '@/server/functions/loans';
@@ -115,7 +116,7 @@ function NewLoanPage() {
             {selectedBorrower ? (
               <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-3">
                 <div>
-                  <p className="font-medium text-slate-900">{selectedBorrower.name}</p>
+                  <p className="font-medium text-slate-900"><NameDisplay name={selectedBorrower.name} /></p>
                   <p className="text-sm text-slate-500">{selectedBorrower.mobile}</p>
                 </div>
                 <Button
@@ -149,7 +150,7 @@ function NewLoanPage() {
                             setBorrowerQuery(b.name);
                           }}
                         >
-                          <p className="text-sm font-medium">{b.name}</p>
+                          <p className="text-sm font-medium"><NameDisplay name={b.name} /></p>
                           <p className="text-xs text-slate-400">{b.mobile}{b.area ? ` — ${b.area}` : ''}</p>
                         </button>
                       </li>
@@ -283,7 +284,7 @@ function NewLoanPage() {
           <div className="mt-3 space-y-3">
             <div className="rounded-lg bg-slate-50 p-3">
               <p className="text-sm text-slate-500">{t('borrowers.name')}</p>
-              <p className="font-medium">{selectedBorrower.name}</p>
+              <p className="font-medium"><NameDisplay name={selectedBorrower.name} /></p>
             </div>
 
             <AutoCalcPreview calc={calc} />

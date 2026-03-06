@@ -9,11 +9,10 @@ interface CurrencyDisplayProps {
 
 export function CurrencyDisplay({ amount, className }: CurrencyDisplayProps) {
   const language = useStore(uiStore, (s) => s.language);
-  const useNativeNumerals = useStore(uiStore, (s) => s.useNativeNumerals);
 
   return (
     <span className={className}>
-      {formatINR(amount, { lang: language, useNativeNumerals })}
+      {formatINR(amount, { lang: language })}
     </span>
   );
 }

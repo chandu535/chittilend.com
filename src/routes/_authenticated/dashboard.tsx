@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { useStore } from '@tanstack/react-store';
 import { authStore } from '@/lib/stores';
+import { useLocalizedName } from '@/components/shared/NameDisplay';
 import { Spinner } from '@/components/ui/Spinner';
 import { SummaryCards } from '@/components/dashboard/SummaryCards';
 import { OverdueAlerts } from '@/components/dashboard/OverdueAlerts';
@@ -37,6 +38,7 @@ type ActivityItem = {
 function DashboardPage() {
   const { t } = useTranslation();
   const user = useStore(authStore, (s) => s.user);
+  const userName = useLocalizedName(user?.name || '');
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [cashflow, setCashflow] = useState<CashflowItem[]>([]);
@@ -79,7 +81,7 @@ function DashboardPage() {
       {/* Greeting */}
       <div>
         <h2 className="text-2xl font-bold text-slate-900">
-          {t(getGreetingKey())}{user ? `, ${user.name}` : ''}
+          {t(getGreetingKey())}{user ? `, ${userName}` : ''}
         </h2>
         <p className="text-sm text-slate-500 mt-0.5">{t('dashboard.subtitle')}</p>
       </div>

@@ -10,6 +10,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
+import { NameDisplay } from '@/components/shared/NameDisplay';
 import { toast } from '@/components/ui/Toast';
 import { getCapitalBalance, getCapitalLog, addInvestment } from '@/server/functions/capital';
 
@@ -166,7 +167,7 @@ function CapitalPage() {
                         </span>
                       </div>
                       {entry.borrowerName && (
-                        <p className="mt-1 text-xs text-slate-500">{entry.borrowerName}</p>
+                        <p className="mt-1 text-xs text-slate-500"><NameDisplay name={entry.borrowerName} /></p>
                       )}
                       {entry.notes && (
                         <p className="mt-1 text-xs text-slate-400">{entry.notes}</p>
