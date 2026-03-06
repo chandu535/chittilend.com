@@ -32,6 +32,7 @@ function LoanDetailPage() {
   const [loan, setLoan] = useState<Awaited<ReturnType<typeof getLoanById>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(null);
+  const borrowerDisplayName = useLocalizedName(loan?.borrower?.name ?? '');
 
   const fetchLoan = useCallback(async () => {
     setLoading(true);
@@ -60,8 +61,6 @@ function LoanDetailPage() {
   if (!loan) {
     return <p className="text-center text-slate-500 py-12">{t('errors.notFound')}</p>;
   }
-
-  const borrowerDisplayName = useLocalizedName(loan.borrower.name);
   const paidCount = loan.payments.filter((p) => p.status === 'paid').length;
   const progress = loan.totalInstallments > 0 ? (paidCount / loan.totalInstallments) * 100 : 0;
 

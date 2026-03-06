@@ -1,6 +1,8 @@
 import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router';
 import { useStore } from '@tanstack/react-store';
-import { uiStore } from '@/lib/stores';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { uiStore, setLanguage, LANG_COOKIE } from '@/lib/stores';
 import { ToastContainer } from '@/components/ui/Toast';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import '@/lib/i18n/config';
@@ -27,6 +29,17 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  const { i18n } = useTranslation();
+
+  // Sync language preference from localStorage after hydration
+  useEffect(() => {
+    const saved = localStorage.getItem(LANG_COOKIE);
+    if (saved === 'te' || saved === 'en') {
+      setLanguage(saved);
+      i18n.changeLanguage(saved);
+    }
+  }, [i18n]);
+
   return (
     <RootDocument>
       <ErrorBoundary>

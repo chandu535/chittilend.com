@@ -8,12 +8,7 @@ i18n.use(initReactI18next).init({
     en: { translation: en },
     te: { translation: te },
   },
-  lng:
-    (typeof window !== 'undefined' && localStorage.getItem('chittilend-lang')) ||
-    (typeof navigator !== 'undefined' && navigator.language.startsWith('te')
-      ? 'te'
-      : 'en') ||
-    'en',
+  lng: 'en',
   fallbackLng: 'en',
   supportedLngs: ['en', 'te'],
 

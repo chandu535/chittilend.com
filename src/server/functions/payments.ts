@@ -323,6 +323,89 @@ export const listRecentPayments = createServerFn({ method: 'GET' }).handler(asyn
   }));
 });
 
+export const revertPayment = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => {
+    const d = data as { paymentId: string; reason?: string };
+    if (!d.paymentId) throw new Error('Payment ID is required');
+    return { paymentId: d.paymentId, reason: d.reason || '' };
+  })
+  .handler(async ({ data }) => {
+    const user = await getAuthenticatedUser();
+    requireRole(user, ['admin', 'manager']);
+
+    const [payment] = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.id, data.paymentId))
+      .limit(1);
+
+    if (!payment) throw new Error('Payment not found');
+
+    if (payment.status === 'pending' || payment.status === 'overdue') {
+      throw new Error('PAYMENT_ALREADY_PENDING');
+    }
+
+    const previousAmountPaid = parseFloat(payment.amountPaid);
+
+    // Determine reverted status based on due date
+    const today = new Date().toISOString().split('T')[0];
+    const revertedStatus = payment.dueDate <= today ? 'overdue' : 'pending';
+
+    // Reset the payment
+    const [updated] = await db
+      .update(payments)
+      .set({
+        status: revertedStatus as 'pending' | 'overdue',
+        amountPaid: '0.00',
+        paidDate: null,
+        paymentMethod: null,
+        notes: data.reason ? `Reverted: ${data.reason}` : 'Reverted',
+        recordedBy: user.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(payments.id, data.paymentId))
+      .returning();
+
+    // Reverse the capital pool entry if there was money collected
+    if (previousAmountPaid > 0) {
+      const lastEntry = await db
+        .select({ runningBalance: capitalPoolLog.runningBalance })
+        .from(capitalPoolLog)
+        .orderBy(desc(capitalPoolLog.createdAt))
+        .limit(1);
+
+      const currentBalance = lastEntry.length > 0
+        ? parseFloat(lastEntry[0].runningBalance)
+        : 0;
+
+      await db.insert(capitalPoolLog).values({
+        eventType: 'collection',
+        amount: (-previousAmountPaid).toFixed(2),
+        runningBalance: (currentBalance - previousAmountPaid).toFixed(2),
+        referenceLoanId: payment.loanId,
+        referencePaymentId: payment.id,
+        notes: data.reason ? `Reversal: ${data.reason}` : 'Payment reversal',
+        recordedBy: user.id,
+      });
+    }
+
+    // If the loan was completed, revert it back to active
+    const [loan] = await db
+      .select({ id: loans.id, status: loans.status })
+      .from(loans)
+      .where(eq(loans.id, payment.loanId))
+      .limit(1);
+
+    if (loan && loan.status === 'completed') {
+      await db
+        .update(loans)
+        .set({ status: 'active', updatedAt: new Date() })
+        .where(eq(loans.id, loan.id));
+    }
+
+    return updated;
+  });
+
 export const bulkUpdateOverdueStatus = createServerFn({ method: 'POST' }).handler(async () => {
   const user = await getAuthenticatedUser();
   requireRole(user, ['admin', 'manager']);

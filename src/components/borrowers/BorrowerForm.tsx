@@ -19,9 +19,10 @@ interface BorrowerFormProps {
   initialData?: Partial<BorrowerFormData>;
   onSubmit: (data: BorrowerFormData) => Promise<void>;
   loading?: boolean;
+  submitLabel?: string;
 }
 
-export function BorrowerForm({ initialData, onSubmit, loading }: BorrowerFormProps) {
+export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: BorrowerFormProps) {
   const { t } = useTranslation();
   const [data, setData] = useState<BorrowerFormData>({
     name: initialData?.name || '',
@@ -157,7 +158,7 @@ export function BorrowerForm({ initialData, onSubmit, loading }: BorrowerFormPro
       )}
 
       <Button type="submit" className="w-full" loading={loading}>
-        {t('common.save')}
+        {submitLabel || t('common.save')}
       </Button>
     </form>
   );

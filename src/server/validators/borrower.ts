@@ -33,7 +33,7 @@ export const createBorrowerSchema = Joi.object({
     then: Joi.required().messages({
       'any.required': 'Surety reference required when type is existing_borrower',
     }),
-    otherwise: Joi.allow(null),
+    otherwise: Joi.allow(null, ''),
   }),
   aadhaarPhotoUrl: Joi.string().uri().allow('', null),
   profilePhotoUrl: Joi.string().uri().allow('', null),

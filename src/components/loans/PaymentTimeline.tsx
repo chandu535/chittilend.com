@@ -34,7 +34,8 @@ export function PaymentTimeline({ payments, onPaymentTap }: PaymentTimelineProps
     <div className="space-y-0">
       {payments.map((payment, index) => {
         const isLast = index === payments.length - 1;
-        const isActionable = payment.status === 'pending' || payment.status === 'overdue' || payment.status === 'partial';
+        // All payments are tappable: pending/overdue/partial for marking, paid/waived for reverting
+        const isActionable = true;
 
         return (
           <div key={payment.id} className="flex gap-3">

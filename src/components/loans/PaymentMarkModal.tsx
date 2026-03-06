@@ -8,7 +8,7 @@ import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from '@/components/ui/Toast';
-import { markPaymentPaid, markPaymentPartial, markPaymentWaived } from '@/server/functions/payments';
+import { markPaymentPaid, markPaymentPartial, markPaymentWaived, revertPayment } from '@/server/functions/payments';
 
 interface Payment {
   id: string;
@@ -29,6 +29,7 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
   const { t } = useTranslation();
   const amountDue = parseFloat(payment.amountDue);
   const alreadyPaid = parseFloat(payment.amountPaid);
+  const isCompleted = payment.status === 'paid' || payment.status === 'waived';
 
   const [amountPaid, setAmountPaid] = useState(
     payment.status === 'partial' ? (amountDue - alreadyPaid).toFixed(0) : amountDue.toFixed(0),
@@ -36,7 +37,8 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
   const [paidDate, setPaidDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState<'paid' | 'partial' | 'waived' | null>(null);
+  const [revertReason, setRevertReason] = useState('');
+  const [loading, setLoading] = useState<'paid' | 'partial' | 'waived' | 'revert' | null>(null);
 
   const handleAction = async (action: 'paid' | 'partial' | 'waived') => {
     setLoading(action);
@@ -70,6 +72,27 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
       onSuccess();
     } catch (err) {
       toast(err instanceof Error ? err.message : t('errors.generic'), 'error');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleRevert = async () => {
+    setLoading('revert');
+    try {
+      await revertPayment({
+        data: {
+          paymentId: payment.id,
+          reason: revertReason || undefined,
+        },
+      });
+      toast(t('payments.revertSuccess'), 'success');
+      onSuccess();
+    } catch (err) {
+      const message = err instanceof Error && err.message.includes('PAYMENT_ALREADY_PENDING')
+        ? t('payments.alreadyPending')
+        : err instanceof Error ? err.message : t('errors.generic');
+      toast(message, 'error');
     } finally {
       setLoading(null);
     }
@@ -113,7 +136,7 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
               <span className="text-sm text-slate-500">{t('payments.amountDue')}</span>
               <CurrencyDisplay amount={amountDue} className="text-lg font-bold text-slate-900" />
             </div>
-            {payment.status === 'partial' && alreadyPaid > 0 && (
+            {alreadyPaid > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-500">{t('payments.amountPaid')}</span>
                 <CurrencyDisplay amount={alreadyPaid} className="text-sm font-medium text-amber-600" />
@@ -125,77 +148,122 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
             </div>
           </div>
 
-          {/* Amount Input */}
-          <Input
-            label={t('payments.amountPaid')}
-            value={amountPaid}
-            onChange={(e) => setAmountPaid(e.target.value.replace(/[^\d.]/g, ''))}
-            inputMode="decimal"
-            lang="en"
-            leftIcon={<span className="text-slate-500 text-sm">₹</span>}
-          />
+          {isCompleted ? (
+            /* ---- Revert View ---- */
+            <>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <p className="text-sm text-amber-800">{t('payments.revertConfirm')}</p>
+              </div>
 
-          {/* Date */}
-          <DatePicker
-            label={t('payments.paidDate')}
-            value={paidDate}
-            onChange={(e) => setPaidDate(e.target.value)}
-          />
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  {t('payments.revertReason')}
+                </label>
+                <textarea
+                  value={revertReason}
+                  onChange={(e) => setRevertReason(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  placeholder={t('payments.revertReason')}
+                />
+              </div>
 
-          {/* Payment Method */}
-          <Select
-            label={t('payments.paymentMethod')}
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
-            options={[
-              { value: 'cash', label: t('payments.cash') },
-              { value: 'upi', label: t('payments.upi') },
-              { value: 'bank_transfer', label: t('payments.bankTransfer') },
-              { value: 'other', label: t('payments.other') },
-            ]}
-          />
+              <div className="space-y-2 pt-2">
+                <Button
+                  variant="danger"
+                  className="w-full"
+                  onClick={handleRevert}
+                  loading={loading === 'revert'}
+                  disabled={loading !== null}
+                >
+                  {t('payments.revertPayment')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={onClose}
+                  disabled={loading !== null}
+                >
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            </>
+          ) : (
+            /* ---- Mark Payment View ---- */
+            <>
+              {/* Amount Input */}
+              <Input
+                label={t('payments.amountPaid')}
+                value={amountPaid}
+                onChange={(e) => setAmountPaid(e.target.value.replace(/[^\d.]/g, ''))}
+                inputMode="decimal"
+                lang="en"
+                leftIcon={<span className="text-slate-500 text-sm">₹</span>}
+              />
 
-          {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.notes')}</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-              placeholder={t('common.notes')}
-            />
-          </div>
+              {/* Date */}
+              <DatePicker
+                label={t('payments.paidDate')}
+                value={paidDate}
+                onChange={(e) => setPaidDate(e.target.value)}
+              />
 
-          {/* Action Buttons */}
-          <div className="space-y-2 pt-2">
-            <Button
-              className="w-full"
-              onClick={() => handleAction('paid')}
-              loading={loading === 'paid'}
-              disabled={loading !== null}
-            >
-              {t('payments.markPaid')}
-            </Button>
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={() => handleAction('partial')}
-              loading={loading === 'partial'}
-              disabled={loading !== null}
-            >
-              {t('payments.markPartial')}
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full text-purple-700 hover:bg-purple-50"
-              onClick={() => handleAction('waived')}
-              loading={loading === 'waived'}
-              disabled={loading !== null}
-            >
-              {t('payments.markWaived')}
-            </Button>
-          </div>
+              {/* Payment Method */}
+              <Select
+                label={t('payments.paymentMethod')}
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                options={[
+                  { value: 'cash', label: t('payments.cash') },
+                  { value: 'upi', label: t('payments.upi') },
+                  { value: 'bank_transfer', label: t('payments.bankTransfer') },
+                  { value: 'other', label: t('payments.other') },
+                ]}
+              />
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.notes')}</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  placeholder={t('common.notes')}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-2">
+                <Button
+                  className="w-full"
+                  onClick={() => handleAction('paid')}
+                  loading={loading === 'paid'}
+                  disabled={loading !== null}
+                >
+                  {t('payments.markPaid')}
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => handleAction('partial')}
+                  loading={loading === 'partial'}
+                  disabled={loading !== null}
+                >
+                  {t('payments.markPartial')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full text-purple-700 hover:bg-purple-50"
+                  onClick={() => handleAction('waived')}
+                  loading={loading === 'waived'}
+                  disabled={loading !== null}
+                >
+                  {t('payments.markWaived')}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

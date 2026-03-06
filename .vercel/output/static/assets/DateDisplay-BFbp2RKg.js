@@ -1,1 +1,0 @@
-import{a as s,f as o,j as n}from"./main-GuyZGrOa.js";import{e as i}from"./formatters-Cf9IAC8q.js";function p({date:a,className:t}){const e=s(o,r=>r.language);return n.jsx("span",{className:t,children:i(a,{lang:e})})}export{p as D};

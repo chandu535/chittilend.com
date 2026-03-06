@@ -1,8 +1,8 @@
 import { createServerFn } from '@tanstack/react-start';
-import { eq, ilike, or, sql, desc, count } from 'drizzle-orm';
+import { eq, ilike, or, sql, desc, count, and } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { db } from '../db';
-import { borrowers } from '../db/schema';
+import { borrowers, loans } from '../db/schema';
 import { createBorrowerSchema, updateBorrowerSchema } from '../validators/borrower';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole } from '../middleware/roleGuard';
@@ -246,6 +246,42 @@ export const searchBorrowers = createServerFn({ method: 'GET' })
       .limit(10);
 
     return results;
+  });
+
+export const deleteBorrower = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => {
+    const id = (data as { id: string }).id;
+    if (!id) throw new Error('Borrower ID is required');
+    return { id };
+  })
+  .handler(async ({ data }) => {
+    const user = await getAuthenticatedUser();
+    requireRole(user, ['admin', 'manager']);
+
+    // Check for active loans before deleting (DB has onDelete: 'restrict')
+    const activeLoans = await db
+      .select({ id: loans.id })
+      .from(loans)
+      .where(
+        and(
+          eq(loans.borrowerId, data.id),
+          or(eq(loans.status, 'active'), eq(loans.status, 'extended')),
+        ),
+      )
+      .limit(1);
+
+    if (activeLoans.length > 0) {
+      throw new Error('BORROWER_HAS_ACTIVE_LOANS');
+    }
+
+    const [deleted] = await db
+      .delete(borrowers)
+      .where(eq(borrowers.id, data.id))
+      .returning({ id: borrowers.id });
+
+    if (!deleted) throw new Error('Borrower not found');
+
+    return { success: true };
   });
 
 export const listAreas = createServerFn({ method: 'GET' }).handler(async () => {

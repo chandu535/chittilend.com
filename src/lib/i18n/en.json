@@ -132,7 +132,12 @@
     "noUpcoming": "No upcoming payments this week.",
     "noOverdue": "No overdue payments.",
     "payments_count_one": "{{count, number}} Payment",
-    "payments_count_other": "{{count, number}} Payments"
+    "payments_count_other": "{{count, number}} Payments",
+    "revertPayment": "Revert Payment",
+    "revertConfirm": "Are you sure you want to revert this payment? The amount will be removed from collections.",
+    "revertReason": "Reason for reversal",
+    "revertSuccess": "Payment reverted successfully",
+    "alreadyPending": "This payment is already pending"
   },
   "borrowers": {
     "title": "Borrowers",
@@ -159,7 +164,18 @@
     "uploadPhoto": "Upload Photo",
     "locationAuto": "Location captured automatically",
     "locationManual": "Enter location manually",
-    "noBorrowers": "No borrowers yet. Add your first borrower!"
+    "noBorrowers": "No borrowers yet. Add your first borrower!",
+    "stepDetails": "Details",
+    "stepPhotos": "Photos",
+    "stepDetailsDesc": "Enter borrower information",
+    "stepPhotosDesc": "Take a photo and upload Aadhaar",
+    "createSuccess": "Borrower created successfully",
+    "editBorrower": "Edit Borrower",
+    "deleteBorrower": "Delete Borrower",
+    "confirmDelete": "Are you sure you want to delete this borrower? This action cannot be undone.",
+    "deleteSuccess": "Borrower deleted successfully",
+    "updateSuccess": "Borrower updated successfully",
+    "hasActiveLoans": "Cannot delete borrower with active loans"
   },
   "analytics": {
     "title": "Analytics",

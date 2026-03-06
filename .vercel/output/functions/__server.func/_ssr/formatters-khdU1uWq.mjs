@@ -90,7 +90,7 @@ export {
   formatPercent as b,
   formatINRCompact as c,
   formatPhone as d,
-  formatINR as e,
+  formatDate as e,
   formatNumber as f,
-  formatDate as g
+  formatINR as g
 };

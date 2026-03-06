@@ -1,1 +1,0 @@
-import{a as o,f as t,j as e}from"./main-GuyZGrOa.js";import{g as u}from"./formatters-Cf9IAC8q.js";function m({amount:a,className:r}){const s=o(t,n=>n.language);return e.jsx("span",{className:r,children:u(a,{lang:s})})}export{m as C};

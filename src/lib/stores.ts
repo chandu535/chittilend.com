@@ -18,10 +18,13 @@ export const uiStore = new Store({
   },
 });
 
+export const LANG_COOKIE = 'chittilend-lang';
+
 export function setLanguage(lang: 'en' | 'te') {
   uiStore.setState((s) => ({ ...s, language: lang }));
   if (typeof window !== 'undefined') {
-    localStorage.setItem('chittilend-lang', lang);
+    localStorage.setItem(LANG_COOKIE, lang);
+    document.cookie = `${LANG_COOKIE}=${lang};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
     document.documentElement.setAttribute('lang', lang);
   }
 }
