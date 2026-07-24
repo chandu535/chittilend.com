@@ -89,8 +89,8 @@ export {
   formatMonthYear as a,
   formatPercent as b,
   formatINRCompact as c,
-  formatPhone as d,
+  formatINR as d,
   formatDate as e,
   formatNumber as f,
-  formatINR as g
+  formatPhone as g
 };

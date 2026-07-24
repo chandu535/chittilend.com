@@ -1,1 +1,0 @@
-import{j as n,f as r}from"./main--CNpflsE.js";import{S as a}from"./constants-Be-aISC-.js";function x({status:e,children:s,className:t}){return n.jsx("span",{className:r("badge inline-flex items-center rounded-full px-2.5 py-0.5","text-xs font-medium",a[e],t),children:s})}export{x as B};

@@ -7,6 +7,7 @@ import { BorrowerForm } from '@/components/borrowers/BorrowerForm';
 import { CameraCapture } from '@/components/ui/CameraCapture';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { createBorrower } from '@/server/functions/borrowers';
+import { uploadBorrowerPhoto } from '@/server/functions/upload';
 import { toast } from '@/components/ui/Toast';
 
 export const Route = createFileRoute('/_authenticated/borrowers/new')({
@@ -18,6 +19,9 @@ interface BorrowerFormData {
   mobile: string;
   area: string;
   address: string;
+  locationUrl: string;
+  locationLat: number | null;
+  locationLng: number | null;
   suretyType: 'owner' | 'existing_borrower';
   suretyReferenceId: string;
 }
@@ -28,19 +32,40 @@ function NewBorrowerPage() {
   const [step, setStep] = useState<1 | 2>(1);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<BorrowerFormData | null>(null);
-  const [_profilePhoto, setProfilePhoto] = useState<File | null>(null);
-  const [_aadhaarPhoto, setAadhaarPhoto] = useState<File | null>(null);
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [aadhaarPhoto, setAadhaarPhoto] = useState<File | null>(null);
 
   const handleFormNext = async (data: BorrowerFormData) => {
     setFormData(data);
     setStep(2);
   };
 
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const uploadPhoto = async (file: File, borrowerId: string, docType: 'profile' | 'aadhaar') => {
+    const fileData = await fileToBase64(file);
+    await uploadBorrowerPhoto({ data: { borrowerId, docType, fileData, contentType: file.type } });
+  };
+
   const handleSubmit = async () => {
     if (!formData) return;
     setLoading(true);
     try {
-      const borrower = await createBorrower({ data: formData });
+      const { locationUrl: _locationUrl, ...borrowerData } = formData;
+      const borrower = await createBorrower({ data: borrowerData });
+
+      // Upload any selected photos now that we have a borrower ID
+      const uploads: Promise<void>[] = [];
+      if (profilePhoto) uploads.push(uploadPhoto(profilePhoto, borrower.id, 'profile'));
+      if (aadhaarPhoto) uploads.push(uploadPhoto(aadhaarPhoto, borrower.id, 'aadhaar'));
+      if (uploads.length > 0) await Promise.all(uploads);
+
       toast(t('borrowers.createSuccess'), 'success');
       navigate({
         to: '/borrowers/$borrowerId',

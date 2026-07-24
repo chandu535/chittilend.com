@@ -20,13 +20,13 @@ export const LIMITS = {
 } as const;
 
 export const STATUS_COLORS = {
-  active: 'bg-blue-100 text-blue-800',
-  completed: 'bg-emerald-100 text-emerald-800',
-  defaulted: 'bg-red-100 text-red-800',
-  extended: 'bg-amber-100 text-amber-800',
-  paid: 'bg-emerald-100 text-emerald-800',
-  pending: 'bg-slate-100 text-slate-800',
-  partial: 'bg-amber-100 text-amber-800',
-  overdue: 'bg-red-100 text-red-800',
-  waived: 'bg-purple-100 text-purple-800',
+  active:    'bg-violet-50 text-violet-700',
+  completed: 'bg-emerald-50 text-emerald-700',
+  defaulted: 'bg-red-50 text-red-600',
+  extended:  'bg-amber-50 text-amber-700',
+  paid:      'bg-emerald-50 text-emerald-700',
+  pending:   'bg-slate-100 text-slate-600',
+  partial:   'bg-amber-50 text-amber-700',
+  overdue:   'bg-red-50 text-red-600',
+  waived:    'bg-purple-50 text-purple-700',
 } as const;

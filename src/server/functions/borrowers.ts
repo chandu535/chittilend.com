@@ -87,6 +87,7 @@ export const getBorrowerById = createServerFn({ method: 'GET' })
         loans: {
           columns: {
             id: true,
+            loanNumber: true,
             primaryAmount: true,
             totalRepayment: true,
             status: true,
@@ -183,6 +184,7 @@ export const updateBorrower = createServerFn({ method: 'POST' })
       .update(borrowers)
       .set({
         ...updateData,
+        suretyReferenceId: updateData.suretyReferenceId || null,
         locationLat: updateData.locationLat?.toString() || undefined,
         locationLng: updateData.locationLng?.toString() || undefined,
         updatedAt: new Date(),

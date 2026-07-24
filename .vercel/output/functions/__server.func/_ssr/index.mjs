@@ -452,7 +452,7 @@ function getResponse() {
   return event.res;
 }
 async function getStartManifest(matchedRoutes) {
-  const { tsrStartManifest } = await import("./_tanstack-start-manifest_v-DJuUVqlV.mjs");
+  const { tsrStartManifest } = await import("./_tanstack-start-manifest_v-CKtXIpnu.mjs");
   const startManifest = tsrStartManifest();
   const rootRoute = startManifest.routes[rootRouteId] = startManifest.routes[rootRouteId] || {};
   rootRoute.assets = rootRoute.assets || [];
@@ -608,124 +608,133 @@ function createMultiplexedStream(jsonStream, rawStreams) {
 }
 const manifest = { "c66295356ee1bed9dcd6acc6996417714105d1c255d6dc117cb348c4624a9cfa": {
   functionName: "login_createServerFn_handler",
-  importer: () => import("./auth-CHvkzgUk.mjs")
+  importer: () => import("./auth-DNFnH8E0.mjs")
 }, "29fdd7534a8fc4cc73a2fc0e6a37abee71570be1256a0cd8b872f6c5140c326e": {
   functionName: "logout_createServerFn_handler",
-  importer: () => import("./auth-CHvkzgUk.mjs")
+  importer: () => import("./auth-DNFnH8E0.mjs")
 }, "bf7d44565f0a75f8775052ea39a4b3599b3e66c0d477bc07f07917b7fb9585ca": {
   functionName: "getSession_createServerFn_handler",
-  importer: () => import("./auth-CHvkzgUk.mjs")
+  importer: () => import("./auth-DNFnH8E0.mjs")
 }, "8829a2c83808fdbc570343dfba48bb912c280a25f1e33ff0d12598054a2751a2": {
   functionName: "verifyPortalToken_createServerFn_handler",
-  importer: () => import("./auth-CHvkzgUk.mjs")
+  importer: () => import("./auth-DNFnH8E0.mjs")
 }, "19c53245c787054aa8380a119cf8051162f8b3ea34375828992f42047dbe4e46": {
   functionName: "getPortalData_createServerFn_handler",
-  importer: () => import("./portal-C2NM7647.mjs")
+  importer: () => import("./portal-B1s1RRWz.mjs")
 }, "86137142a74d80357aac4d577d75d056d30cd47b41a4a6566b21623b672b5b1e": {
   functionName: "getDashboardSummary_createServerFn_handler",
-  importer: () => import("./analytics-BvvZLe4k.mjs")
+  importer: () => import("./analytics-CqAN6B03.mjs")
 }, "21372f13675cb16fef1a6a80ea212d700ad9e6d25ba796aa09565aef12f5cbe7": {
   functionName: "getCashflowTimeline_createServerFn_handler",
-  importer: () => import("./analytics-BvvZLe4k.mjs")
+  importer: () => import("./analytics-CqAN6B03.mjs")
 }, "6545723090aa22a2c36a2643951f144b7b594339e32a0728c055a08805363cae": {
   functionName: "getAreaBreakdown_createServerFn_handler",
-  importer: () => import("./analytics-BvvZLe4k.mjs")
+  importer: () => import("./analytics-CqAN6B03.mjs")
 }, "659dadff243a85a5bac6d9206571e508b15d4876047c9dc57011f252f79ff484": {
   functionName: "getBorrowerRanking_createServerFn_handler",
-  importer: () => import("./analytics-BvvZLe4k.mjs")
+  importer: () => import("./analytics-CqAN6B03.mjs")
 }, "3e9c2c0571901ffe57141eacf53b8ed8d92472b720c79109737bf5aa8f528922": {
   functionName: "getStatusDistribution_createServerFn_handler",
-  importer: () => import("./analytics-BvvZLe4k.mjs")
+  importer: () => import("./analytics-CqAN6B03.mjs")
 }, "dbd9f7730ebad79ea4ce6669df1e8129b72f2cacf83639e4d70a092dbc83e880": {
   functionName: "getMonthlySnapshot_createServerFn_handler",
-  importer: () => import("./analytics-BvvZLe4k.mjs")
+  importer: () => import("./analytics-CqAN6B03.mjs")
 }, "e9a4555d7c844d233b99e27d25f094e7df13d73cd7572c2b83920784810d6748": {
   functionName: "getRecentActivity_createServerFn_handler",
-  importer: () => import("./analytics-BvvZLe4k.mjs")
-}, "c6aac2c5f1e616252a1cd37b59ff41c6b3ed900ab92cbd85e8c5b69b6725aef3": {
-  functionName: "listLoans_createServerFn_handler",
-  importer: () => import("./loans-Dsui7rNl.mjs")
-}, "598abfe0b55db0d95b1f41e6294dee2fb9697115d41bec08c40a6a51475a1790": {
-  functionName: "getLoanById_createServerFn_handler",
-  importer: () => import("./loans-Dsui7rNl.mjs")
-}, "dc465117bc796bf617a74a59b0b3cf5a9a299261996da1e1500aafb78575d145": {
-  functionName: "createLoan_createServerFn_handler",
-  importer: () => import("./loans-Dsui7rNl.mjs")
-}, "deaca83f8752c79c3c1dda0649870988e1cf3c42f1baffc248e4cdec82929de1": {
-  functionName: "updateLoan_createServerFn_handler",
-  importer: () => import("./loans-Dsui7rNl.mjs")
-}, "30b913d22c4bf7659f9f140cd86dc966712ef404a269811cd4222e03d847627f": {
-  functionName: "extendTenure_createServerFn_handler",
-  importer: () => import("./loans-Dsui7rNl.mjs")
-}, "4ac19b88fda24680112998290cab23be6b3ca6dbd7a210ce4a0ded515ed2c8ba": {
-  functionName: "listManagers_createServerFn_handler",
-  importer: () => import("./users-DzaPKrQe.mjs")
-}, "3522d6afa08eb1863225729ae565bc746cf03f7dff76d212cb10a9b18ba28bbd": {
-  functionName: "createManager_createServerFn_handler",
-  importer: () => import("./users-DzaPKrQe.mjs")
-}, "0de027824cdfd2a4d95cdce2b5fe1a4d14143af767c24d1ce2d191f08b910dc0": {
-  functionName: "toggleManagerActive_createServerFn_handler",
-  importer: () => import("./users-DzaPKrQe.mjs")
-}, "2b1febee5c8352ad582297cea76d90d23bf6ab8bb6f7abdcc2d6b34723e07067": {
-  functionName: "listBorrowers_createServerFn_handler",
-  importer: () => import("./borrowers-B2_EoSCt.mjs")
-}, "f8fa8e37fb95dcb732a5664237572af025802fa7026aa5bb268ecb5b3db6efa8": {
-  functionName: "getBorrowerById_createServerFn_handler",
-  importer: () => import("./borrowers-B2_EoSCt.mjs")
-}, "9224c6c400432973e2a31c14018e45cd63e0a8de4b5ec9883bb6ff7b28501648": {
-  functionName: "createBorrower_createServerFn_handler",
-  importer: () => import("./borrowers-B2_EoSCt.mjs")
-}, "b7a4cf04ffd8a5b15f834ee95339c99b18115fde677512f72a588f58ff6d4387": {
-  functionName: "updateBorrower_createServerFn_handler",
-  importer: () => import("./borrowers-B2_EoSCt.mjs")
-}, "17d267557b2ea379c4700e1419c007e8de89febce492c7fade7b8b457a61f2f7": {
-  functionName: "generateNewMagicLink_createServerFn_handler",
-  importer: () => import("./borrowers-B2_EoSCt.mjs")
-}, "89ade9f6e5ddc3ac6b5567266dc044c9dcdeb1bae24e7d378d558882950d24b1": {
-  functionName: "searchBorrowers_createServerFn_handler",
-  importer: () => import("./borrowers-B2_EoSCt.mjs")
-}, "8e6468c5eff369b3b413d794897027be351edd040f192ff3545adfccc32ca6e4": {
-  functionName: "deleteBorrower_createServerFn_handler",
-  importer: () => import("./borrowers-B2_EoSCt.mjs")
-}, "faf23032f626d47cf6b4fdfa73ba96d0e74bb314fefc6c764d95b0f7bacf768d": {
-  functionName: "listAreas_createServerFn_handler",
-  importer: () => import("./borrowers-B2_EoSCt.mjs")
-}, "cc11e524a6bf78967b71a718ff53a0b27099805b4c84beb43f5eb652c045bf60": {
-  functionName: "getCapitalBalance_createServerFn_handler",
-  importer: () => import("./capital-BaYN4vgL.mjs")
-}, "727e83e3ba9a6397583d7296131d393575f763162e2298693aa6ed034b64ed61": {
-  functionName: "getCapitalLog_createServerFn_handler",
-  importer: () => import("./capital-BaYN4vgL.mjs")
-}, "b5b76cdd5bf2632d2f5e9c07e7f1cee2047f8cc7b538a73532cb598e98860fc0": {
-  functionName: "addInvestment_createServerFn_handler",
-  importer: () => import("./capital-BaYN4vgL.mjs")
+  importer: () => import("./analytics-CqAN6B03.mjs")
 }, "ddff522c8bb9ccb79a21689bc8a037e0bc5c0b03976bfad9aea68f21c22e49e0": {
   functionName: "listPaymentsByLoan_createServerFn_handler",
-  importer: () => import("./payments-CP_PvyYR.mjs")
+  importer: () => import("./payments-B8sU1Ybk.mjs")
 }, "59c15f949d8dc113c6350ef01cf363752f956a68f708bdf6f58805fda162f915": {
   functionName: "markPaymentPaid_createServerFn_handler",
-  importer: () => import("./payments-CP_PvyYR.mjs")
+  importer: () => import("./payments-B8sU1Ybk.mjs")
 }, "8f1f91b5598343ef977b6533acc047b67e13f3f1a85847038c59286ffbae29bf": {
   functionName: "markPaymentPartial_createServerFn_handler",
-  importer: () => import("./payments-CP_PvyYR.mjs")
+  importer: () => import("./payments-B8sU1Ybk.mjs")
 }, "24c97fbfdfdea218d73ce4fe6aa689f5ada68672778a74aac52cdfdc7f376115": {
   functionName: "markPaymentWaived_createServerFn_handler",
-  importer: () => import("./payments-CP_PvyYR.mjs")
+  importer: () => import("./payments-B8sU1Ybk.mjs")
 }, "27af284ac630b437bdbda95142b0abfbefc64d0f0ff24c5f855347ceaec795df": {
   functionName: "listUpcomingPayments_createServerFn_handler",
-  importer: () => import("./payments-CP_PvyYR.mjs")
+  importer: () => import("./payments-B8sU1Ybk.mjs")
 }, "eb9a0a8f9fbcc6d36f47887494e1861a79a993fc0634c5fab13f0bfadff2181f": {
   functionName: "listOverduePayments_createServerFn_handler",
-  importer: () => import("./payments-CP_PvyYR.mjs")
+  importer: () => import("./payments-B8sU1Ybk.mjs")
 }, "467a4add2f8162dd6e91ae88288e840b44a1533c7629bd97404f41a8e480e67b": {
   functionName: "listRecentPayments_createServerFn_handler",
-  importer: () => import("./payments-CP_PvyYR.mjs")
+  importer: () => import("./payments-B8sU1Ybk.mjs")
 }, "1b7c1f44b08991f3daafb4a2ca8a6a97cedb276718c2c33042cf5e1c0dda0be9": {
   functionName: "revertPayment_createServerFn_handler",
-  importer: () => import("./payments-CP_PvyYR.mjs")
+  importer: () => import("./payments-B8sU1Ybk.mjs")
 }, "ee8c6974c87a15c3f851649bc5854dcd90080d025f99584e051c0187379c58b5": {
   functionName: "bulkUpdateOverdueStatus_createServerFn_handler",
-  importer: () => import("./payments-CP_PvyYR.mjs")
+  importer: () => import("./payments-B8sU1Ybk.mjs")
+}, "cc11e524a6bf78967b71a718ff53a0b27099805b4c84beb43f5eb652c045bf60": {
+  functionName: "getCapitalBalance_createServerFn_handler",
+  importer: () => import("./capital-00ruq479.mjs")
+}, "727e83e3ba9a6397583d7296131d393575f763162e2298693aa6ed034b64ed61": {
+  functionName: "getCapitalLog_createServerFn_handler",
+  importer: () => import("./capital-00ruq479.mjs")
+}, "b5b76cdd5bf2632d2f5e9c07e7f1cee2047f8cc7b538a73532cb598e98860fc0": {
+  functionName: "addInvestment_createServerFn_handler",
+  importer: () => import("./capital-00ruq479.mjs")
+}, "c6aac2c5f1e616252a1cd37b59ff41c6b3ed900ab92cbd85e8c5b69b6725aef3": {
+  functionName: "listLoans_createServerFn_handler",
+  importer: () => import("./loans-EnIicyuY.mjs")
+}, "598abfe0b55db0d95b1f41e6294dee2fb9697115d41bec08c40a6a51475a1790": {
+  functionName: "getLoanById_createServerFn_handler",
+  importer: () => import("./loans-EnIicyuY.mjs")
+}, "dc465117bc796bf617a74a59b0b3cf5a9a299261996da1e1500aafb78575d145": {
+  functionName: "createLoan_createServerFn_handler",
+  importer: () => import("./loans-EnIicyuY.mjs")
+}, "deaca83f8752c79c3c1dda0649870988e1cf3c42f1baffc248e4cdec82929de1": {
+  functionName: "updateLoan_createServerFn_handler",
+  importer: () => import("./loans-EnIicyuY.mjs")
+}, "30b913d22c4bf7659f9f140cd86dc966712ef404a269811cd4222e03d847627f": {
+  functionName: "extendTenure_createServerFn_handler",
+  importer: () => import("./loans-EnIicyuY.mjs")
+}, "361d9805ac41dce6e3f105c867a61b961eed5b15f6fcfa1883da0be151707733": {
+  functionName: "changeStatus_createServerFn_handler",
+  importer: () => import("./loans-EnIicyuY.mjs")
+}, "2b1febee5c8352ad582297cea76d90d23bf6ab8bb6f7abdcc2d6b34723e07067": {
+  functionName: "listBorrowers_createServerFn_handler",
+  importer: () => import("./borrowers-C7M5H29w.mjs")
+}, "f8fa8e37fb95dcb732a5664237572af025802fa7026aa5bb268ecb5b3db6efa8": {
+  functionName: "getBorrowerById_createServerFn_handler",
+  importer: () => import("./borrowers-C7M5H29w.mjs")
+}, "9224c6c400432973e2a31c14018e45cd63e0a8de4b5ec9883bb6ff7b28501648": {
+  functionName: "createBorrower_createServerFn_handler",
+  importer: () => import("./borrowers-C7M5H29w.mjs")
+}, "b7a4cf04ffd8a5b15f834ee95339c99b18115fde677512f72a588f58ff6d4387": {
+  functionName: "updateBorrower_createServerFn_handler",
+  importer: () => import("./borrowers-C7M5H29w.mjs")
+}, "17d267557b2ea379c4700e1419c007e8de89febce492c7fade7b8b457a61f2f7": {
+  functionName: "generateNewMagicLink_createServerFn_handler",
+  importer: () => import("./borrowers-C7M5H29w.mjs")
+}, "89ade9f6e5ddc3ac6b5567266dc044c9dcdeb1bae24e7d378d558882950d24b1": {
+  functionName: "searchBorrowers_createServerFn_handler",
+  importer: () => import("./borrowers-C7M5H29w.mjs")
+}, "8e6468c5eff369b3b413d794897027be351edd040f192ff3545adfccc32ca6e4": {
+  functionName: "deleteBorrower_createServerFn_handler",
+  importer: () => import("./borrowers-C7M5H29w.mjs")
+}, "faf23032f626d47cf6b4fdfa73ba96d0e74bb314fefc6c764d95b0f7bacf768d": {
+  functionName: "listAreas_createServerFn_handler",
+  importer: () => import("./borrowers-C7M5H29w.mjs")
+}, "542cd0838f496f237f9f1a986b69ea6cab57c0d2acf4519ea5d55ed771e7606a": {
+  functionName: "uploadBorrowerPhoto_createServerFn_handler",
+  importer: () => import("./upload-CEfkfd5L.mjs")
+}, "4ac19b88fda24680112998290cab23be6b3ca6dbd7a210ce4a0ded515ed2c8ba": {
+  functionName: "listManagers_createServerFn_handler",
+  importer: () => import("./users-Cnpt9kgS.mjs")
+}, "3522d6afa08eb1863225729ae565bc746cf03f7dff76d212cb10a9b18ba28bbd": {
+  functionName: "createManager_createServerFn_handler",
+  importer: () => import("./users-Cnpt9kgS.mjs")
+}, "0de027824cdfd2a4d95cdce2b5fe1a4d14143af767c24d1ce2d191f08b910dc0": {
+  functionName: "toggleManagerActive_createServerFn_handler",
+  importer: () => import("./users-Cnpt9kgS.mjs")
+}, "2f15cf97c55a997040ea638dacd5e036f9ef72c63417c6b0124d32db95c057d7": {
+  functionName: "sendLoanWhatsAppTemplate_createServerFn_handler",
+  importer: () => import("./whatsapp-YnvE5i-7.mjs")
 } };
 async function getServerFnById(id) {
   const serverFnInfo = manifest[id];
@@ -1148,7 +1157,7 @@ let entriesPromise;
 let baseManifestPromise;
 let cachedFinalManifestPromise;
 async function loadEntries() {
-  const routerEntry = await import("./router-De5441r5.mjs").then((n) => n.r);
+  const routerEntry = await import("./router-_jeUSzJ6.mjs").then((n) => n.r);
   const startEntry = await import("./start-HYkvq4Ni.mjs");
   return { startEntry, routerEntry };
 }

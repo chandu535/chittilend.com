@@ -36,6 +36,15 @@ describe('createBorrowerSchema', () => {
     expect(error!.details[0].path).toContain('mobile');
   });
 
+  it('rejects a 10-digit number that is not an Indian mobile number', () => {
+    const { error } = createBorrowerSchema.validate({
+      ...validBorrower,
+      mobile: '1234567890',
+    });
+    expect(error).toBeDefined();
+    expect(error!.details[0].path).toContain('mobile');
+  });
+
   it('rejects mobile with country code', () => {
     const { error } = createBorrowerSchema.validate({
       ...validBorrower,

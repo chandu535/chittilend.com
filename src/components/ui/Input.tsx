@@ -32,14 +32,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={clsx(
-              'w-full rounded-lg border bg-white px-3 py-2.5',
-              'text-base text-slate-900 placeholder:text-slate-400',
+              'w-full rounded-xl border bg-white px-3.5 py-2.5',
+              'text-[15px] text-slate-900 placeholder:text-slate-400',
               'min-h-[48px]',
-              'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary',
-              'transition-colors',
+              'focus:outline-none focus:ring-2 focus:ring-violet-300/60 focus:border-violet-400',
+              'transition-all duration-150',
+              'shadow-[0_1px_4px_rgba(0,0,0,0.06)]',
               error
-                ? 'border-danger focus:ring-danger/30 focus:border-danger'
-                : 'border-slate-300',
+                ? 'border-red-300 focus:ring-red-300/60 focus:border-red-400'
+                : 'border-slate-200',
               leftIcon && 'pl-10',
               className,
             )}

@@ -1,0 +1,38 @@
+import { H as HttpRequest } from "./protocol-http.mjs";
+const CONTENT_LENGTH_HEADER = "content-length";
+function contentLengthMiddleware(bodyLengthChecker) {
+  return (next) => async (args) => {
+    const request = args.request;
+    if (HttpRequest.isInstance(request)) {
+      const { body, headers } = request;
+      if (body && Object.keys(headers).map((str) => str.toLowerCase()).indexOf(CONTENT_LENGTH_HEADER) === -1) {
+        try {
+          const length = bodyLengthChecker(body);
+          request.headers = {
+            ...request.headers,
+            [CONTENT_LENGTH_HEADER]: String(length)
+          };
+        } catch (error) {
+        }
+      }
+    }
+    return next({
+      ...args,
+      request
+    });
+  };
+}
+const contentLengthMiddlewareOptions = {
+  step: "build",
+  tags: ["SET_CONTENT_LENGTH", "CONTENT_LENGTH"],
+  name: "contentLengthMiddleware",
+  override: true
+};
+const getContentLengthPlugin = (options) => ({
+  applyToStack: (clientStack) => {
+    clientStack.add(contentLengthMiddleware(options.bodyLengthChecker), contentLengthMiddlewareOptions);
+  }
+});
+export {
+  getContentLengthPlugin as g
+};

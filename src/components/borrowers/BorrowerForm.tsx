@@ -11,6 +11,9 @@ interface BorrowerFormData {
   mobile: string;
   area: string;
   address: string;
+  locationUrl: string;
+  locationLat: number | null;
+  locationLng: number | null;
   suretyType: 'owner' | 'existing_borrower';
   suretyReferenceId: string;
 }
@@ -29,12 +32,37 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
     mobile: initialData?.mobile || '',
     area: initialData?.area || '',
     address: initialData?.address || '',
+    locationUrl: initialData?.locationUrl || '',
+    locationLat: initialData?.locationLat ?? null,
+    locationLng: initialData?.locationLng ?? null,
     suretyType: initialData?.suretyType || 'owner',
     suretyReferenceId: initialData?.suretyReferenceId || '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [suretyResults, setSuretyResults] = useState<Array<{ id: string; name: string; mobile: string }>>([]);
   const [suretySearch, setSuretySearch] = useState('');
+  const [locating, setLocating] = useState(false);
+
+  const setLocationFromUrl = (locationUrl: string) => {
+    const match = locationUrl.match(/(?:@|[?&](?:q|query)=)?(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/);
+    const locationLat = match ? Number(match[1]) : null;
+    const locationLng = match ? Number(match[2]) : null;
+    setData((current) => ({ ...current, locationUrl, locationLat, locationLng }));
+  };
+
+  const captureLocation = () => {
+    if (!navigator.geolocation) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const locationUrl = `https://www.google.com/maps?q=${coords.latitude},${coords.longitude}`;
+        setData((current) => ({ ...current, locationUrl, locationLat: coords.latitude, locationLng: coords.longitude }));
+        setLocating(false);
+      },
+      () => setLocating(false),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
@@ -43,8 +71,11 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
       errs.name = t('common.required');
     }
 
-    if (!data.mobile || !/^[0-9]{10}$/.test(data.mobile)) {
+    if (!data.mobile || !/^[6-9][0-9]{9}$/.test(data.mobile)) {
       errs.mobile = t('borrowers.mobileHint');
+    }
+    if (data.locationUrl && (data.locationLat === null || data.locationLng === null)) {
+      errs.locationUrl = t('borrowers.locationInvalid');
     }
 
     if (data.suretyType === 'existing_borrower' && !data.suretyReferenceId) {
@@ -107,6 +138,27 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
         value={data.address}
         onChange={(e) => setData((d) => ({ ...d, address: e.target.value }))}
       />
+
+      <div className="flex items-end gap-2">
+        <div className="flex-1">
+          <Input
+            label={t('borrowers.location')}
+            value={data.locationUrl}
+            onChange={(e) => {
+              setLocationFromUrl(e.target.value);
+              setErrors((current) => ({ ...current, locationUrl: '' }));
+            }}
+            error={errors.locationUrl}
+            placeholder={t('borrowers.locationPlaceholder')}
+          />
+        </div>
+        <Button type="button" variant="secondary" onClick={captureLocation} disabled={locating} aria-label={t('borrowers.captureLocation')}>
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l2.5 2.5" />
+          </svg>
+        </Button>
+      </div>
 
       <Select
         label={t('borrowers.surety')}

@@ -1,0 +1,1 @@
+import{b as o,i as t,j as e}from"./main-U1W1SOhI.js";import{g as i}from"./formatters-Cf9IAC8q.js";function m({amount:r,className:a}){const s=o(t,n=>n.language);return e.jsx("span",{className:a,children:i(r,{lang:s})})}export{m as C};

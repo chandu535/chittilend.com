@@ -1,11 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: 'Inter', 'Noto Sans Telugu', 'Mandali', system-ui, sans-serif;
 
-  --color-primary: #2563EB;
-  --color-secondary: #7C3AED;
+  --color-primary: #7C3AED;
+  --color-primary-light: #EDE9FE;
+  --color-accent: #EC4899;
+  --color-secondary: #2563EB;
   --color-success: #059669;
   --color-warning: #D97706;
   --color-danger: #DC2626;
@@ -22,12 +24,13 @@ html, body, #app {
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background-color: #f8fafc;
+  background-color: #F5F4FF;
   color: #0f172a;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "liga" 1, "calt" 1;
+  font-optical-sizing: auto;
 }
 
 /* ========================================

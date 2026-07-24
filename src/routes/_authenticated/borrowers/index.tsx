@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { BorrowerCard } from '@/components/borrowers/BorrowerCard';
+import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
 import { NameDisplay } from '@/components/shared/NameDisplay';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
@@ -29,6 +30,7 @@ function BorrowersPage() {
       name: string;
       mobile: string;
       area: string | null;
+      profilePhotoUrl: string | null;
     }>;
     total: number;
     totalPages: number;
@@ -129,6 +131,7 @@ function BorrowersPage() {
                 name={b.name}
                 mobile={b.mobile}
                 area={b.area}
+                photoUrl={b.profilePhotoUrl}
               />
             ))}
           </div>
@@ -147,7 +150,12 @@ function BorrowersPage() {
               <tbody className="divide-y divide-slate-100">
                 {result.items.map((b) => (
                   <tr key={b.id} className="hover:bg-slate-50">
-                    <td className="py-3 font-medium text-slate-900"><NameDisplay name={b.name} /></td>
+                    <td className="py-3 font-medium text-slate-900">
+                      <div className="flex items-center gap-2.5">
+                        <BorrowerAvatar name={b.name} photoUrl={b.profilePhotoUrl} size="sm" />
+                        <NameDisplay name={b.name} />
+                      </div>
+                    </td>
                     <td className="py-3 text-slate-600">{formatPhone(b.mobile)}</td>
                     <td className="py-3 text-slate-600">{b.area || '—'}</td>
                     <td className="py-3">

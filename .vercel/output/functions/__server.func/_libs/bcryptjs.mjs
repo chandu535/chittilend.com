@@ -1,11 +1,11 @@
-import require$$1 from "crypto";
+import crypto$1 from "crypto";
 function randomBytes(len) {
   try {
     return crypto.getRandomValues(new Uint8Array(len));
   } catch {
   }
   try {
-    return require$$1.randomBytes(len);
+    return crypto$1.randomBytes(len);
   } catch {
   }
   {

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { CameraCapture } from '@/components/ui/CameraCapture';
 import { toast } from '@/components/ui/Toast';
-import { getPresignedUploadUrl, confirmUpload } from '@/server/functions/upload';
+import { uploadBorrowerPhoto } from '@/server/functions/upload';
 
 interface DocumentUploadProps {
   borrowerId?: string;
@@ -12,13 +12,20 @@ interface DocumentUploadProps {
   onLocation?: (lat: number, lng: number) => void;
 }
 
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
 export function DocumentUpload({ borrowerId, onProfilePhoto, onAadhaarPhoto, onLocation }: DocumentUploadProps) {
   const { t } = useTranslation();
   const [uploading, setUploading] = useState<'profile' | 'aadhaar' | null>(null);
 
   const handleUpload = async (file: File, docType: 'profile' | 'aadhaar') => {
     if (!borrowerId) {
-      // No borrower yet — just store the file locally
       if (docType === 'profile') onProfilePhoto(file);
       else onAadhaarPhoto(file);
       return;
@@ -26,36 +33,16 @@ export function DocumentUpload({ borrowerId, onProfilePhoto, onAadhaarPhoto, onL
 
     setUploading(docType);
     try {
-      // Get presigned URL
-      const { uploadUrl, fileKey } = await getPresignedUploadUrl({
-        data: {
-          fileType: docType,
-          contentType: file.type,
-          borrowerId,
-        },
-      });
-
-      // Upload directly to R2
-      await fetch(uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
-      });
-
-      // Confirm upload in DB
-      await confirmUpload({
-        data: { fileKey, borrowerId, docType },
-      });
-
+      const fileData = await fileToBase64(file);
+      await uploadBorrowerPhoto({ data: { borrowerId, docType, fileData, contentType: file.type } });
       toast(t('common.save'), 'success');
+      if (docType === 'profile') onProfilePhoto(file);
+      else onAadhaarPhoto(file);
     } catch (err) {
       toast(err instanceof Error ? err.message : t('errors.generic'), 'error');
     } finally {
       setUploading(null);
     }
-
-    if (docType === 'profile') onProfilePhoto(file);
-    else onAadhaarPhoto(file);
   };
 
   return (

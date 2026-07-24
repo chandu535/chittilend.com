@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { Modal } from '@/components/ui/Modal';
 import { MagicLinkGenerator } from '@/components/borrowers/MagicLinkGenerator';
+import { DocumentUpload } from '@/components/borrowers/DocumentUpload';
 import { BorrowerForm } from '@/components/borrowers/BorrowerForm';
+import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { useLocalizedName } from '@/components/shared/NameDisplay';
 import { formatPhone } from '@/lib/formatters';
@@ -27,6 +29,7 @@ function BorrowerDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [locationSaving, setLocationSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const displayName = useLocalizedName(borrower?.name ?? '');
 
@@ -51,12 +54,16 @@ function BorrowerDetailPage() {
     mobile: string;
     area: string;
     address: string;
+    locationUrl: string;
+    locationLat: number | null;
+    locationLng: number | null;
     suretyType: 'owner' | 'existing_borrower';
     suretyReferenceId: string;
   }) => {
     setSaving(true);
     try {
-      await updateBorrower({ data: { id: borrowerId, ...formData } });
+      const { locationUrl: _locationUrl, ...borrowerData } = formData;
+      await updateBorrower({ data: { id: borrowerId, ...borrowerData } });
       setEditOpen(false);
       toast(t('borrowers.updateSuccess'), 'success');
       await fetchBorrower();
@@ -82,6 +89,34 @@ function BorrowerDetailPage() {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const captureLocation = () => {
+    if (!navigator.geolocation) {
+      toast(t('borrowers.locationUnavailable'), 'error');
+      return;
+    }
+    setLocationSaving(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          await updateBorrower({
+            data: { id: borrowerId, locationLat: coords.latitude, locationLng: coords.longitude },
+          });
+          toast(t('borrowers.updateSuccess'), 'success');
+          await fetchBorrower();
+        } catch (err) {
+          toast(err instanceof Error ? err.message : t('errors.generic'), 'error');
+        } finally {
+          setLocationSaving(false);
+        }
+      },
+      () => {
+        toast(t('borrowers.locationUnavailable'), 'error');
+        setLocationSaving(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
   };
 
   if (loading) {
@@ -128,9 +163,11 @@ function BorrowerDetailPage() {
       {/* Profile Card */}
       <Card>
         <div className="flex items-start gap-4">
-          <div className="h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-semibold shrink-0">
-            {displayName.charAt(0).toUpperCase()}
-          </div>
+          <BorrowerAvatar
+            name={borrower.name}
+            photoUrl={borrower.profilePhotoUrl}
+            size="lg"
+          />
           <div className="flex-1 min-w-0 space-y-1">
             <p className="text-lg font-semibold text-slate-900">{displayName}</p>
             <p className="text-sm text-slate-600">{formatPhone(borrower.mobile)}</p>
@@ -140,6 +177,24 @@ function BorrowerDetailPage() {
             {borrower.address && (
               <p className="text-sm text-slate-400">{borrower.address}</p>
             )}
+            {borrower.locationLat && borrower.locationLng && (
+              <a
+                href={`https://www.google.com/maps?q=${borrower.locationLat},${borrower.locationLng}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+              >
+                <span>⌖</span>{t('borrowers.openLocation')}
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={captureLocation}
+              disabled={locationSaving}
+              className="ml-3 inline-flex items-center gap-1 text-sm text-primary hover:underline disabled:opacity-50"
+            >
+              <span>⌖</span>{t('borrowers.captureLocation')}
+            </button>
           </div>
         </div>
       </Card>
@@ -165,10 +220,13 @@ function BorrowerDetailPage() {
                 className="flex items-center justify-between rounded-lg border border-slate-100 p-3 hover:bg-slate-50 transition-colors"
               >
                 <div>
-                  <CurrencyDisplay
-                    amount={parseFloat(loan.primaryAmount)}
-                    className="font-semibold text-slate-900"
-                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-400 tabular-nums">#{loan.loanNumber}</span>
+                    <CurrencyDisplay
+                      amount={parseFloat(loan.primaryAmount)}
+                      className="font-semibold text-slate-900"
+                    />
+                  </div>
                   <p className="text-xs text-slate-400">{loan.dateGiven}</p>
                 </div>
                 <Badge status={loan.status}>{loan.status}</Badge>
@@ -186,6 +244,42 @@ function BorrowerDetailPage() {
         />
       </Card>
 
+      {/* Photos */}
+      <Card>
+        <CardTitle className="mb-3">{t('borrowers.stepPhotos')}</CardTitle>
+
+        {(borrower.profilePhotoUrl || borrower.aadhaarPhotoUrl) && (
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {borrower.profilePhotoUrl && (
+              <div>
+                <p className="text-xs text-slate-500 mb-1">{t('borrowers.profilePhoto')}</p>
+                <img
+                  src={borrower.profilePhotoUrl}
+                  alt={t('borrowers.profilePhoto')}
+                  className="w-full rounded-lg object-cover aspect-square"
+                />
+              </div>
+            )}
+            {borrower.aadhaarPhotoUrl && (
+              <div>
+                <p className="text-xs text-slate-500 mb-1">{t('borrowers.aadhaarPhoto')}</p>
+                <img
+                  src={borrower.aadhaarPhotoUrl}
+                  alt={t('borrowers.aadhaarPhoto')}
+                  className="w-full rounded-lg object-cover aspect-square"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        <DocumentUpload
+          borrowerId={borrower.id}
+          onProfilePhoto={() => fetchBorrower()}
+          onAadhaarPhoto={() => fetchBorrower()}
+        />
+      </Card>
+
       {/* Edit Modal */}
       <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title={t('borrowers.editBorrower')}>
         <BorrowerForm
@@ -194,6 +288,11 @@ function BorrowerDetailPage() {
             mobile: borrower.mobile,
             area: borrower.area ?? '',
             address: borrower.address ?? '',
+            locationUrl: borrower.locationLat && borrower.locationLng
+              ? `https://www.google.com/maps?q=${borrower.locationLat},${borrower.locationLng}`
+              : '',
+            locationLat: borrower.locationLat ? Number(borrower.locationLat) : null,
+            locationLng: borrower.locationLng ? Number(borrower.locationLng) : null,
             suretyType: (borrower.suretyType as 'owner' | 'existing_borrower') ?? 'owner',
             suretyReferenceId: borrower.suretyReferenceId ?? '',
           }}

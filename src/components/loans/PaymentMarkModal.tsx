@@ -8,7 +8,7 @@ import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from '@/components/ui/Toast';
-import { markPaymentPaid, markPaymentPartial, markPaymentWaived, revertPayment } from '@/server/functions/payments';
+import { markPaymentPaid, markPaymentWaived, revertPayment } from '@/server/functions/payments';
 
 interface Payment {
   id: string;
@@ -29,45 +29,56 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
   const { t } = useTranslation();
   const amountDue = parseFloat(payment.amountDue);
   const alreadyPaid = parseFloat(payment.amountPaid);
+  const remainingToPay = amountDue - alreadyPaid;
   const isCompleted = payment.status === 'paid' || payment.status === 'waived';
 
-  const [amountPaid, setAmountPaid] = useState(
-    payment.status === 'partial' ? (amountDue - alreadyPaid).toFixed(0) : amountDue.toFixed(0),
-  );
+  // Amount the user is paying now (not cumulative total)
+  const [amountNow, setAmountNow] = useState(remainingToPay.toFixed(2));
+  const [partialMode, setPartialMode] = useState(false);
   const [paidDate, setPaidDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [notes, setNotes] = useState('');
   const [revertReason, setRevertReason] = useState('');
-  const [loading, setLoading] = useState<'paid' | 'partial' | 'waived' | 'revert' | null>(null);
+  const [loading, setLoading] = useState<'submit' | 'waived' | 'revert' | null>(null);
 
-  const handleAction = async (action: 'paid' | 'partial' | 'waived') => {
-    setLoading(action);
+  // Total including previous partial payments
+  const totalAfterPayment = alreadyPaid + parseFloat(amountNow || '0');
+  const willBeFullyPaid = totalAfterPayment >= amountDue;
+
+  const handleSubmit = async () => {
+    const amount = parseFloat(amountNow);
+    if (!amount || amount <= 0) {
+      toast(t('common.required'), 'error');
+      return;
+    }
+    setLoading('submit');
     try {
-      if (action === 'waived') {
-        if (!notes.trim()) {
-          toast(t('payments.waiverReason'), 'error');
-          setLoading(null);
-          return;
-        }
-        await markPaymentWaived({ data: { paymentId: payment.id, notes } });
-      } else {
-        const amount = parseFloat(amountPaid);
-        if (!amount || amount <= 0) {
-          toast(t('common.required'), 'error');
-          setLoading(null);
-          return;
-        }
-        const fn = action === 'paid' ? markPaymentPaid : markPaymentPartial;
-        await fn({
-          data: {
-            paymentId: payment.id,
-            amountPaid: amount,
-            paidDate,
-            paymentMethod,
-            notes: notes || undefined,
-          },
-        });
-      }
+      await markPaymentPaid({
+        data: {
+          paymentId: payment.id,
+          amountPaid: totalAfterPayment,
+          paidDate,
+          paymentMethod,
+          notes: notes || undefined,
+        },
+      });
+      toast(t('payments.confirmPayment'), 'success');
+      onSuccess();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : t('errors.generic'), 'error');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleWaive = async () => {
+    if (!notes.trim()) {
+      toast(t('payments.waiverReason'), 'error');
+      return;
+    }
+    setLoading('waived');
+    try {
+      await markPaymentWaived({ data: { paymentId: payment.id, notes } });
       toast(t('payments.confirmPayment'), 'success');
       onSuccess();
     } catch (err) {
@@ -96,6 +107,14 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
     } finally {
       setLoading(null);
     }
+  };
+
+  const togglePartialMode = () => {
+    if (partialMode) {
+      // Reset to full remaining amount
+      setAmountNow(remainingToPay.toFixed(2));
+    }
+    setPartialMode((m) => !m);
   };
 
   return (
@@ -178,12 +197,7 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
                 >
                   {t('payments.revertPayment')}
                 </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full"
-                  onClick={onClose}
-                  disabled={loading !== null}
-                >
+                <Button variant="ghost" className="w-full" onClick={onClose} disabled={loading !== null}>
                   {t('common.cancel')}
                 </Button>
               </div>
@@ -191,15 +205,37 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
           ) : (
             /* ---- Mark Payment View ---- */
             <>
-              {/* Amount Input */}
-              <Input
-                label={t('payments.amountPaid')}
-                value={amountPaid}
-                onChange={(e) => setAmountPaid(e.target.value.replace(/[^\d.]/g, ''))}
-                inputMode="decimal"
-                lang="en"
-                leftIcon={<span className="text-slate-500 text-sm">₹</span>}
-              />
+              {/* Amount field — disabled by default, enabled in partial mode */}
+              <div>
+                <Input
+                  label={t('payments.amountPaid')}
+                  value={amountNow}
+                  onChange={(e) => setAmountNow(e.target.value.replace(/[^0-9.]/g, ''))}
+                  inputMode="decimal"
+                  lang="en"
+                  leftIcon={<span className="text-slate-500 text-sm">₹</span>}
+                  disabled={!partialMode}
+                />
+                {/* Partial toggle */}
+                <button
+                  type="button"
+                  onClick={togglePartialMode}
+                  className="mt-1.5 text-xs text-primary font-medium hover:underline"
+                >
+                  {partialMode ? t('payments.payFullAmount') : t('payments.payDifferentAmount')}
+                </button>
+              </div>
+
+              {/* Remaining preview when partial mode and not full payment */}
+              {partialMode && !willBeFullyPaid && totalAfterPayment > 0 && (
+                <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 flex items-center justify-between">
+                  <span className="text-sm text-amber-700">{t('payments.remainingAmount')}</span>
+                  <CurrencyDisplay
+                    amount={amountDue - totalAfterPayment}
+                    className="text-sm font-bold text-amber-700"
+                  />
+                </div>
+              )}
 
               {/* Date */}
               <DatePicker
@@ -237,25 +273,16 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
               <div className="space-y-2 pt-2">
                 <Button
                   className="w-full"
-                  onClick={() => handleAction('paid')}
-                  loading={loading === 'paid'}
+                  onClick={handleSubmit}
+                  loading={loading === 'submit'}
                   disabled={loading !== null}
                 >
-                  {t('payments.markPaid')}
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="w-full"
-                  onClick={() => handleAction('partial')}
-                  loading={loading === 'partial'}
-                  disabled={loading !== null}
-                >
-                  {t('payments.markPartial')}
+                  {willBeFullyPaid ? t('payments.markPaid') : t('payments.markPartial')}
                 </Button>
                 <Button
                   variant="ghost"
                   className="w-full text-purple-700 hover:bg-purple-50"
-                  onClick={() => handleAction('waived')}
+                  onClick={handleWaive}
                   loading={loading === 'waived'}
                   disabled={loading !== null}
                 >

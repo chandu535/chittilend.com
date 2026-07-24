@@ -16,7 +16,7 @@ export function Card({ children, padding = 'md', className, ...props }: CardProp
   return (
     <div
       className={clsx(
-        'rounded-xl bg-white shadow-sm border border-slate-200',
+        'rounded-2xl bg-white shadow-[0_2px_16px_rgba(109,40,217,0.06)] border-0',
         paddingStyles[padding],
         className,
       )}
@@ -29,7 +29,7 @@ export function Card({ children, padding = 'md', className, ...props }: CardProp
 
 export function CardTitle({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <h3 className={clsx('card-title text-base font-semibold text-slate-900', className)}>
+    <h3 className={clsx('card-title text-[15px] font-semibold text-slate-800', className)}>
       {children}
     </h3>
   );

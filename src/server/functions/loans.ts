@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { eq, and, desc, count, gte, lte, ilike } from 'drizzle-orm';
+import { eq, and, desc, count, gte, lte, ilike, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { loans, payments, borrowers, capitalPoolLog } from '../db/schema';
 import { createLoanSchema } from '../validators/loan';
@@ -7,6 +7,15 @@ import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole } from '../middleware/roleGuard';
 import { calculateLoan, calculateStartMonth, generatePaymentSchedule } from '@/lib/calculations';
 import { DEFAULTS } from '@/lib/constants';
+
+type NextPayment = {
+  id: string;
+  installmentNumber: number;
+  dueDate: string;
+  amountDue: string;
+  amountPaid: string;
+  status: 'pending' | 'partial' | 'overdue';
+};
 
 export const listLoans = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => {
@@ -67,11 +76,18 @@ export const listLoans = createServerFn({ method: 'GET' })
             borrowerName: borrowers.name,
             borrowerMobile: borrowers.mobile,
             borrowerArea: borrowers.area,
+            borrowerPhotoUrl: borrowers.profilePhotoUrl,
+            nextPayment: sql<NextPayment | null>`(SELECT json_build_object('id',p.id::text,'installmentNumber',p.installment_number,'dueDate',p.due_date::text,'amountDue',p.amount_due::text,'amountPaid',p.amount_paid::text,'status',p.status::text) FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1)`,
+            paidInstallments: sql<number>`(SELECT COUNT(*) FROM payments p WHERE p.loan_id=${loans.id} AND p.status = 'paid')`,
+            paidAmount: sql<string>`COALESCE((SELECT SUM(p.amount_paid) FROM payments p WHERE p.loan_id=${loans.id} AND p.status IN ('paid', 'partial')), 0)`,
           })
           .from(loans)
           .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
           .where(fullWhere)
-          .orderBy(desc(loans.createdAt))
+          .orderBy(
+            sql`(SELECT CASE WHEN p.status = 'overdue' THEN 0 ELSE 1 END FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1) ASC NULLS LAST`,
+            desc(loans.createdAt),
+          )
           .limit(data.limit)
           .offset(offset),
         db
@@ -87,6 +103,10 @@ export const listLoans = createServerFn({ method: 'GET' })
           borrowerName: r.borrowerName,
           borrowerMobile: r.borrowerMobile,
           borrowerArea: r.borrowerArea,
+          borrowerPhotoUrl: r.borrowerPhotoUrl,
+          nextPayment: r.nextPayment,
+          paidInstallments: Number(r.paidInstallments),
+          paidAmount: r.paidAmount,
         })),
         total: totalResult[0].count,
         page: data.page,
@@ -102,11 +122,18 @@ export const listLoans = createServerFn({ method: 'GET' })
           borrowerName: borrowers.name,
           borrowerMobile: borrowers.mobile,
           borrowerArea: borrowers.area,
+          borrowerPhotoUrl: borrowers.profilePhotoUrl,
+          nextPayment: sql<NextPayment | null>`(SELECT json_build_object('id',p.id::text,'installmentNumber',p.installment_number,'dueDate',p.due_date::text,'amountDue',p.amount_due::text,'amountPaid',p.amount_paid::text,'status',p.status::text) FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1)`,
+          paidInstallments: sql<number>`(SELECT COUNT(*) FROM payments p WHERE p.loan_id=${loans.id} AND p.status = 'paid')`,
+          paidAmount: sql<string>`COALESCE((SELECT SUM(p.amount_paid) FROM payments p WHERE p.loan_id=${loans.id} AND p.status IN ('paid', 'partial')), 0)`,
         })
         .from(loans)
         .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
         .where(where)
-        .orderBy(desc(loans.createdAt))
+        .orderBy(
+          sql`(SELECT CASE WHEN p.status = 'overdue' THEN 0 ELSE 1 END FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1) ASC NULLS LAST`,
+          desc(loans.createdAt),
+        )
         .limit(data.limit)
         .offset(offset),
       db
@@ -121,6 +148,10 @@ export const listLoans = createServerFn({ method: 'GET' })
         borrowerName: r.borrowerName,
         borrowerMobile: r.borrowerMobile,
         borrowerArea: r.borrowerArea,
+        borrowerPhotoUrl: r.borrowerPhotoUrl,
+        nextPayment: r.nextPayment,
+        paidInstallments: Number(r.paidInstallments),
+        paidAmount: r.paidAmount,
       })),
       total: totalResult[0].count,
       page: data.page,
@@ -370,5 +401,28 @@ export const extendTenure = createServerFn({ method: 'POST' })
       .where(eq(loans.id, data.id))
       .returning();
 
+    return updated;
+  });
+
+export const changeStatus = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => {
+    const d = data as { id: string; status: string };
+    if (!d.id) throw new Error('Loan ID is required');
+    if (!['active', 'defaulted'].includes(d.status)) {
+      throw new Error('Status must be active or defaulted');
+    }
+    return d as { id: string; status: 'active' | 'defaulted' };
+  })
+  .handler(async ({ data }) => {
+    const user = await getAuthenticatedUser();
+    requireRole(user, ['admin', 'manager']);
+
+    const [updated] = await db
+      .update(loans)
+      .set({ status: data.status, updatedAt: new Date() })
+      .where(eq(loans.id, data.id))
+      .returning();
+
+    if (!updated) throw new Error('Loan not found');
     return updated;
   });

@@ -2,16 +2,18 @@ import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { formatPhone } from '@/lib/formatters';
 import { useLocalizedName } from '@/components/shared/NameDisplay';
+import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
 
 interface BorrowerCardProps {
   id: string;
   name: string;
   mobile: string;
   area: string | null;
+  photoUrl?: string | null;
   loanCount?: number;
 }
 
-export function BorrowerCard({ id, name, mobile, area, loanCount }: BorrowerCardProps) {
+export function BorrowerCard({ id, name, mobile, area, photoUrl, loanCount }: BorrowerCardProps) {
   const { t } = useTranslation();
   const displayName = useLocalizedName(name);
 
@@ -22,9 +24,7 @@ export function BorrowerCard({ id, name, mobile, area, loanCount }: BorrowerCard
       className="block rounded-xl border border-slate-200 bg-white p-4 hover:shadow-md transition-shadow"
     >
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold shrink-0">
-          {displayName.charAt(0).toUpperCase()}
-        </div>
+        <BorrowerAvatar name={name} photoUrl={photoUrl} size="md" />
         <div className="min-w-0 flex-1">
           <p className="font-medium text-slate-900 truncate">{displayName}</p>
           <p className="text-sm text-slate-500">{formatPhone(mobile)}</p>

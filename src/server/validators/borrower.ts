@@ -11,10 +11,10 @@ export const createBorrowerSchema = Joi.object({
       'string.pattern.base': 'Name must contain only Telugu or English characters',
     }),
   mobile: Joi.string()
-    .pattern(/^[0-9]{10}$/)
+    .pattern(/^[6-9][0-9]{9}$/)
     .required()
     .messages({
-      'string.pattern.base': 'Mobile must be exactly 10 digits (no +91)',
+      'string.pattern.base': 'Mobile must be a valid 10-digit Indian number (starts with 6, 7, 8, or 9; no +91)',
     }),
   area: Joi.string()
     .trim()

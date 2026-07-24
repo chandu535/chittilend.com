@@ -2,6 +2,7 @@ import {
   pgTable, uuid, varchar, text, decimal, integer, boolean,
   timestamp, date, pgEnum, index, uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { relations } from 'drizzle-orm';
 
 // ===================== ENUMS =====================
@@ -84,6 +85,7 @@ export const borrowers = pgTable('borrowers', {
 // ----- LOANS -----
 export const loans = pgTable('loans', {
   id: uuid('id').primaryKey().defaultRandom(),
+  loanNumber: integer('loan_number').notNull().default(sql`nextval('loans_loan_number_seq')`),
   borrowerId: uuid('borrower_id').notNull().references(() => borrowers.id, { onDelete: 'restrict' }),
   dateGiven: date('date_given').notNull(),
   startMonth: date('start_month').notNull(),
@@ -104,6 +106,7 @@ export const loans = pgTable('loans', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
+  uniqueIndex('loans_loan_number_idx').on(table.loanNumber),
   index('loans_borrower_id_idx').on(table.borrowerId),
   index('loans_status_idx').on(table.status),
   index('loans_date_given_idx').on(table.dateGiven),

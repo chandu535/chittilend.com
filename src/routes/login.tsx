@@ -27,7 +27,7 @@ function LoginPage() {
     try {
       const user = await login({ data: { email, password } });
       setAuthUser(user);
-      navigate({ to: '/dashboard' });
+      navigate({ to: '/loans' });
     } catch (err) {
       setError(err instanceof Error ? err.message : t('errors.generic'));
     } finally {

@@ -11,7 +11,7 @@ import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { NameDisplay } from '@/components/shared/NameDisplay';
 import { toast } from '@/components/ui/Toast';
-import { searchBorrowers } from '@/server/functions/borrowers';
+import { searchBorrowers, createBorrower, updateBorrower } from '@/server/functions/borrowers';
 import { createLoan } from '@/server/functions/loans';
 import { calculateLoan, calculateStartMonth, generatePaymentSchedule } from '@/lib/calculations';
 
@@ -29,9 +29,16 @@ function NewLoanPage() {
   const [loading, setLoading] = useState(false);
 
   // Step 1: Borrower
+  const [borrowerMode, setBorrowerMode] = useState<'search' | 'create'>('search');
   const [borrowerQuery, setBorrowerQuery] = useState('');
   const [borrowerResults, setBorrowerResults] = useState<Array<{ id: string; name: string; mobile: string; area: string | null }>>([]);
   const [selectedBorrower, setSelectedBorrower] = useState<{ id: string; name: string; mobile: string; area: string | null } | null>(null);
+  const [newBorrower, setNewBorrower] = useState({ name: '', mobile: '', area: '', address: '' });
+  const [newBorrowerErrors, setNewBorrowerErrors] = useState<Record<string, string>>({});
+  const [creatingBorrower, setCreatingBorrower] = useState(false);
+  // A borrower is created before the loan details are entered. Keep its id so that
+  // returning to this step lets the user edit the same borrower instead of creating a duplicate.
+  const [createdBorrowerId, setCreatedBorrowerId] = useState<string | null>(null);
 
   // Step 2: Amount
   const [primaryAmount, setPrimaryAmount] = useState('');
@@ -51,6 +58,46 @@ function NewLoanPage() {
     const startMonth = calculateStartMonth(new Date(dateGiven));
     return generatePaymentSchedule(startMonth, calc.totalRepayment, calc.totalInstallments, frequency);
   }, [calc, dateGiven, frequency]);
+
+  function validateNewBorrower(data: typeof newBorrower) {
+    const errors: Record<string, string> = {};
+    if (!data.name.trim() || data.name.trim().length < 2) errors.name = 'Name must be at least 2 characters';
+    if (!/^[6-9]\d{9}$/.test(data.mobile)) errors.mobile = 'Enter a valid 10-digit Indian mobile number';
+    return errors;
+  }
+
+  const handleStep1Next = async () => {
+    if (borrowerMode === 'search') {
+      setStep('amount');
+      return;
+    }
+    const errors = validateNewBorrower(newBorrower);
+    if (Object.keys(errors).length > 0) {
+      setNewBorrowerErrors(errors);
+      return;
+    }
+    setCreatingBorrower(true);
+    try {
+      const borrowerData = {
+        name: newBorrower.name.trim(),
+        mobile: newBorrower.mobile,
+        area: newBorrower.area.trim() || undefined,
+        address: newBorrower.address.trim() || undefined,
+        suretyType: 'owner' as const,
+      };
+      const borrower = createdBorrowerId
+        ? await updateBorrower({ data: { id: createdBorrowerId, ...borrowerData } })
+        : await createBorrower({ data: borrowerData });
+
+      setCreatedBorrowerId(borrower.id);
+      setSelectedBorrower({ id: borrower.id, name: borrower.name, mobile: borrower.mobile, area: borrower.area });
+      setStep('amount');
+    } catch (err) {
+      setNewBorrowerErrors({ mobile: err instanceof Error ? err.message : 'Failed to create borrower' });
+    } finally {
+      setCreatingBorrower(false);
+    }
+  };
 
   const handleBorrowerSearch = async (query: string) => {
     setBorrowerQuery(query);
@@ -112,58 +159,134 @@ function NewLoanPage() {
       {step === 'borrower' && (
         <Card>
           <CardTitle>{t('loans.selectBorrower')}</CardTitle>
+
+          {/* Tab toggle */}
+          <div className="mt-3 flex rounded-xl bg-slate-100 p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setBorrowerMode('search');
+                setSelectedBorrower(null);
+                setBorrowerQuery('');
+                setCreatedBorrowerId(null);
+              }}
+              className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all ${
+                borrowerMode === 'search'
+                  ? 'bg-white text-violet-700 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {t('loans.searchExisting')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setBorrowerMode('create');
+                setSelectedBorrower(null);
+                setNewBorrowerErrors({});
+              }}
+              className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all ${
+                borrowerMode === 'create'
+                  ? 'bg-white text-violet-700 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              + {t('loans.newBorrower')}
+            </button>
+          </div>
+
           <div className="mt-3 space-y-3">
-            {selectedBorrower ? (
-              <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-3">
-                <div>
-                  <p className="font-medium text-slate-900"><NameDisplay name={selectedBorrower.name} /></p>
-                  <p className="text-sm text-slate-500">{selectedBorrower.mobile}</p>
+            {borrowerMode === 'search' ? (
+              selectedBorrower ? (
+                <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-3">
+                  <div>
+                    <p className="font-medium text-slate-900"><NameDisplay name={selectedBorrower.name} /></p>
+                    <p className="text-sm text-slate-500">{selectedBorrower.mobile}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedBorrower(null);
+                      setBorrowerQuery('');
+                    }}
+                  >
+                    {t('common.edit')}
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedBorrower(null);
-                    setBorrowerQuery('');
-                  }}
-                >
-                  {t('common.edit')}
-                </Button>
-              </div>
+              ) : (
+                <>
+                  <Input
+                    placeholder={t('common.search')}
+                    value={borrowerQuery}
+                    onChange={(e) => handleBorrowerSearch(e.target.value)}
+                  />
+                  {borrowerResults.length > 0 && (
+                    <ul className="rounded-lg border border-slate-200 divide-y divide-slate-100 max-h-48 overflow-y-auto">
+                      {borrowerResults.map((b) => (
+                        <li key={b.id}>
+                          <button
+                            type="button"
+                            className="w-full text-left px-3 py-2.5 hover:bg-slate-50 min-h-[44px]"
+                            onClick={() => {
+                              setSelectedBorrower(b);
+                              setBorrowerResults([]);
+                              setBorrowerQuery(b.name);
+                            }}
+                          >
+                            <p className="text-sm font-medium"><NameDisplay name={b.name} /></p>
+                            <p className="text-xs text-slate-400">{b.mobile}{b.area ? ` — ${b.area}` : ''}</p>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )
             ) : (
               <>
                 <Input
-                  placeholder={t('common.search')}
-                  value={borrowerQuery}
-                  onChange={(e) => handleBorrowerSearch(e.target.value)}
+                  label={t('borrowers.name')}
+                  value={newBorrower.name}
+                  onChange={(e) => {
+                    setNewBorrower((p) => ({ ...p, name: e.target.value }));
+                    setNewBorrowerErrors((p) => ({ ...p, name: '' }));
+                  }}
+                  error={newBorrowerErrors.name}
+                  placeholder="Full name"
                 />
-                {borrowerResults.length > 0 && (
-                  <ul className="rounded-lg border border-slate-200 divide-y divide-slate-100 max-h-48 overflow-y-auto">
-                    {borrowerResults.map((b) => (
-                      <li key={b.id}>
-                        <button
-                          type="button"
-                          className="w-full text-left px-3 py-2.5 hover:bg-slate-50 min-h-[44px]"
-                          onClick={() => {
-                            setSelectedBorrower(b);
-                            setBorrowerResults([]);
-                            setBorrowerQuery(b.name);
-                          }}
-                        >
-                          <p className="text-sm font-medium"><NameDisplay name={b.name} /></p>
-                          <p className="text-xs text-slate-400">{b.mobile}{b.area ? ` — ${b.area}` : ''}</p>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <Input
+                  label={t('borrowers.mobile')}
+                  value={newBorrower.mobile}
+                  onChange={(e) => {
+                    setNewBorrower((p) => ({ ...p, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) }));
+                    setNewBorrowerErrors((p) => ({ ...p, mobile: '' }));
+                  }}
+                  error={newBorrowerErrors.mobile}
+                  inputMode="numeric"
+                  placeholder="10-digit mobile"
+                />
+                <Input
+                  label={t('borrowers.area')}
+                  value={newBorrower.area}
+                  onChange={(e) => setNewBorrower((p) => ({ ...p, area: e.target.value }))}
+                  placeholder={t('common.optional')}
+                />
+                <Input
+                  label={t('borrowers.address')}
+                  value={newBorrower.address}
+                  onChange={(e) => setNewBorrower((p) => ({ ...p, address: e.target.value }))}
+                  placeholder={t('common.optional')}
+                />
+                <p className="text-xs text-slate-400">{t('loans.photosLaterHint')}</p>
               </>
             )}
 
             <Button
               className="w-full"
-              onClick={() => setStep('amount')}
-              disabled={!selectedBorrower}
+              onClick={handleStep1Next}
+              disabled={(borrowerMode === 'search' && !selectedBorrower) || creatingBorrower}
+              loading={creatingBorrower}
             >
               {t('common.next')}
             </Button>
