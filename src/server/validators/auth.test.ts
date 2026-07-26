@@ -4,7 +4,7 @@ import { loginSchema } from './auth';
 describe('loginSchema', () => {
   it('accepts valid credentials', () => {
     const { error } = loginSchema.validate({
-      email: 'admin@chittilend.com',
+      email: 'admin@sripay.com',
       password: 'password123',
     });
     expect(error).toBeUndefined();
@@ -28,7 +28,7 @@ describe('loginSchema', () => {
 
   it('rejects short password', () => {
     const { error } = loginSchema.validate({
-      email: 'admin@chittilend.com',
+      email: 'admin@sripay.com',
       password: '123',
     });
     expect(error).toBeDefined();
@@ -37,7 +37,7 @@ describe('loginSchema', () => {
 
   it('rejects missing password', () => {
     const { error } = loginSchema.validate({
-      email: 'admin@chittilend.com',
+      email: 'admin@sripay.com',
     });
     expect(error).toBeDefined();
   });

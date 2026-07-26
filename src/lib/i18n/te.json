@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "చిట్టీలెండ్",
+    "appName": "శ్రీపే",
     "save": "సేవ్ చేయండి",
     "cancel": "రద్దు చేయండి",
     "delete": "తొలగించండి",
@@ -56,7 +56,7 @@
     "loginTitle": "సైన్ ఇన్",
     "loginSubtitle": "మీ చిట్టీ అప్పుల వ్యాపారాన్ని నిర్వహించండి",
     "loginButton": "సైన్ ఇన్",
-    "emailPlaceholder": "admin@chittilend.com",
+    "emailPlaceholder": "admin@sripay.com",
     "passwordPlaceholder": "మీ పాస్‌వర్డ్ ఇవ్వండి",
     "loginError": "చెల్లని ఈమెయిల్ లేదా పాస్‌వర్డ్",
     "welcomeBack": "మళ్ళీ స్వాగతం"

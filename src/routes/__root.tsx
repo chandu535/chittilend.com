@@ -16,8 +16,8 @@ export const Route = createRootRoute({
       { name: 'theme-color', content: '#2563EB' },
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
       { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
-      { name: 'description', content: 'ChittiLend — Manage chitti lending operations' },
-      { title: 'ChittiLend' },
+      { name: 'description', content: 'SriPay — Manage chitti lending operations' },
+      { title: 'SriPay' },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },

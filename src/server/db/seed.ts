@@ -23,7 +23,7 @@ async function seed() {
     .insert(schema.users)
     .values({
       name: 'Admin',
-      email: 'admin@chittilend.com',
+      email: 'admin@sripay.com',
       passwordHash: adminPasswordHash,
       role: 'admin',
     })
@@ -37,7 +37,7 @@ async function seed() {
     .insert(schema.users)
     .values({
       name: 'Ravi Kumar',
-      email: 'manager@chittilend.com',
+      email: 'manager@sripay.com',
       passwordHash: managerPasswordHash,
       role: 'manager',
     })
@@ -290,8 +290,8 @@ async function seed() {
   console.log(`Total collected: ₹${totalCollected.toLocaleString('en-IN')}`);
 
   console.log('\n--- Seed complete ---');
-  console.log('Admin login: admin@chittilend.com / admin123');
-  console.log('Manager login: manager@chittilend.com / manager123');
+  console.log('Admin login: admin@sripay.com / admin123');
+  console.log('Manager login: manager@sripay.com / manager123');
 }
 
 seed().catch((err) => {

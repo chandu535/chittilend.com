@@ -79,7 +79,7 @@ send fails outright rather than degrading.
 ## Footer
 
 ```
-చిట్టిలెండ్
+శ్రీపే
 ```
 
 Optional, 60 characters max, no variables allowed.
@@ -208,7 +208,7 @@ Meta rejects the template if any placeholder has no example.
 ## Footer
 
 ```
-చిట్టిలెండ్
+శ్రీపే
 ```
 
 ## Buttons
@@ -238,7 +238,7 @@ Phone number: your collection number, in `+91XXXXXXXXXX` form.
 
 ఏదైనా ఇబ్బంది ఉంటే మాతో మాట్లాడండి. మీకు అనుకూలమైన పరిష్కారం చూద్దాం.
 
-చిట్టిలెండ్
+శ్రీపే
 ┌──────────────────┐
 │  📞 మాట్లాడండి   │
 └──────────────────┘
@@ -311,7 +311,7 @@ arithmetic — which is the point of a receipt.
 ## Footer
 
 ```
-చిట్టిలెండ్
+శ్రీపే
 ```
 
 ## Finished message preview
@@ -327,7 +327,7 @@ arithmetic — which is the point of a receipt.
 
 ఈ చెల్లింపు మా రికార్డులో నమోదైంది.
 
-చిట్టిలెండ్
+శ్రీపే
 ```
 
 ## Notes
@@ -398,7 +398,7 @@ loan_closed_te
 ## Footer
 
 ```
-చిట్టిలెండ్
+శ్రీపే
 ```
 
 ## Finished message preview
@@ -414,7 +414,7 @@ loan_closed_te
 రుణాన్ని పూర్తిగా తీర్చినందుకు ధన్యవాదాలు 🙏
 మీ ఖాతా ఇప్పుడు పూర్తిగా క్లోజ్ చేయబడింది.
 
-చిట్టిలెండ్
+శ్రీపే
 ```
 
 ## Notes
@@ -460,7 +460,7 @@ Please check the details above are correct, then tap the button below to record 
 ## Footer
 
 ```
-ChittiLend
+SriPay
 ```
 
 ## Button text

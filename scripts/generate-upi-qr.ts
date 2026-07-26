@@ -23,7 +23,7 @@ async function main() {
 
   const vpa = process.env.UPI_VPA;
   if (!vpa) throw new Error('UPI_VPA is not set');
-  const payeeName = process.env.UPI_PAYEE_NAME || 'ChittiLend';
+  const payeeName = process.env.UPI_PAYEE_NAME || 'SriPay';
 
   // The VPA is written raw. encodeURIComponent turns "@" into "%40", and some UPI apps
   // fail to resolve a percent-encoded payee address — every published UPI QR carries the

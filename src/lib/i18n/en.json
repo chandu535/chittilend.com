@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "ChittiLend",
+    "appName": "SriPay",
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -56,7 +56,7 @@
     "loginTitle": "Sign In",
     "loginSubtitle": "Manage your chitti lending business",
     "loginButton": "Sign In",
-    "emailPlaceholder": "admin@chittilend.com",
+    "emailPlaceholder": "admin@sripay.com",
     "passwordPlaceholder": "Enter your password",
     "loginError": "Invalid email or password",
     "welcomeBack": "Welcome back"
