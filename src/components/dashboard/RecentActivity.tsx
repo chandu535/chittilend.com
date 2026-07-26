@@ -11,6 +11,7 @@ interface ActivityItem {
   amount: number;
   loanId: string | null;
   borrowerName: string | null;
+  borrowerNameTelugu: string | null;
 }
 
 const eventIcons: Record<string, { icon: string; color: string }> = {
@@ -45,7 +46,7 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
                 <p className="text-sm font-medium text-slate-700 truncate">
                   {t(`capital.${item.eventType}`)}
                   {item.borrowerName && (
-                    <span className="text-slate-400"> — <NameDisplay name={item.borrowerName} /></span>
+                    <span className="text-slate-400"> — <NameDisplay name={item.borrowerName} nameTelugu={item.borrowerNameTelugu} /></span>
                   )}
                 </p>
                 <DateDisplay date={dateStr} className="text-xs text-slate-400" />

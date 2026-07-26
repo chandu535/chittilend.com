@@ -10,6 +10,14 @@ export const createBorrowerSchema = Joi.object({
     .messages({
       'string.pattern.base': 'Name must contain only Telugu or English characters',
     }),
+  nameTelugu: Joi.string()
+    .trim()
+    .max(255)
+    .pattern(/^[ఀ-౿\s.\-']+$/)
+    .allow('', null)
+    .messages({
+      'string.pattern.base': 'Telugu name must contain only Telugu characters',
+    }),
   mobile: Joi.string()
     .pattern(/^[6-9][0-9]{9}$/)
     .required()

@@ -59,6 +59,7 @@ export const getCapitalLog = createServerFn({ method: 'GET' })
       .select({
         log: capitalPoolLog,
         loanBorrowerName: borrowers.name,
+        loanBorrowerNameTelugu: borrowers.nameTelugu,
       })
       .from(capitalPoolLog)
       .leftJoin(loans, eq(capitalPoolLog.referenceLoanId, loans.id))
@@ -70,6 +71,7 @@ export const getCapitalLog = createServerFn({ method: 'GET' })
     return result.map((r) => ({
       ...r.log,
       borrowerName: r.loanBorrowerName,
+      borrowerNameTelugu: r.loanBorrowerNameTelugu,
     }));
   });
 

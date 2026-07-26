@@ -45,7 +45,7 @@ export function CollectionChart({ data }: { data: CashflowData[] }) {
       </div>
 
       {/* SVG Bar Chart */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overscroll-x-contain">
         <svg
           viewBox={`0 0 ${Math.max(data.length * 80, 320)} ${chartHeight + 40}`}
           className="w-full min-w-[320px]"

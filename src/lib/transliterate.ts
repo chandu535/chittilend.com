@@ -182,8 +182,22 @@ function transliterateWord(word: string): string {
 /**
  * Transliterate English text to Telugu script.
  * Each word is transliterated independently; spaces/punctuation are preserved.
+ *
+ * This is a character-level approximation and cannot recover vowel length or
+ * retroflexion, neither of which Latin spelling marks. It is the offline fallback;
+ * `suggestTelugu` is the accurate path.
  */
 export function toTelugu(text: string): string {
   if (!text) return text;
   return text.replace(/[a-zA-Z]+/g, (word) => transliterateWord(word));
+}
+
+/** True when the text contains at least one Telugu character. */
+export function hasTeluguScript(text: string): boolean {
+  return /[ఀ-౿]/.test(text);
+}
+
+/** True when the text contains at least one Latin letter. */
+export function hasLatinScript(text: string): boolean {
+  return /[A-Za-z]/.test(text);
 }

@@ -61,6 +61,9 @@ export const sessions = pgTable('sessions', {
 export const borrowers = pgTable('borrowers', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
+  // Confirmed by a human at entry time. Null on legacy rows, which fall back to
+  // on-the-fly transliteration at render.
+  nameTelugu: varchar('name_telugu', { length: 255 }),
   mobile: varchar('mobile', { length: 10 }).notNull(),
   area: varchar('area', { length: 255 }),
   address: text('address'),
@@ -102,11 +105,25 @@ export const loans = pgTable('loans', {
   profitAmount: decimal('profit_amount', { precision: 12, scale: 2 }).notNull(),
   status: loanStatusEnum('status').notNull().default('active'),
   notes: text('notes'),
+  // Two-sided agreement record. The borrower accepts from the portal link sent over
+  // WhatsApp; the owner accepts from the loan screen. IP and user agent are kept so the
+  // borrower's acceptance is evidence rather than just a flag.
+  // Single-purpose credential for the acceptance link. Minted when the welcome is sent,
+  // scoped to this one loan, and revocable without touching the loan itself.
+  consentToken: varchar('consent_token', { length: 64 }),
+  consentTokenExpiry: timestamp('consent_token_expiry', { withTimezone: true }),
+  borrowerAcceptedAt: timestamp('borrower_accepted_at', { withTimezone: true }),
+  borrowerAcceptanceIp: varchar('borrower_acceptance_ip', { length: 64 }),
+  borrowerAcceptanceUserAgent: text('borrower_acceptance_user_agent'),
+  ownerAcceptedAt: timestamp('owner_accepted_at', { withTimezone: true }),
+  ownerAcceptedBy: uuid('owner_accepted_by').references(() => users.id),
+  welcomeSentAt: timestamp('welcome_sent_at', { withTimezone: true }),
   createdBy: uuid('created_by').notNull().references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex('loans_loan_number_idx').on(table.loanNumber),
+  uniqueIndex('loans_consent_token_idx').on(table.consentToken),
   index('loans_borrower_id_idx').on(table.borrowerId),
   index('loans_status_idx').on(table.status),
   index('loans_date_given_idx').on(table.dateGiven),

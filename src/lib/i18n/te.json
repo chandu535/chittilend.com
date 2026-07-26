@@ -24,7 +24,17 @@
     "amount": "మొత్తం",
     "notes": "గమనికలు",
     "required": "తప్పనిసరి",
-    "optional": "ఐచ్ఛికం"
+    "optional": "ఐచ్ఛికం",
+    "pagination": "పేజీలు",
+    "showingRange": "{{total}}లో {{first}}–{{last}}",
+    "loadingMore": "మరిన్ని లోడ్ అవుతున్నాయి…",
+    "endOfList": "మొత్తం {{count}} లోడ్ అయ్యాయి",
+    "totalCount": "మొత్తం {{count}}",
+    "rowsPerPage": "పేజీకి వరుసలు",
+    "perPage": "{{count}}/పేజీ",
+    "goTo": "వెళ్లండి",
+    "previous": "మునుపటి",
+    "serial": "#"
   },
   "nav": {
     "home": "హోమ్",
@@ -123,7 +133,22 @@
     "notesPlaceholder": "ఈ అప్పు గురించి గమనికలు జోడించండి...",
     "sendWhatsAppReminder": "వాట్సాప్ రిమైండర్ పంపండి",
     "whatsappReminderMessage": "నమస్కారం {{name}},\n\nఅప్పు #{{loanNumber}} కోసం వాయిదా #{{installmentNumber}} {{dueDate}} నాడు చెల్లించాలి. చెల్లించవలసిన మొత్తం: {{amount}}.\n\nధన్యవాదాలు.",
-    "whatsappReminderSent": "వాట్సాప్ సందేశం పంపబడింది"
+    "whatsappReminderSent": "వాట్సాప్ సందేశం పంపబడింది",
+    "agreementTitle": "ఒప్పందం",
+    "agreementBorrower": "అప్పుదారు",
+    "agreementOwner": "యజమాని",
+    "agreementPending": "అంగీకరించలేదు",
+    "agreementAwaiting": "అప్పుదారు కోసం ఎదురుచూపు",
+    "agreementNotSent": "ఇంకా పంపలేదు",
+    "agreementAcceptAsOwner": "యజమానిగా అంగీకరించండి",
+    "agreementOwnerRecorded": "మీ అంగీకారం నమోదైంది",
+    "welcomeSend": "వాట్సాప్‌లో స్వాగతం పంపండి",
+    "welcomeResend": "స్వాగతం మళ్లీ పంపండి",
+    "welcomeSent": "స్వాగత సందేశం పంపబడింది",
+    "welcomeSentOn": "స్వాగతం పంపిన తేదీ",
+    "loanNumber": "రుణ సంఖ్య",
+    "installmentAmount": "వాయిదా",
+    "loanNo": "రుణ #"
   },
   "payments": {
     "title": "చెల్లింపులు",
@@ -203,7 +228,10 @@
     "confirmDelete": "మీరు ఈ అప్పుదారుని తొలగించాలనుకుంటున్నారా? ఈ చర్యను రద్దు చేయలేరు.",
     "deleteSuccess": "అప్పుదారు విజయవంతంగా తొలగించబడ్డారు",
     "updateSuccess": "అప్పుదారు విజయవంతంగా నవీకరించబడ్డారు",
-    "hasActiveLoans": "చురుకైన అప్పులు ఉన్న అప్పుదారుని తొలగించలేరు"
+    "hasActiveLoans": "చురుకైన అప్పులు ఉన్న అప్పుదారుని తొలగించలేరు",
+    "teluguName": "తెలుగు:",
+    "teluguConverting": "మారుస్తోంది…",
+    "teluguEdit": "తెలుగు స్పెల్లింగ్ మార్చడానికి నొక్కండి"
   },
   "analytics": {
     "title": "విశ్లేషణలు",
@@ -231,7 +259,17 @@
     "profitRealized": "సాధించిన లాభం",
     "uniqueCapital": "ప్రత్యేక మూలధన పెట్టుబడి",
     "totalCirculated": "మొత్తం చలామణి మూలధనం",
-    "noData": "ఈ కాలానికి డేటా లేదు."
+    "noData": "ఈ కాలానికి డేటా లేదు.",
+    "givenInPeriod": "ఇచ్చినది",
+    "collectedInPeriod": "వసూలైనది",
+    "profitInPeriod": "వచ్చిన లాభం",
+    "asOfToday": "ఈ రోజు నాటికి",
+    "loansCount": "{{count}} రుణాలు",
+    "paymentsCount": "{{count}} చెల్లింపులు",
+    "newBorrowersCount": "{{count}} కొత్త అప్పుదారులు",
+    "pickMonth": "నెల",
+    "month": "నెల",
+    "year": "సంవత్సరం"
   },
   "capital": {
     "title": "మూలధన నిధి",
@@ -250,7 +288,14 @@
     "totalRemaining": "మొత్తం మిగిలినది",
     "nextDue": "తదుపరి గడువు",
     "noDue": "చెల్లింపులు లేవు",
-    "allPaid": "అన్ని చెల్లింపులు పూర్తయ్యాయి! ధన్యవాదాలు."
+    "allPaid": "అన్ని చెల్లింపులు పూర్తయ్యాయి! ధన్యవాదాలు.",
+    "consentTitle": "మీ రుణాన్ని నిర్ధారించండి",
+    "consentIntro": "కింది వివరాలను చూసి, ఈ షరతులకు మీరు అంగీకరిస్తున్నట్టు నిర్ధారించండి.",
+    "consentDeclaration": "అంగీకరిస్తున్నాను నొక్కడం ద్వారా, చూపిన మొత్తాన్ని మీరు అందుకున్నారని, షెడ్యూల్ ప్రకారం మొత్తాన్ని తిరిగి చెల్లిస్తానని నిర్ధారిస్తున్నారు.",
+    "consentAccept": "నేను అంగీకరిస్తున్నాను",
+    "consentThanks": "ధన్యవాదాలు. మీ అంగీకారం నమోదైంది.",
+    "consentRecorded": "మీరు ఈ రుణాన్ని అంగీకరించారు",
+    "consentQuestions": "సందేహాలా? అంగీకరించే ముందు మీ ఏజెంట్‌ను సంప్రదించండి."
   },
   "settings": {
     "title": "సెట్టింగ్‌లు",
@@ -299,6 +344,13 @@
     "notFound": "కనుగొనబడలేదు.",
     "mobileExists": "ఈ మొబైల్ నంబర్ ఇప్పటికే నమోదు చేయబడింది.",
     "invalidToken": "ఈ లింక్ చెల్లదు లేదా గడువు ముగిసింది.",
-    "networkError": "నెట్‌వర్క్ లోపం. మీ కనెక్షన్ తనిఖీ చేయండి."
+    "networkError": "నెట్‌వర్క్ లోపం. మీ కనెక్షన్ తనిఖీ చేయండి.",
+    "offlineTitle": "ఇంటర్నెట్ కనెక్షన్ లేదు",
+    "offlineBody": "మీ మొబైల్ డేటా లేదా వైఫై చూసుకోండి. మీ సమాచారం సురక్షితంగా ఉంది — ఏదీ పోలేదు.",
+    "offlineAuto": "కనెక్షన్ వచ్చాక దానంతట అదే తిరిగి పనిచేస్తుంది.",
+    "connectionTitle": "సర్వర్‌ను చేరుకోలేకపోయాము",
+    "connectionBody": "మీరు ఆన్‌లైన్‌లో ఉన్నారు, కానీ సర్వర్ స్పందించలేదు. ఇది సాధారణంగా కొద్దిసేపే — మళ్లీ ప్రయత్నించండి.",
+    "retry": "మళ్లీ ప్రయత్నించండి",
+    "loadFailed": "ఈ జాబితా లోడ్ కాలేదు"
   }
 }

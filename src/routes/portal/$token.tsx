@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect } from 'react';
-import { Spinner } from '@/components/ui/Spinner';
+import { useState, useEffect, useCallback } from 'react';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { PortalHeader } from '@/components/portal/PortalHeader';
 import { PortalLoanCard } from '@/components/portal/PortalLoanCard';
 import { PortalPaymentList } from '@/components/portal/PortalPaymentList';
@@ -20,30 +20,28 @@ function PortalPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<PortalData | null>(null);
-  const borrowerName = useLocalizedName(data?.borrower?.name || '');
+  const borrowerName = useLocalizedName(data?.borrower?.name || '', data?.borrower?.nameTelugu);
+
+  const load = useCallback(async () => {
+    try {
+      const result = await getPortalData({ data: { token } });
+      setData(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('errors.invalidToken'));
+    } finally {
+      setLoading(false);
+    }
+  }, [token, t]);
 
   useEffect(() => {
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const result = await getPortalData({ data: { token } });
-        setData(result);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t('errors.invalidToken'));
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
-  }, [token, t]);
+    load();
+  }, [load]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50">
         <PortalHeader />
-        <div className="flex justify-center py-20">
-          <Spinner size="lg" />
-        </div>
+        <div className="max-w-lg mx-auto px-4 py-6"><PageSkeleton variant="portal" /></div>
       </div>
     );
   }
@@ -83,6 +81,7 @@ function PortalPage() {
             <p className="text-emerald-700 font-medium">{t('portal.allPaid')}</p>
           </div>
         )}
+
 
         {/* Loans */}
         <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">

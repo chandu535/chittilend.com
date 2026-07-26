@@ -1,18 +1,20 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
-import { Spinner } from '@/components/ui/Spinner';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { NameDisplay } from '@/components/shared/NameDisplay';
 import { toast } from '@/components/ui/Toast';
 import { getCapitalBalance, getCapitalLog, addInvestment } from '@/server/functions/capital';
+import { useScrollLock } from '@/lib/useScrollLock';
 
 export const Route = createFileRoute('/_authenticated/capital')({
   component: CapitalPage,
@@ -28,6 +30,7 @@ type LogEntry = {
   referencePaymentId: string | null;
   notes: string | null;
   borrowerName: string | null;
+  borrowerNameTelugu: string | null;
 };
 
 const eventColors: Record<string, string> = {
@@ -71,7 +74,8 @@ function CapitalPage() {
   }, [fetchData]);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <ScrollPage>
+      <div className="max-w-2xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-900">{t('capital.title')}</h2>
         <Button size="sm" onClick={() => setShowInvestModal(true)}>
@@ -119,9 +123,7 @@ function CapitalPage() {
         <CardTitle>{t('capital.log')}</CardTitle>
         <div className="mt-3">
           {loading ? (
-            <div className="flex justify-center py-8">
-              <Spinner size="lg" />
-            </div>
+            <PageSkeleton variant="list" />
           ) : log.length === 0 ? (
             <EmptyState title={t('common.noData')} />
           ) : (
@@ -167,7 +169,7 @@ function CapitalPage() {
                         </span>
                       </div>
                       {entry.borrowerName && (
-                        <p className="mt-1 text-xs text-slate-500"><NameDisplay name={entry.borrowerName} /></p>
+                        <p className="mt-1 text-xs text-slate-500"><NameDisplay name={entry.borrowerName} nameTelugu={entry.borrowerNameTelugu} /></p>
                       )}
                       {entry.notes && (
                         <p className="mt-1 text-xs text-slate-400">{entry.notes}</p>
@@ -191,7 +193,8 @@ function CapitalPage() {
           }}
         />
       )}
-    </div>
+      </div>
+    </ScrollPage>
   );
 }
 
@@ -200,6 +203,8 @@ function InvestmentModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useScrollLock(true);
 
   const handleSubmit = async () => {
     const parsed = parseFloat(amount);

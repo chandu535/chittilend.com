@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -9,6 +10,7 @@ import { DateDisplay } from '@/components/shared/DateDisplay';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from '@/components/ui/Toast';
 import { markPaymentPaid, markPaymentWaived, revertPayment } from '@/server/functions/payments';
+import { useScrollLock } from '@/lib/useScrollLock';
 
 interface Payment {
   id: string;
@@ -40,6 +42,8 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
   const [notes, setNotes] = useState('');
   const [revertReason, setRevertReason] = useState('');
   const [loading, setLoading] = useState<'submit' | 'waived' | 'revert' | null>(null);
+
+  useScrollLock(true);
 
   // Total including previous partial payments
   const totalAfterPayment = alreadyPaid + parseFloat(amountNow || '0');
@@ -117,13 +121,18 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
     setPartialMode((m) => !m);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+  // Portalled to <body> deliberately. This modal renders inside LoanCard, and the card
+  // sits in a `.list-row` whose `content-visibility: auto` implies `contain: paint` —
+  // which makes the card a containing block for `position: fixed`. Left inline, the
+  // modal anchors to the card instead of the viewport and is clipped off screen.
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] overflow-y-auto shadow-xl">
+      {/* Sheet. dvh so mobile browser chrome is accounted for; the bottom padding keeps
+          the last action clear of the home indicator. */}
+      <div className="relative flex max-h-[88dvh] w-full flex-col overflow-y-auto overscroll-contain rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] shadow-xl sm:max-w-md sm:rounded-2xl sm:pb-0">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
           <h3 className="text-lg font-semibold text-slate-900">
@@ -293,6 +302,7 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

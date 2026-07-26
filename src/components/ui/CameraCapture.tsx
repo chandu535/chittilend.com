@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
+import { ZoomableImage } from '@/components/ui/ZoomableImage';
 
 interface CameraCaptureProps {
   onCapture: (file: File) => void;
@@ -90,7 +91,7 @@ export function CameraCapture({ onCapture, onLocation }: CameraCaptureProps) {
   if (preview) {
     return (
       <div className="space-y-2">
-        <img src={preview} alt="Captured" className="w-full rounded-lg" />
+        <ZoomableImage src={preview} alt="Captured" className="w-full rounded-lg" />
         <Button variant="ghost" size="sm" onClick={reset} className="w-full">
           {t('common.edit')}
         </Button>

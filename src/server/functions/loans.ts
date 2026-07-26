@@ -63,6 +63,34 @@ export const listLoans = createServerFn({ method: 'GET' })
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
+    // Facet counts for the status chips. Deliberately ignores the status filter itself
+    // so each chip shows its own total and the numbers do not shift when you switch
+    // between them; every other active filter (search, dates, borrower) still applies.
+    const facetConditions = [];
+    if (data.borrowerId) facetConditions.push(eq(loans.borrowerId, data.borrowerId));
+    if (data.dateFrom) facetConditions.push(gte(loans.dateGiven, data.dateFrom));
+    if (data.dateTo) facetConditions.push(lte(loans.dateGiven, data.dateTo));
+    if (data.search) facetConditions.push(ilike(borrowers.name, `%${data.search}%`));
+
+    const facetRows = await db
+      .select({ status: loans.status, count: count() })
+      .from(loans)
+      .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
+      .where(facetConditions.length > 0 ? and(...facetConditions) : undefined)
+      .groupBy(loans.status);
+
+    const statusCounts = {
+      all: 0,
+      active: 0,
+      completed: 0,
+      defaulted: 0,
+      extended: 0,
+    } as Record<'all' | 'active' | 'completed' | 'defaulted' | 'extended', number>;
+    for (const row of facetRows) {
+      statusCounts[row.status] = row.count;
+      statusCounts.all += row.count;
+    }
+
     // If searching by borrower name, join
     if (data.search) {
       const pattern = `%${data.search}%`;
@@ -74,6 +102,7 @@ export const listLoans = createServerFn({ method: 'GET' })
           .select({
             loan: loans,
             borrowerName: borrowers.name,
+            borrowerNameTelugu: borrowers.nameTelugu,
             borrowerMobile: borrowers.mobile,
             borrowerArea: borrowers.area,
             borrowerPhotoUrl: borrowers.profilePhotoUrl,
@@ -101,6 +130,7 @@ export const listLoans = createServerFn({ method: 'GET' })
         items: items.map((r) => ({
           ...r.loan,
           borrowerName: r.borrowerName,
+          borrowerNameTelugu: r.borrowerNameTelugu,
           borrowerMobile: r.borrowerMobile,
           borrowerArea: r.borrowerArea,
           borrowerPhotoUrl: r.borrowerPhotoUrl,
@@ -109,6 +139,7 @@ export const listLoans = createServerFn({ method: 'GET' })
           paidAmount: r.paidAmount,
         })),
         total: totalResult[0].count,
+        statusCounts,
         page: data.page,
         limit: data.limit,
         totalPages: Math.ceil(totalResult[0].count / data.limit),
@@ -120,6 +151,7 @@ export const listLoans = createServerFn({ method: 'GET' })
         .select({
           loan: loans,
           borrowerName: borrowers.name,
+            borrowerNameTelugu: borrowers.nameTelugu,
           borrowerMobile: borrowers.mobile,
           borrowerArea: borrowers.area,
           borrowerPhotoUrl: borrowers.profilePhotoUrl,
@@ -146,6 +178,7 @@ export const listLoans = createServerFn({ method: 'GET' })
       items: items.map((r) => ({
         ...r.loan,
         borrowerName: r.borrowerName,
+          borrowerNameTelugu: r.borrowerNameTelugu,
         borrowerMobile: r.borrowerMobile,
         borrowerArea: r.borrowerArea,
         borrowerPhotoUrl: r.borrowerPhotoUrl,
@@ -154,6 +187,7 @@ export const listLoans = createServerFn({ method: 'GET' })
         paidAmount: r.paidAmount,
       })),
       total: totalResult[0].count,
+      statusCounts,
       page: data.page,
       limit: data.limit,
       totalPages: Math.ceil(totalResult[0].count / data.limit),
@@ -177,6 +211,7 @@ export const getLoanById = createServerFn({ method: 'GET' })
           columns: {
             id: true,
             name: true,
+            nameTelugu: true,
             mobile: true,
             area: true,
             profilePhotoUrl: true,

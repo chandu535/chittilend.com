@@ -9,6 +9,7 @@ import { formatPercent } from '@/lib/formatters';
 interface BorrowerData {
   id: string;
   name: string;
+  nameTelugu: string | null;
   mobile: string;
   area: string;
   totalPayments: number;
@@ -63,7 +64,7 @@ export function BorrowerStats({ data }: { data: BorrowerData[] }) {
         {sorted.map((b) => (
           <div key={b.id} className="rounded-lg border border-slate-100 p-3">
             <div className="flex justify-between items-center mb-1">
-              <NameDisplay name={b.name} className="font-medium text-sm text-slate-900" />
+              <NameDisplay name={b.name} nameTelugu={b.nameTelugu} className="font-medium text-sm text-slate-900" />
               <span className={`text-xs font-semibold ${b.onTimePercent >= 80 ? 'text-emerald-600' : b.onTimePercent >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
                 {formatPercent(b.onTimePercent, { lang })}
               </span>
@@ -77,7 +78,7 @@ export function BorrowerStats({ data }: { data: BorrowerData[] }) {
       </div>
 
       {/* Desktop: table */}
-      <div className="hidden sm:block overflow-x-auto">
+      <div className="hidden sm:block overflow-x-auto overscroll-x-contain">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
@@ -96,7 +97,7 @@ export function BorrowerStats({ data }: { data: BorrowerData[] }) {
           <tbody className="divide-y divide-slate-50">
             {sorted.map((b) => (
               <tr key={b.id} className="hover:bg-slate-50">
-                <td className="py-2 font-medium text-slate-900"><NameDisplay name={b.name} /></td>
+                <td className="py-2 font-medium text-slate-900"><NameDisplay name={b.name} nameTelugu={b.nameTelugu} /></td>
                 <td className="py-2 text-slate-500">{b.area}</td>
                 <td className="py-2 text-right">
                   <span className={`font-semibold ${b.onTimePercent >= 80 ? 'text-emerald-600' : b.onTimePercent >= 50 ? 'text-amber-600' : 'text-red-600'}`}>

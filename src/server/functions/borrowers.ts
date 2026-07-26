@@ -35,6 +35,7 @@ export const listBorrowers = createServerFn({ method: 'GET' })
       conditions.push(
         or(
           ilike(borrowers.name, pattern),
+          ilike(borrowers.nameTelugu, pattern),
           ilike(borrowers.mobile, pattern),
         ),
       );
@@ -132,6 +133,7 @@ export const createBorrower = createServerFn({ method: 'POST' })
       .insert(borrowers)
       .values({
         name: data.name,
+        nameTelugu: data.nameTelugu || null,
         mobile: data.mobile,
         area: data.area || null,
         address: data.address || null,
@@ -235,6 +237,7 @@ export const searchBorrowers = createServerFn({ method: 'GET' })
       .select({
         id: borrowers.id,
         name: borrowers.name,
+        nameTelugu: borrowers.nameTelugu,
         mobile: borrowers.mobile,
         area: borrowers.area,
       })
@@ -242,6 +245,7 @@ export const searchBorrowers = createServerFn({ method: 'GET' })
       .where(
         or(
           ilike(borrowers.name, pattern),
+          ilike(borrowers.nameTelugu, pattern),
           ilike(borrowers.mobile, pattern),
         ),
       )

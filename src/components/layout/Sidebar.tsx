@@ -91,8 +91,10 @@ export function Sidebar() {
   );
 
   return (
-    <aside className="hidden md:flex md:flex-col md:w-60 bg-white border-r border-slate-200 min-h-0">
-      <nav aria-label="Main navigation" className="flex-1 p-3 space-y-1 overflow-y-auto">
+    // Tablet portrait gets a narrow rail with labels under the icons; only lg has
+    // room for the full labelled panel.
+    <aside className="hidden md:flex md:flex-col md:w-[76px] lg:w-60 shrink-0 bg-white border-r border-slate-200 min-h-0">
+      <nav aria-label="Main navigation" className="flex-1 p-2 lg:p-3 space-y-1 overflow-y-auto overscroll-contain">
         {visibleItems.map((item) => {
           const isActive = !!matchRoute({ to: item.to, fuzzy: true });
 
@@ -100,15 +102,18 @@ export function Sidebar() {
             <Link
               key={item.to}
               to={item.to}
+              title={t(item.labelKey)}
               className={clsx(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                'flex rounded-lg font-medium transition-colors',
+                'flex-col items-center gap-1 px-1 py-2 text-[10px] text-center',
+                'lg:flex-row lg:items-center lg:gap-3 lg:px-3 lg:py-2.5 lg:text-sm lg:text-left',
                 isActive
                   ? 'bg-primary/10 text-primary'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
               )}
             >
               {item.icon}
-              <span>{t(item.labelKey)}</span>
+              <span className="max-w-full truncate">{t(item.labelKey)}</span>
             </Link>
           );
         })}

@@ -83,6 +83,10 @@ export const getPortalData = createServerFn({ method: 'GET' })
 
       return {
         id: loan.id,
+        loanNumber: loan.loanNumber,
+        amountUserReceived: loan.amountUserReceived,
+        borrowerAcceptedAt: loan.borrowerAcceptedAt,
+        ownerAcceptedAt: loan.ownerAcceptedAt,
         primaryAmount: loan.primaryAmount,
         totalRepayment: loan.totalRepayment,
         installmentAmount: loan.installmentAmount,
@@ -102,6 +106,7 @@ export const getPortalData = createServerFn({ method: 'GET' })
     return {
       borrower: {
         name: borrower.name,
+        nameTelugu: borrower.nameTelugu,
         mobile: borrower.mobile,
       },
       loans: loansWithPayments,

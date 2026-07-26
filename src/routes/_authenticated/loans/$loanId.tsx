@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getLoanById, updateLoan, changeStatus } from '@/server/functions/loans';
 import { sendLoanWhatsAppTemplate } from '@/server/functions/whatsapp';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { Spinner } from '@/components/ui/Spinner';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { Button } from '@/components/ui/Button';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
@@ -14,7 +15,9 @@ import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
 import { PaymentTimeline } from '@/components/loans/PaymentTimeline';
 import { PaymentMarkModal } from '@/components/loans/PaymentMarkModal';
 import { ExtendTenureModal } from '@/components/loans/ExtendTenureModal';
+import { LoanAgreementCard } from '@/components/loans/LoanAgreementCard';
 import { formatPhone } from '@/lib/formatters';
+import { useScrollLock } from '@/lib/useScrollLock';
 import { toast } from '@/components/ui/Toast';
 import { clsx } from 'clsx';
 
@@ -50,7 +53,7 @@ function LoanDetailPage() {
   const [notesSaving, setNotesSaving] = useState(false);
   const [whatsAppSending, setWhatsAppSending] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const borrowerDisplayName = useLocalizedName(loan?.borrower?.name ?? '');
+  const borrowerDisplayName = useLocalizedName(loan?.borrower?.name ?? '', loan?.borrower?.nameTelugu);
 
   const fetchLoan = useCallback(async () => {
     setLoading(true);
@@ -110,9 +113,7 @@ function LoanDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <Spinner size="lg" />
-      </div>
+      <PageSkeleton variant="detail" />
     );
   }
 
@@ -151,7 +152,8 @@ function LoanDetailPage() {
   const paidInstallmentsForModal = loan.payments.filter((p) => p.status === 'paid').length;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4 pb-8">
+    <ScrollPage>
+      <div className="max-w-2xl mx-auto space-y-4">
       {/* ── Header ── */}
       <div className="flex items-center gap-2">
         <Link to="/loans" className="text-slate-400 hover:text-slate-600 shrink-0">
@@ -303,6 +305,16 @@ function LoanDetailPage() {
         </p>
       </Card>
 
+      {/* ── Section 3b: Agreement ── */}
+      <LoanAgreementCard
+        loanId={loan.id}
+        borrowerAcceptedAt={loan.borrowerAcceptedAt}
+        ownerAcceptedAt={loan.ownerAcceptedAt}
+        welcomeSentAt={loan.welcomeSentAt}
+        canMessage={isValidIndianMobile}
+        onChange={fetchLoan}
+      />
+
       {/* ── Section 4: Loan Info ── */}
       <Card>
         <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
@@ -453,7 +465,8 @@ function LoanDetailPage() {
           onCancel={() => setConfirmActive(false)}
         />
       )}
-    </div>
+      </div>
+    </ScrollPage>
   );
 }
 
@@ -509,6 +522,8 @@ function ConfirmModal({ title, message, confirmLabel, danger = false, loading, o
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  useScrollLock(true);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} />

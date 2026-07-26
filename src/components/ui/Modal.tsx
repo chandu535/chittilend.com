@@ -1,5 +1,7 @@
 import { clsx } from 'clsx';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { useScrollLock } from '@/lib/useScrollLock';
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,6 +21,8 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  useScrollLock(isOpen);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -27,17 +31,13 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     };
 
     document.addEventListener('keydown', handleEscape);
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
-    };
+    return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  return (
+  // Portalled so a `contain: paint` ancestor cannot clip the dialog.
+  return createPortal(
     <div
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -50,7 +50,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         ref={contentRef}
         className={clsx(
           'relative w-full rounded-xl bg-white shadow-xl',
-          'max-h-[90vh] overflow-y-auto',
+          'max-h-[90dvh] overflow-y-auto overscroll-contain',
           sizeStyles[size],
         )}
         role="dialog"
@@ -77,6 +77,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         )}
         <div className="p-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

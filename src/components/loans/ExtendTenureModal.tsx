@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { toast } from '@/components/ui/Toast';
 import { extendTenure } from '@/server/functions/loans';
+import { useScrollLock } from '@/lib/useScrollLock';
 
 interface ExtendTenureModalProps {
   loan: {
@@ -25,6 +27,8 @@ export function ExtendTenureModal({ loan, onClose, onSuccess }: ExtendTenureModa
   const { t } = useTranslation();
   const [newTenure, setNewTenure] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useScrollLock(true);
 
   const paidAmount = loan.payments
     .filter((p) => p.status === 'paid')
@@ -52,8 +56,10 @@ export function ExtendTenureModal({ loan, onClose, onSuccess }: ExtendTenureModa
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+  // Portalled so the overlay can never be trapped by a `contain: paint` ancestor —
+  // `content-visibility` on list rows creates exactly that containing block.
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl">
         <div className="sticky top-0 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
@@ -123,6 +129,7 @@ export function ExtendTenureModal({ loan, onClose, onSuccess }: ExtendTenureModa
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UserPaymentAcceptanceConsentTokenRouteImport } from './routes/user-payment-acceptance/$consentToken'
 import { Route as PortalTokenRouteImport } from './routes/portal/$token'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
@@ -39,6 +40,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UserPaymentAcceptanceConsentTokenRoute =
+  UserPaymentAcceptanceConsentTokenRouteImport.update({
+    id: '/user-payment-acceptance/$consentToken',
+    path: '/user-payment-acceptance/$consentToken',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PortalTokenRoute = PortalTokenRouteImport.update({
   id: '/portal/$token',
   path: '/portal/$token',
@@ -113,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/payments': typeof AuthenticatedPaymentsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/portal/$token': typeof PortalTokenRoute
+  '/user-payment-acceptance/$consentToken': typeof UserPaymentAcceptanceConsentTokenRoute
   '/borrowers/$borrowerId': typeof AuthenticatedBorrowersBorrowerIdRoute
   '/borrowers/new': typeof AuthenticatedBorrowersNewRoute
   '/loans/$loanId': typeof AuthenticatedLoansLoanIdRoute
@@ -129,6 +137,7 @@ export interface FileRoutesByTo {
   '/payments': typeof AuthenticatedPaymentsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/portal/$token': typeof PortalTokenRoute
+  '/user-payment-acceptance/$consentToken': typeof UserPaymentAcceptanceConsentTokenRoute
   '/borrowers/$borrowerId': typeof AuthenticatedBorrowersBorrowerIdRoute
   '/borrowers/new': typeof AuthenticatedBorrowersNewRoute
   '/loans/$loanId': typeof AuthenticatedLoansLoanIdRoute
@@ -147,6 +156,7 @@ export interface FileRoutesById {
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/portal/$token': typeof PortalTokenRoute
+  '/user-payment-acceptance/$consentToken': typeof UserPaymentAcceptanceConsentTokenRoute
   '/_authenticated/borrowers/$borrowerId': typeof AuthenticatedBorrowersBorrowerIdRoute
   '/_authenticated/borrowers/new': typeof AuthenticatedBorrowersNewRoute
   '/_authenticated/loans/$loanId': typeof AuthenticatedLoansLoanIdRoute
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/payments'
     | '/settings'
     | '/portal/$token'
+    | '/user-payment-acceptance/$consentToken'
     | '/borrowers/$borrowerId'
     | '/borrowers/new'
     | '/loans/$loanId'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/payments'
     | '/settings'
     | '/portal/$token'
+    | '/user-payment-acceptance/$consentToken'
     | '/borrowers/$borrowerId'
     | '/borrowers/new'
     | '/loans/$loanId'
@@ -198,6 +210,7 @@ export interface FileRouteTypes {
     | '/_authenticated/payments'
     | '/_authenticated/settings'
     | '/portal/$token'
+    | '/user-payment-acceptance/$consentToken'
     | '/_authenticated/borrowers/$borrowerId'
     | '/_authenticated/borrowers/new'
     | '/_authenticated/loans/$loanId'
@@ -211,6 +224,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   PortalTokenRoute: typeof PortalTokenRoute
+  UserPaymentAcceptanceConsentTokenRoute: typeof UserPaymentAcceptanceConsentTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -234,6 +248,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/user-payment-acceptance/$consentToken': {
+      id: '/user-payment-acceptance/$consentToken'
+      path: '/user-payment-acceptance/$consentToken'
+      fullPath: '/user-payment-acceptance/$consentToken'
+      preLoaderRoute: typeof UserPaymentAcceptanceConsentTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portal/$token': {
@@ -360,6 +381,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   PortalTokenRoute: PortalTokenRoute,
+  UserPaymentAcceptanceConsentTokenRoute:
+    UserPaymentAcceptanceConsentTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

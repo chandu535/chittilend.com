@@ -1,14 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState, useEffect } from 'react';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { Spinner } from '@/components/ui/Spinner';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { toast } from '@/components/ui/Toast';
 import { listManagers, createManager, toggleManagerActive } from '@/server/functions/users';
+import { useScrollLock } from '@/lib/useScrollLock';
 
 export const Route = createFileRoute('/_authenticated/settings')({
   component: SettingsPage,
@@ -56,7 +58,8 @@ function SettingsPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <ScrollPage>
+      <div className="max-w-2xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-900">{t('settings.title')}</h2>
       </div>
@@ -71,9 +74,7 @@ function SettingsPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-8">
-            <Spinner size="lg" />
-          </div>
+          <PageSkeleton variant="list" />
         ) : managers.length === 0 ? (
           <EmptyState title={t('common.noData')} />
         ) : (
@@ -102,7 +103,7 @@ function SettingsPage() {
             </div>
 
             {/* Desktop: table */}
-            <div className="hidden sm:block overflow-x-auto">
+            <div className="hidden sm:block overflow-x-auto overscroll-x-contain">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-left text-slate-500">
@@ -150,7 +151,8 @@ function SettingsPage() {
           }}
         />
       )}
-    </div>
+      </div>
+    </ScrollPage>
   );
 }
 
@@ -160,6 +162,8 @@ function AddManagerModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useScrollLock(true);
 
   const handleSubmit = async () => {
     if (!name || !email || !password) {

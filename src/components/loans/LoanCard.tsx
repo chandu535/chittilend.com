@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, memo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
-import { Spinner } from '@/components/ui/Spinner';
+import { InlineSkeleton } from '@/components/ui/PageSkeleton';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { useLocalizedName } from '@/components/shared/NameDisplay';
@@ -36,13 +36,6 @@ interface LoanCardProps {
   totalInstallments: number;
   paidInstallments: number;
   dateGiven: string;
-}
-
-function daysSince(dateStr: string): number {
-  const due = new Date(dateStr + 'T00:00:00');
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.max(0, Math.floor((today.getTime() - due.getTime()) / 86400000));
 }
 
 function isOverdueDate(dueDate: string): boolean {
@@ -86,7 +79,7 @@ const STATUS_LABEL: Record<string, { bg: string; text: string; label: string }> 
   extended:  { bg: 'bg-amber-50',   text: 'text-amber-700',   label: 'Extended' },
 };
 
-export function LoanCard({
+function LoanCardImpl({
   id,
   loanNumber,
   borrowerName,
@@ -146,9 +139,12 @@ export function LoanCard({
     }
   }, [id]);
 
-  const handleToggle = useCallback(async () => {
-    if (!open && !details) await loadDetails();
-    setOpen((o) => !o);
+  const handleToggle = useCallback(() => {
+    const willOpen = !open;
+    // Expand first so the skeleton is visible while details load. Awaiting the fetch
+    // before opening makes the card look unresponsive for the length of the request.
+    setOpen(willOpen);
+    if (willOpen && !details) void loadDetails();
   }, [open, details, loadDetails]);
 
   const handleQuickMark = useCallback((e: React.MouseEvent) => {
@@ -173,13 +169,16 @@ export function LoanCard({
 
   const chipOverdue = nextPayment && (nextPayment.status === 'overdue' || isOverdueDate(nextPayment.dueDate));
   const chipPartial = nextPayment?.status === 'partial';
+  const currentMonthStart = new Date();
+  currentMonthStart.setDate(1);
+  currentMonthStart.setHours(0, 0, 0, 0);
+  const hasPreviousMonthBalance = Boolean(
+    nextPayment && new Date(nextPayment.dueDate + 'T00:00:00') < currentMonthStart,
+  );
   const chipRemainingCalc = chipPartial && nextPayment
     ? parseFloat(nextPayment.amountDue) - parseFloat(nextPayment.amountPaid)
     : null;
   const chipRemaining = chipRemainingCalc && chipRemainingCalc > 0 ? chipRemainingCalc : null;
-  const currentMonthStart = new Date();
-  currentMonthStart.setDate(1);
-  currentMonthStart.setHours(0, 0, 0, 0);
   const paidForCurrentMonth = Boolean(
     nextPayment
       && !chipOverdue
@@ -203,7 +202,22 @@ export function LoanCard({
         <div className={clsx('h-[3px] bg-gradient-to-r', STATUS_STRIP[status])} />
 
         {/* ── Collapsed header ── */}
-        <button type="button" onClick={handleToggle} className="w-full text-left">
+        {/* A div rather than a button: the header contains its own buttons (quick-pay,
+            avatar preview) and nesting interactive elements is invalid HTML. */}
+        <div
+          role="button"
+          tabIndex={0}
+          aria-expanded={open}
+          onClick={handleToggle}
+          onKeyDown={(e) => {
+            if (e.target !== e.currentTarget) return;
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleToggle();
+            }
+          }}
+          className="w-full text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset"
+        >
           <div className="flex items-center gap-3.5 px-4 pt-4 pb-3">
             {/* Avatar */}
             <div className="shrink-0">
@@ -244,7 +258,7 @@ export function LoanCard({
                     'flex flex-col items-center rounded-2xl px-2.5 py-1.5 min-w-[50px]',
                     'font-semibold text-[11px] leading-none',
                     'transition-transform duration-150 active:scale-95',
-                    chipPartial
+                    chipPartial && !hasPreviousMonthBalance
                       ? 'border border-red-200 bg-red-100 text-red-700'
                       : chipOverdue
                         ? 'bg-gradient-to-b from-red-500 to-red-600 text-white shadow-[0_2px_8px_rgba(239,68,68,0.4)]'
@@ -295,14 +309,42 @@ export function LoanCard({
               )}
             </div>
           </div>
-        </button>
+        </div>
 
         {/* ── Expanded content ── */}
         {open && (
           <div className="border-t border-slate-50">
             {fetching ? (
-              <div className="flex justify-center py-10">
-                <Spinner size="lg" />
+              /* Mirrors the loaded layout below — same padding, same six-tile grid,
+                 same pill and link rows — so nothing shifts when the data lands. */
+              <div className="px-4 pb-5 pt-4 space-y-4" aria-busy="true">
+                <div className="grid grid-cols-2 gap-2">
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <InlineSkeleton key={i} className="h-[52px] rounded-2xl" />
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <InlineSkeleton className="h-[26px] w-20 rounded-full" />
+                  <InlineSkeleton className="h-[26px] w-24 rounded-full" />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <InlineSkeleton className="h-4 w-24" />
+                  <InlineSkeleton className="h-4 w-28" />
+                </div>
+
+                <div>
+                  <InlineSkeleton className="h-3 w-20 mb-3" />
+                  <div className="space-y-0">
+                    {Array.from({ length: 3 }, (_, i) => (
+                      <div key={i} className="flex gap-3">
+                        <InlineSkeleton className="h-8 w-8 rounded-full shrink-0" />
+                        <InlineSkeleton className="flex-1 h-[62px] mb-2" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             ) : details ? (
               <div className="px-4 pb-5 pt-4 space-y-4">
@@ -413,6 +455,24 @@ export function LoanCard({
     </>
   );
 }
+
+/**
+ * Memoised: infinite scroll appends pages, so without this every previously rendered
+ * card re-renders on each append. All props are primitives except nextPayment, which is
+ * compared field-by-field below.
+ */
+export const LoanCard = memo(LoanCardImpl, (prev, next) => (
+  prev.id === next.id
+  && prev.status === next.status
+  && prev.paidAmount === next.paidAmount
+  && prev.paidInstallments === next.paidInstallments
+  && prev.borrowerName === next.borrowerName
+  && prev.borrowerPhotoUrl === next.borrowerPhotoUrl
+  && prev.nextPayment?.id === next.nextPayment?.id
+  && prev.nextPayment?.status === next.nextPayment?.status
+  && prev.nextPayment?.amountPaid === next.nextPayment?.amountPaid
+  && prev.nextPayment?.dueDate === next.nextPayment?.dueDate
+));
 
 function MiniStat({
   label,

@@ -91,3 +91,32 @@ body {
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* ========================================
+   Long lists
+   ======================================== */
+
+/*
+  Lets the browser skip layout, style and paint for rows that are off screen. With a few
+  hundred infinite-scrolled cards this is the difference between smooth scrolling and a
+  stalled page, and unlike virtualisation it needs no fixed row height, so cards that
+  expand in place keep working.
+
+  contain-intrinsic-size supplies a placeholder height for skipped rows so the scrollbar
+  stays stable; `auto` makes the browser remember each row's real height once measured.
+*/
+.list-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 180px;
+}
+
+/* Scroll-anchoring keeps the viewport steady when rows are appended above the fold. */
+.list-container {
+  overflow-anchor: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

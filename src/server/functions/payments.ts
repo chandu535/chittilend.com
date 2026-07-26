@@ -1,10 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
-import { eq, and, lte, or, desc, gte, sql } from 'drizzle-orm';
+import { eq, and, lte, or, desc, asc, gte, sql, count, type SQL } from 'drizzle-orm';
+import type { PgColumn } from 'drizzle-orm/pg-core';
 import { db } from '../db';
 import { payments, loans, borrowers, capitalPoolLog } from '../db/schema';
 import { markPaymentSchema, markWaivedSchema } from '../validators/payment';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole } from '../middleware/roleGuard';
+import { DEFAULTS } from '@/lib/constants';
 
 export const listPaymentsByLoan = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => {
@@ -212,10 +214,64 @@ export const markPaymentWaived = createServerFn({ method: 'POST' })
     return updated;
   });
 
+/**
+ * Shared page query for the three payment lists. They differ only in their filter and
+ * sort column, so keeping one implementation avoids the count and the rows drifting apart.
+ */
+async function paginatedPayments(
+  where: SQL | undefined,
+  orderColumn: PgColumn,
+  direction: 'asc' | 'desc',
+  page: number,
+  limit: number,
+) {
+  const offset = (page - 1) * limit;
+
+  const [rows, totalResult] = await Promise.all([
+    db
+      .select({
+        payment: payments,
+        borrowerName: borrowers.name,
+        borrowerNameTelugu: borrowers.nameTelugu,
+        borrowerMobile: borrowers.mobile,
+        loanPrimaryAmount: loans.primaryAmount,
+      })
+      .from(payments)
+      .innerJoin(loans, eq(payments.loanId, loans.id))
+      .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
+      .where(where)
+      .orderBy(direction === 'desc' ? desc(orderColumn) : asc(orderColumn))
+      .limit(limit)
+      .offset(offset),
+    db
+      .select({ count: count() })
+      .from(payments)
+      .innerJoin(loans, eq(payments.loanId, loans.id))
+      .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
+      .where(where),
+  ]);
+
+  const total = totalResult[0].count;
+
+  return {
+    items: rows.map((r) => ({
+      ...r.payment,
+      borrowerName: r.borrowerName,
+      borrowerNameTelugu: r.borrowerNameTelugu,
+      borrowerMobile: r.borrowerMobile,
+      loanPrimaryAmount: r.loanPrimaryAmount,
+    })),
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
 export const listUpcomingPayments = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => {
-    const days = (data as { days?: number }).days || 7;
-    return { days };
+    const d = data as { days?: number; page?: number; limit?: number };
+    return { days: d.days || 7, page: d.page || 1, limit: d.limit || DEFAULTS.ITEMS_PER_PAGE };
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
@@ -226,102 +282,57 @@ export const listUpcomingPayments = createServerFn({ method: 'GET' })
     futureDate.setDate(futureDate.getDate() + data.days);
     const futureDateStr = futureDate.toISOString().split('T')[0];
 
-    const result = await db
-      .select({
-        payment: payments,
-        borrowerName: borrowers.name,
-        borrowerMobile: borrowers.mobile,
-        loanPrimaryAmount: loans.primaryAmount,
-      })
-      .from(payments)
-      .innerJoin(loans, eq(payments.loanId, loans.id))
-      .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-      .where(
-        and(
-          or(eq(payments.status, 'pending'), eq(payments.status, 'partial')),
-          gte(payments.dueDate, today),
-          lte(payments.dueDate, futureDateStr),
-        ),
-      )
-      .orderBy(payments.dueDate);
+    const where = and(
+      or(eq(payments.status, 'pending'), eq(payments.status, 'partial')),
+      gte(payments.dueDate, today),
+      lte(payments.dueDate, futureDateStr),
+    );
 
-    return result.map((r) => ({
-      ...r.payment,
-      borrowerName: r.borrowerName,
-      borrowerMobile: r.borrowerMobile,
-      loanPrimaryAmount: r.loanPrimaryAmount,
-    }));
+    return paginatedPayments(where, payments.dueDate, 'asc', data.page, data.limit);
   });
 
-export const listOverduePayments = createServerFn({ method: 'GET' }).handler(async () => {
-  const user = await getAuthenticatedUser();
-  requireRole(user, ['admin', 'manager']);
+export const listOverduePayments = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => {
+    const d = (data ?? {}) as { page?: number; limit?: number };
+    return { page: d.page || 1, limit: d.limit || DEFAULTS.ITEMS_PER_PAGE };
+  })
+  .handler(async ({ data }) => {
+    const user = await getAuthenticatedUser();
+    requireRole(user, ['admin', 'manager']);
 
-  const today = new Date().toISOString().split('T')[0];
-
-  const result = await db
-    .select({
-      payment: payments,
-      borrowerName: borrowers.name,
-      borrowerMobile: borrowers.mobile,
-      loanPrimaryAmount: loans.primaryAmount,
-    })
-    .from(payments)
-    .innerJoin(loans, eq(payments.loanId, loans.id))
-    .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-    .where(
-      and(
-        or(
-          eq(payments.status, 'pending'),
-          eq(payments.status, 'partial'),
-          eq(payments.status, 'overdue'),
-        ),
-        lte(payments.dueDate, today),
+    const today = new Date().toISOString().split('T')[0];
+    const where = and(
+      or(
+        eq(payments.status, 'pending'),
+        eq(payments.status, 'partial'),
+        eq(payments.status, 'overdue'),
       ),
-    )
-    .orderBy(payments.dueDate);
+      lte(payments.dueDate, today),
+    );
 
-  return result.map((r) => ({
-    ...r.payment,
-    borrowerName: r.borrowerName,
-    borrowerMobile: r.borrowerMobile,
-    loanPrimaryAmount: r.loanPrimaryAmount,
-  }));
-});
+    return paginatedPayments(where, payments.dueDate, 'asc', data.page, data.limit);
+  });
 
-export const listRecentPayments = createServerFn({ method: 'GET' }).handler(async () => {
-  const user = await getAuthenticatedUser();
-  requireRole(user, ['admin', 'manager']);
+export const listRecentPayments = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => {
+    const d = (data ?? {}) as { page?: number; limit?: number };
+    return { page: d.page || 1, limit: d.limit || DEFAULTS.ITEMS_PER_PAGE };
+  })
+  .handler(async ({ data }) => {
+    const user = await getAuthenticatedUser();
+    requireRole(user, ['admin', 'manager']);
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const dateStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const dateStr = thirtyDaysAgo.toISOString().split('T')[0];
 
-  const result = await db
-    .select({
-      payment: payments,
-      borrowerName: borrowers.name,
-      borrowerMobile: borrowers.mobile,
-      loanPrimaryAmount: loans.primaryAmount,
-    })
-    .from(payments)
-    .innerJoin(loans, eq(payments.loanId, loans.id))
-    .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-    .where(
-      and(
-        or(eq(payments.status, 'paid'), eq(payments.status, 'waived')),
-        gte(payments.paidDate, dateStr),
-      ),
-    )
-    .orderBy(desc(payments.paidDate));
+    const where = and(
+      or(eq(payments.status, 'paid'), eq(payments.status, 'waived')),
+      gte(payments.paidDate, dateStr),
+    );
 
-  return result.map((r) => ({
-    ...r.payment,
-    borrowerName: r.borrowerName,
-    borrowerMobile: r.borrowerMobile,
-    loanPrimaryAmount: r.loanPrimaryAmount,
-  }));
-});
+    return paginatedPayments(where, payments.paidDate, 'desc', data.page, data.limit);
+  });
 
 export const revertPayment = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => {

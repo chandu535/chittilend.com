@@ -33,13 +33,13 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
-      <div className="flex items-center justify-between h-14 px-4">
-        <h1 className="text-lg font-bold text-primary">
+    <header className="sticky top-0 z-40 shrink-0 bg-white border-b border-slate-200">
+      <div className="flex h-14 items-center justify-between gap-3 px-4">
+        <h1 className="truncate text-lg font-bold text-primary">
           {t('common.appName')}
         </h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <LanguageToggle />
 
           {user && (
@@ -51,7 +51,7 @@ export function Header() {
                 <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
                   {displayName.charAt(0).toUpperCase()}
                 </div>
-                <span className="hidden sm:inline">{displayName}</span>
+                <span className="hidden max-w-32 truncate sm:inline">{displayName}</span>
               </button>
 
               {menuOpen && (

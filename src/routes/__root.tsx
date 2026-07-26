@@ -12,7 +12,7 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
       { name: 'theme-color', content: '#2563EB' },
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
       { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
@@ -54,11 +54,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   const language = useStore(uiStore, (s) => s.language);
 
   return (
+    // suppressHydrationWarning only applies one level deep, so head and body need their
+    // own. Browser extensions (Grammarly, the devtools locator) inject attributes here
+    // before React hydrates, which React would otherwise report as a mismatch.
     <html lang={language} suppressHydrationWarning>
-      <head>
+      <head suppressHydrationWarning>
         <HeadContent />
       </head>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased" suppressHydrationWarning>
         {children}
         <Scripts />
       </body>

@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import { clsx } from 'clsx';
 import { useLocalizedName } from '@/components/shared/NameDisplay';
-import { PhotoPreview } from '@/components/ui/PhotoPreview';
+import { useImagePreview } from '@/components/ui/ZoomableImage';
 
 interface BorrowerAvatarProps {
   name: string;
@@ -11,7 +10,7 @@ interface BorrowerAvatarProps {
 }
 
 export function BorrowerAvatar({ name, photoUrl, size = 'md', className }: BorrowerAvatarProps) {
-  const [previewing, setPreviewing] = useState(false);
+  const { open, previewElement } = useImagePreview();
   const displayName = useLocalizedName(name);
 
   const sizeClass =
@@ -19,11 +18,9 @@ export function BorrowerAvatar({ name, photoUrl, size = 'md', className }: Borro
     size === 'lg' ? 'h-14 w-14 text-xl' :
     'h-10 w-10 text-sm';
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
     if (!photoUrl) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setPreviewing(true);
+    open(e, photoUrl, displayName);
   };
 
   return (
@@ -53,13 +50,7 @@ export function BorrowerAvatar({ name, photoUrl, size = 'md', className }: Borro
         )}
       </div>
 
-      {previewing && photoUrl && (
-        <PhotoPreview
-          src={photoUrl}
-          alt={displayName}
-          onClose={() => setPreviewing(false)}
-        />
-      )}
+      {previewElement}
     </>
   );
 }

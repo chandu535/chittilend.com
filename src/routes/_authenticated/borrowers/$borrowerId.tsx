@@ -1,12 +1,15 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState, useEffect, useCallback } from 'react';
 import { getBorrowerById, updateBorrower, deleteBorrower } from '@/server/functions/borrowers';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Spinner } from '@/components/ui/Spinner';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { Modal } from '@/components/ui/Modal';
+import { ZoomableImage } from '@/components/ui/ZoomableImage';
+import { MapPinIcon, LocateIcon } from '@/components/shared/icons';
 import { MagicLinkGenerator } from '@/components/borrowers/MagicLinkGenerator';
 import { DocumentUpload } from '@/components/borrowers/DocumentUpload';
 import { BorrowerForm } from '@/components/borrowers/BorrowerForm';
@@ -31,7 +34,7 @@ function BorrowerDetailPage() {
   const [saving, setSaving] = useState(false);
   const [locationSaving, setLocationSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const displayName = useLocalizedName(borrower?.name ?? '');
+  const displayName = useLocalizedName(borrower?.name ?? '', borrower?.nameTelugu);
 
   const fetchBorrower = useCallback(async () => {
     setLoading(true);
@@ -51,6 +54,7 @@ function BorrowerDetailPage() {
 
   const handleUpdate = async (formData: {
     name: string;
+    nameTelugu: string;
     mobile: string;
     area: string;
     address: string;
@@ -121,9 +125,7 @@ function BorrowerDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <Spinner size="lg" />
-      </div>
+      <PageSkeleton variant="detail" />
     );
   }
 
@@ -132,7 +134,8 @@ function BorrowerDetailPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <ScrollPage>
+      <div className="max-w-2xl mx-auto space-y-4">
       <div className="flex items-center gap-2">
         <Link to="/borrowers" className="text-slate-400 hover:text-slate-600">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -184,7 +187,7 @@ function BorrowerDetailPage() {
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
               >
-                <span>⌖</span>{t('borrowers.openLocation')}
+                <MapPinIcon className="h-4 w-4" />{t('borrowers.openLocation')}
               </a>
             )}
             <button
@@ -193,7 +196,7 @@ function BorrowerDetailPage() {
               disabled={locationSaving}
               className="ml-3 inline-flex items-center gap-1 text-sm text-primary hover:underline disabled:opacity-50"
             >
-              <span>⌖</span>{t('borrowers.captureLocation')}
+              <LocateIcon className="h-4 w-4" />{t('borrowers.captureLocation')}
             </button>
           </div>
         </div>
@@ -253,7 +256,7 @@ function BorrowerDetailPage() {
             {borrower.profilePhotoUrl && (
               <div>
                 <p className="text-xs text-slate-500 mb-1">{t('borrowers.profilePhoto')}</p>
-                <img
+                <ZoomableImage
                   src={borrower.profilePhotoUrl}
                   alt={t('borrowers.profilePhoto')}
                   className="w-full rounded-lg object-cover aspect-square"
@@ -263,7 +266,7 @@ function BorrowerDetailPage() {
             {borrower.aadhaarPhotoUrl && (
               <div>
                 <p className="text-xs text-slate-500 mb-1">{t('borrowers.aadhaarPhoto')}</p>
-                <img
+                <ZoomableImage
                   src={borrower.aadhaarPhotoUrl}
                   alt={t('borrowers.aadhaarPhoto')}
                   className="w-full rounded-lg object-cover aspect-square"
@@ -285,6 +288,7 @@ function BorrowerDetailPage() {
         <BorrowerForm
           initialData={{
             name: borrower.name,
+            nameTelugu: borrower.nameTelugu ?? '',
             mobile: borrower.mobile,
             area: borrower.area ?? '',
             address: borrower.address ?? '',
@@ -313,6 +317,7 @@ function BorrowerDetailPage() {
           </Button>
         </div>
       </Modal>
-    </div>
+      </div>
+    </ScrollPage>
   );
 }

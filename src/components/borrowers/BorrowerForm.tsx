@@ -5,9 +5,14 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { NameDisplay } from '@/components/shared/NameDisplay';
 import { searchBorrowers } from '@/server/functions/borrowers';
+import { TeluguNamePreview } from './TeluguNamePreview';
+import { MapPinIcon, LocateIcon } from '@/components/shared/icons';
+import { toast } from '@/components/ui/Toast';
+import { hasTeluguScript } from '@/lib/transliterate';
 
 interface BorrowerFormData {
   name: string;
+  nameTelugu: string;
   mobile: string;
   area: string;
   address: string;
@@ -29,6 +34,7 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
   const { t } = useTranslation();
   const [data, setData] = useState<BorrowerFormData>({
     name: initialData?.name || '',
+    nameTelugu: initialData?.nameTelugu || '',
     mobile: initialData?.mobile || '',
     area: initialData?.area || '',
     address: initialData?.address || '',
@@ -39,7 +45,7 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
     suretyReferenceId: initialData?.suretyReferenceId || '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [suretyResults, setSuretyResults] = useState<Array<{ id: string; name: string; mobile: string }>>([]);
+  const [suretyResults, setSuretyResults] = useState<Array<{ id: string; name: string; nameTelugu: string | null; mobile: string }>>([]);
   const [suretySearch, setSuretySearch] = useState('');
   const [locating, setLocating] = useState(false);
 
@@ -51,7 +57,12 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
   };
 
   const captureLocation = () => {
-    if (!navigator.geolocation) return;
+    // Silence here is the worst outcome: the user taps and nothing appears to happen,
+    // so both the unsupported and denied paths have to say something.
+    if (!navigator.geolocation) {
+      toast(t('borrowers.locationUnavailable'), 'error');
+      return;
+    }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
@@ -59,7 +70,10 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
         setData((current) => ({ ...current, locationUrl, locationLat: coords.latitude, locationLng: coords.longitude }));
         setLocating(false);
       },
-      () => setLocating(false),
+      () => {
+        toast(t('borrowers.locationUnavailable'), 'error');
+        setLocating(false);
+      },
       { enableHighAccuracy: true, timeout: 10000 },
     );
   };
@@ -89,7 +103,10 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    await onSubmit(data);
+    // A name typed directly in Telugu is already its own Telugu spelling.
+    const trimmedName = data.name.trim();
+    const nameTelugu = hasTeluguScript(trimmedName) ? trimmedName : data.nameTelugu.trim();
+    await onSubmit({ ...data, nameTelugu });
   };
 
   const handleSuretySearch = async (query: string) => {
@@ -114,6 +131,12 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
         onChange={(e) => setData((d) => ({ ...d, name: e.target.value }))}
         error={errors.name}
         required
+      />
+
+      <TeluguNamePreview
+        name={data.name}
+        value={data.nameTelugu}
+        onChange={(nameTelugu) => setData((d) => ({ ...d, nameTelugu }))}
       />
 
       <Input
@@ -150,13 +173,19 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
             }}
             error={errors.locationUrl}
             placeholder={t('borrowers.locationPlaceholder')}
+            leftIcon={<MapPinIcon className="h-4 w-4" />}
           />
         </div>
-        <Button type="button" variant="secondary" onClick={captureLocation} disabled={locating} aria-label={t('borrowers.captureLocation')}>
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l2.5 2.5" />
-          </svg>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={captureLocation}
+          disabled={locating}
+          loading={locating}
+          aria-label={t('borrowers.captureLocation')}
+          title={t('borrowers.captureLocation')}
+        >
+          <LocateIcon />
         </Button>
       </div>
 
@@ -200,7 +229,7 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
                       setSuretyResults([]);
                     }}
                   >
-                    <NameDisplay name={b.name} /> — {b.mobile}
+                    <NameDisplay name={b.name} nameTelugu={b.nameTelugu} /> — {b.mobile}
                   </button>
                 </li>
               ))}

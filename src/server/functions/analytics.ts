@@ -108,6 +108,71 @@ export const getDashboardSummary = createServerFn({ method: 'GET' }).handler(asy
 });
 
 // ============================================================
+// Range Summary — flows within the selected period
+// ============================================================
+
+/**
+ * Everything here is a *flow*: money that moved inside the selected window. That is what
+ * makes these figures meaningful per range, unlike the point-in-time balances in
+ * getDashboardSummary (outstanding, active count), which describe a moment rather than a
+ * period and would be nonsense scoped to "this week".
+ */
+export const getRangeSummary = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => {
+    const d = data as { dateFrom?: string; dateTo?: string };
+    if (!d.dateFrom || !d.dateTo) throw new Error('A date range is required');
+    return { dateFrom: d.dateFrom, dateTo: d.dateTo };
+  })
+  .handler(async ({ data }) => {
+    const user = await getAuthenticatedUser();
+    requireRole(user, ['admin', 'manager']);
+
+    const [disbursed, collected, profit, newBorrowers] = await Promise.all([
+      db
+        .select({ total: sum(loans.primaryAmount), count: count() })
+        .from(loans)
+        .where(and(gte(loans.dateGiven, data.dateFrom), lte(loans.dateGiven, data.dateTo))),
+
+      db
+        .select({ total: sum(payments.amountPaid), count: count() })
+        .from(payments)
+        .where(and(gte(payments.paidDate, data.dateFrom), lte(payments.paidDate, data.dateTo))),
+
+      // Profit cannot be dated by loan completion — there is no completed_at column, and
+      // a lump sum on completion would misrepresent when the money actually arrived.
+      // Instead each rupee collected carries its loan's profit share, so profit is
+      // recognised as it is received.
+      db
+        .select({
+          total: sql<string>`COALESCE(SUM(
+            CAST(${payments.amountPaid} AS numeric)
+            * (CAST(${loans.profitAmount} AS numeric) / NULLIF(CAST(${loans.totalRepayment} AS numeric), 0))
+          ), 0)`,
+        })
+        .from(payments)
+        .innerJoin(loans, eq(payments.loanId, loans.id))
+        .where(and(gte(payments.paidDate, data.dateFrom), lte(payments.paidDate, data.dateTo))),
+
+      db
+        .select({ count: count() })
+        .from(borrowers)
+        .where(and(
+          gte(borrowers.createdAt, new Date(`${data.dateFrom}T00:00:00.000Z`)),
+          lte(borrowers.createdAt, new Date(`${data.dateTo}T23:59:59.999Z`)),
+        )),
+    ]);
+
+    return {
+      disbursed: parseFloat(disbursed[0].total || '0'),
+      loansGiven: disbursed[0].count,
+      collected: parseFloat(collected[0].total || '0'),
+      paymentsReceived: collected[0].count,
+      profitRealized: parseFloat(profit[0].total || '0'),
+      newBorrowers: newBorrowers[0].count,
+    };
+  });
+
+// ============================================================
 // Cashflow Timeline — monthly collections vs disbursements
 // ============================================================
 
@@ -206,6 +271,7 @@ export const getBorrowerRanking = createServerFn({ method: 'GET' }).handler(asyn
     .select({
       id: borrowers.id,
       name: borrowers.name,
+      nameTelugu: borrowers.nameTelugu,
       mobile: borrowers.mobile,
       area: borrowers.area,
       totalPayments: count(payments.id),
@@ -219,7 +285,7 @@ export const getBorrowerRanking = createServerFn({ method: 'GET' }).handler(asyn
     .from(borrowers)
     .innerJoin(loans, eq(loans.borrowerId, borrowers.id))
     .innerJoin(payments, eq(payments.loanId, loans.id))
-    .groupBy(borrowers.id, borrowers.name, borrowers.mobile, borrowers.area)
+    .groupBy(borrowers.id, borrowers.name, borrowers.nameTelugu, borrowers.mobile, borrowers.area)
     .orderBy(sql`ROUND(
       SUM(CASE WHEN ${payments.status} = 'paid' AND ${payments.paidDate} <= ${payments.dueDate} THEN 1 ELSE 0 END)::numeric
       / NULLIF(COUNT(CASE WHEN ${payments.status} = 'paid' THEN 1 END), 0) * 100, 1
@@ -228,6 +294,7 @@ export const getBorrowerRanking = createServerFn({ method: 'GET' }).handler(asyn
   return result.map((r) => ({
     id: r.id,
     name: r.name,
+    nameTelugu: r.nameTelugu,
     mobile: r.mobile,
     area: r.area || 'Unknown',
     totalPayments: r.totalPayments,
@@ -335,6 +402,7 @@ export const getRecentActivity = createServerFn({ method: 'GET' }).handler(async
       amount: capitalPoolLog.amount,
       referenceLoanId: capitalPoolLog.referenceLoanId,
       borrowerName: borrowers.name,
+      borrowerNameTelugu: borrowers.nameTelugu,
     })
     .from(capitalPoolLog)
     .leftJoin(loans, eq(capitalPoolLog.referenceLoanId, loans.id))
@@ -349,5 +417,6 @@ export const getRecentActivity = createServerFn({ method: 'GET' }).handler(async
     amount: parseFloat(e.amount),
     loanId: e.referenceLoanId,
     borrowerName: e.borrowerName,
+    borrowerNameTelugu: e.borrowerNameTelugu,
   }));
 });

@@ -1,10 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState, useEffect } from 'react';
 import { useStore } from '@tanstack/react-store';
 import { authStore } from '@/lib/stores';
 import { useLocalizedName } from '@/components/shared/NameDisplay';
-import { Spinner } from '@/components/ui/Spinner';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { cachedRequest } from '@/lib/requestCache';
 import { SummaryCards } from '@/components/dashboard/SummaryCards';
 import { OverdueAlerts } from '@/components/dashboard/OverdueAlerts';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
@@ -33,6 +35,7 @@ type ActivityItem = {
   amount: number;
   loanId: string | null;
   borrowerName: string | null;
+  borrowerNameTelugu: string | null;
 };
 
 function DashboardPage() {
@@ -51,11 +54,11 @@ function DashboardPage() {
         // Refresh overdue statuses on dashboard load
         await bulkUpdateOverdueStatus();
 
-        const [summaryData, cashflowData, activityData] = await Promise.all([
-          getDashboardSummary(),
-          getCashflowTimeline({ data: {} }),
-          getRecentActivity(),
-        ]);
+        const [summaryData, cashflowData, activityData] = await cachedRequest(
+          'dashboard:overview',
+          () => Promise.all([getDashboardSummary(), getCashflowTimeline({ data: {} }), getRecentActivity()]),
+          30_000,
+        );
         setSummary(summaryData);
         setCashflow(cashflowData as CashflowItem[]);
         setActivity(activityData as ActivityItem[]);
@@ -70,14 +73,13 @@ function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <Spinner size="lg" />
-      </div>
+      <PageSkeleton variant="dashboard" />
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <ScrollPage>
+      <div className="max-w-2xl mx-auto space-y-4">
       {/* Greeting */}
       <div>
         <h2 className="text-2xl font-bold text-slate-900">
@@ -148,6 +150,7 @@ function DashboardPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </ScrollPage>
   );
 }

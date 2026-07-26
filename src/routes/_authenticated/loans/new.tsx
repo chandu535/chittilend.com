@@ -1,8 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState, useMemo } from 'react';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { TeluguNamePreview } from '@/components/borrowers/TeluguNamePreview';
+import { hasTeluguScript } from '@/lib/transliterate';
 import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Button } from '@/components/ui/Button';
@@ -31,9 +34,9 @@ function NewLoanPage() {
   // Step 1: Borrower
   const [borrowerMode, setBorrowerMode] = useState<'search' | 'create'>('search');
   const [borrowerQuery, setBorrowerQuery] = useState('');
-  const [borrowerResults, setBorrowerResults] = useState<Array<{ id: string; name: string; mobile: string; area: string | null }>>([]);
-  const [selectedBorrower, setSelectedBorrower] = useState<{ id: string; name: string; mobile: string; area: string | null } | null>(null);
-  const [newBorrower, setNewBorrower] = useState({ name: '', mobile: '', area: '', address: '' });
+  const [borrowerResults, setBorrowerResults] = useState<Array<{ id: string; name: string; nameTelugu: string | null; mobile: string; area: string | null }>>([]);
+  const [selectedBorrower, setSelectedBorrower] = useState<{ id: string; name: string; nameTelugu: string | null; mobile: string; area: string | null } | null>(null);
+  const [newBorrower, setNewBorrower] = useState({ name: '', nameTelugu: '', mobile: '', area: '', address: '' });
   const [newBorrowerErrors, setNewBorrowerErrors] = useState<Record<string, string>>({});
   const [creatingBorrower, setCreatingBorrower] = useState(false);
   // A borrower is created before the loan details are entered. Keep its id so that
@@ -80,6 +83,7 @@ function NewLoanPage() {
     try {
       const borrowerData = {
         name: newBorrower.name.trim(),
+        nameTelugu: hasTeluguScript(newBorrower.name.trim()) ? newBorrower.name.trim() : newBorrower.nameTelugu.trim() || undefined,
         mobile: newBorrower.mobile,
         area: newBorrower.area.trim() || undefined,
         address: newBorrower.address.trim() || undefined,
@@ -90,7 +94,7 @@ function NewLoanPage() {
         : await createBorrower({ data: borrowerData });
 
       setCreatedBorrowerId(borrower.id);
-      setSelectedBorrower({ id: borrower.id, name: borrower.name, mobile: borrower.mobile, area: borrower.area });
+      setSelectedBorrower({ id: borrower.id, name: borrower.name, nameTelugu: borrower.nameTelugu, mobile: borrower.mobile, area: borrower.area });
       setStep('amount');
     } catch (err) {
       setNewBorrowerErrors({ mobile: err instanceof Error ? err.message : 'Failed to create borrower' });
@@ -138,7 +142,8 @@ function NewLoanPage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto space-y-4">
+    <ScrollPage>
+      <div className="max-w-lg mx-auto space-y-4">
       <h2 className="text-2xl font-bold text-slate-900">{t('loans.createTitle')}</h2>
 
       {/* Step indicator */}
@@ -200,7 +205,7 @@ function NewLoanPage() {
               selectedBorrower ? (
                 <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-3">
                   <div>
-                    <p className="font-medium text-slate-900"><NameDisplay name={selectedBorrower.name} /></p>
+                    <p className="font-medium text-slate-900"><NameDisplay name={selectedBorrower.name} nameTelugu={selectedBorrower.nameTelugu} /></p>
                     <p className="text-sm text-slate-500">{selectedBorrower.mobile}</p>
                   </div>
                   <Button
@@ -234,7 +239,7 @@ function NewLoanPage() {
                               setBorrowerQuery(b.name);
                             }}
                           >
-                            <p className="text-sm font-medium"><NameDisplay name={b.name} /></p>
+                            <p className="text-sm font-medium"><NameDisplay name={b.name} nameTelugu={b.nameTelugu} /></p>
                             <p className="text-xs text-slate-400">{b.mobile}{b.area ? ` — ${b.area}` : ''}</p>
                           </button>
                         </li>
@@ -254,6 +259,11 @@ function NewLoanPage() {
                   }}
                   error={newBorrowerErrors.name}
                   placeholder="Full name"
+                />
+                <TeluguNamePreview
+                  name={newBorrower.name}
+                  value={newBorrower.nameTelugu}
+                  onChange={(nameTelugu) => setNewBorrower((p) => ({ ...p, nameTelugu }))}
                 />
                 <Input
                   label={t('borrowers.mobile')}
@@ -407,7 +417,7 @@ function NewLoanPage() {
           <div className="mt-3 space-y-3">
             <div className="rounded-lg bg-slate-50 p-3">
               <p className="text-sm text-slate-500">{t('borrowers.name')}</p>
-              <p className="font-medium"><NameDisplay name={selectedBorrower.name} /></p>
+              <p className="font-medium"><NameDisplay name={selectedBorrower.name} nameTelugu={selectedBorrower.nameTelugu} /></p>
             </div>
 
             <AutoCalcPreview calc={calc} />
@@ -428,6 +438,7 @@ function NewLoanPage() {
           </div>
         </Card>
       )}
-    </div>
+      </div>
+    </ScrollPage>
   );
 }

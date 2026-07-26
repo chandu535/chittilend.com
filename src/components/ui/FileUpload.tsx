@@ -1,4 +1,5 @@
 import { clsx } from 'clsx';
+import { ZoomableImage } from '@/components/ui/ZoomableImage';
 import { useRef, useState, useCallback, type ChangeEvent } from 'react';
 import { DEFAULTS } from '@/lib/constants';
 
@@ -84,7 +85,7 @@ export function FileUpload({
 
       {preview ? (
         <div className="relative rounded-lg border border-slate-300 overflow-hidden">
-          <img
+          <ZoomableImage
             src={preview}
             alt="Preview"
             className="w-full max-h-48 object-contain bg-slate-50"

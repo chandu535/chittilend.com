@@ -1,3 +1,6 @@
+// The shell's scroll container at md+. Below md the document scrolls instead.
+export const APP_SCROLL_ID = 'app-scroll';
+
 export const DEFAULTS = {
   TENURE_MONTHS: 5,
   SERVICE_CHARGE_PERCENT: 1,
@@ -5,7 +8,7 @@ export const DEFAULTS = {
   PAYMENT_FREQUENCY: 'monthly' as const,
   JWT_EXPIRY: '7d',
   PORTAL_TOKEN_LENGTH: 32, // 32 bytes = 64 hex chars
-  ITEMS_PER_PAGE: 25,
+  ITEMS_PER_PAGE: 10,
   MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
   ALLOWED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
 } as const;

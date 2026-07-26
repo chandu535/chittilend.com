@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState } from 'react';
 import { Card, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -79,7 +80,8 @@ function NewBorrowerPage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto space-y-5">
+    <ScrollPage>
+      <div className="max-w-lg mx-auto space-y-5">
       {/* Header */}
       <h2 className="text-2xl font-bold text-slate-900">{t('borrowers.newBorrower')}</h2>
 
@@ -163,7 +165,8 @@ function NewBorrowerPage() {
           </div>
         </>
       )}
-    </div>
+      </div>
+    </ScrollPage>
   );
 }
 
