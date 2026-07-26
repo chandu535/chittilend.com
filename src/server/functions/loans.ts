@@ -72,12 +72,39 @@ export const listLoans = createServerFn({ method: 'GET' })
     if (data.dateTo) facetConditions.push(lte(loans.dateGiven, data.dateTo));
     if (data.search) facetConditions.push(ilike(borrowers.name, `%${data.search}%`));
 
-    const facetRows = await db
-      .select({ status: loans.status, count: count() })
-      .from(loans)
-      .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-      .where(facetConditions.length > 0 ? and(...facetConditions) : undefined)
-      .groupBy(loans.status);
+    const facetWhere = facetConditions.length > 0 ? and(...facetConditions) : undefined;
+
+    // The next instalment still owing, per loan — the same one the rows and the sort use.
+    const nextStatus = sql`(SELECT p.status FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1)`;
+    const nextDue = sql`(SELECT p.due_date FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1)`;
+    // "Today" in IST. The server runs on UTC, where CURRENT_DATE is still yesterday for
+    // the last five and a half hours of the Indian day.
+    const istToday = sql`(now() AT TIME ZONE 'Asia/Kolkata')::date`;
+
+    // Counted over the whole filtered set, not the loaded page. Deriving these on the
+    // client counted only the rows in hand, so desktop capped them at the page size while
+    // mobile's infinite scroll grew them with every page appended.
+    const [facetRows, urgencyRows] = await Promise.all([
+      db
+        .select({ status: loans.status, count: count() })
+        .from(loans)
+        .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
+        .where(facetWhere)
+        .groupBy(loans.status),
+      db
+        .select({
+          overdue: sql<number>`COUNT(*) FILTER (WHERE ${nextStatus} = 'overdue')`,
+          dueToday: sql<number>`COUNT(*) FILTER (WHERE ${nextStatus} <> 'overdue' AND ${nextDue} = ${istToday})`,
+        })
+        .from(loans)
+        .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
+        .where(facetWhere),
+    ]);
+
+    const urgencyCounts = {
+      overdue: Number(urgencyRows[0]?.overdue ?? 0),
+      dueToday: Number(urgencyRows[0]?.dueToday ?? 0),
+    };
 
     const statusCounts = {
       all: 0,
@@ -140,6 +167,7 @@ export const listLoans = createServerFn({ method: 'GET' })
         })),
         total: totalResult[0].count,
         statusCounts,
+        urgencyCounts,
         page: data.page,
         limit: data.limit,
         totalPages: Math.ceil(totalResult[0].count / data.limit),
@@ -188,6 +216,7 @@ export const listLoans = createServerFn({ method: 'GET' })
       })),
       total: totalResult[0].count,
       statusCounts,
+      urgencyCounts,
       page: data.page,
       limit: data.limit,
       totalPages: Math.ceil(totalResult[0].count / data.limit),

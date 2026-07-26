@@ -53,16 +53,6 @@ type LoanItem = {
   dateGiven: string;
 };
 
-function isToday(dateStr: string): boolean {
-  const today = new Date();
-  const d = new Date(dateStr + 'T00:00:00');
-  return (
-    d.getFullYear() === today.getFullYear() &&
-    d.getMonth() === today.getMonth() &&
-    d.getDate() === today.getDate()
-  );
-}
-
 function loanDisplayPriority(loan: LoanItem): number {
   if (loan.status === 'completed') return 3;
   if (!loan.nextPayment) return 2;
@@ -109,18 +99,11 @@ function LoansPage() {
   // chips never changes the numbers on the other chips.
   const statusCounts = (list.meta.statusCounts ?? {}) as Partial<Record<string, number>>;
 
-  // Memoised because infinite scroll can accumulate hundreds of rows: without this, a
-  // full scan plus a sort would run on every render, including every keystroke.
-  const { overdueCount, dueTodayCount } = useMemo(() => {
-    let overdue = 0;
-    let dueToday = 0;
-    for (const loan of items) {
-      if (!loan.nextPayment) continue;
-      if (loan.nextPayment.status === 'overdue') overdue++;
-      else if (isToday(loan.nextPayment.dueDate)) dueToday++;
-    }
-    return { overdueCount: overdue, dueTodayCount: dueToday };
-  }, [items]);
+  // From the server, over every loan the filters match. Counting the loaded rows instead
+  // made desktop stop at the page size and mobile climb as infinite scroll appended.
+  const urgencyCounts = (list.meta.urgencyCounts ?? {}) as { overdue?: number; dueToday?: number };
+  const overdueCount = urgencyCounts.overdue ?? 0;
+  const dueTodayCount = urgencyCounts.dueToday ?? 0;
 
   const statusOptions = [
     { value: 'all', label: t('common.all') },
