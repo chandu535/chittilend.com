@@ -283,7 +283,7 @@ function LoansPage() {
               <tbody className="divide-y divide-slate-50">
                 {sortedLoans.map((loan, index) => {
                   const progress = parseFloat(loan.totalRepayment) > 0
-                    ? Math.round((parseFloat(loan.paidAmount) / parseFloat(loan.totalRepayment)) * 100)
+                    ? Math.min(100, Math.round((parseFloat(loan.paidAmount) / parseFloat(loan.totalRepayment)) * 100))
                     : 0;
                   const nextOverdue = loan.nextPayment?.status === 'overdue';
                   const nextPartial = loan.nextPayment?.status === 'partial';

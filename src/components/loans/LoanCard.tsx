@@ -127,7 +127,8 @@ function LoanCardImpl({
     ? details.payments.reduce((sum, payment) => sum + parseFloat(payment.amountPaid), 0)
     : parseFloat(paidAmountProp);
   const repaymentAmount = details ? parseFloat(details.totalRepayment) : parseFloat(totalRepayment);
-  const progress = repaymentAmount > 0 ? (paidAmount / repaymentAmount) * 100 : 0;
+  // Capped for the same reason as the detail screen — see the note there.
+  const progress = repaymentAmount > 0 ? Math.min(100, (paidAmount / repaymentAmount) * 100) : 0;
 
   const loadDetails = useCallback(async () => {
     setFetching(true);

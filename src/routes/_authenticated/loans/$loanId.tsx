@@ -129,8 +129,10 @@ function LoanDetailPage() {
     .filter((p) => p.status === 'paid' || p.status === 'partial')
     .reduce((sum, p) => sum + parseFloat(p.amountPaid), 0);
   const outstanding = parseFloat(loan.totalRepayment) - totalPaid;
+  // Capped at 100: a borrower can pay more than the amount repayable, and a 101% bar
+  // overflows its track and reads as a bug rather than as an overpayment.
   const progress = parseFloat(loan.totalRepayment) > 0
-    ? (totalPaid / parseFloat(loan.totalRepayment)) * 100
+    ? Math.min(100, (totalPaid / parseFloat(loan.totalRepayment)) * 100)
     : 0;
   const isValidIndianMobile = /^[6-9]\d{9}$/.test(loan.borrower.mobile);
   const hasOverduePayment = loan.payments.some(
