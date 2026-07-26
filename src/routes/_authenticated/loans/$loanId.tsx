@@ -20,6 +20,9 @@ import { formatPhone } from '@/lib/formatters';
 import { useScrollLock } from '@/lib/useScrollLock';
 import { toast } from '@/components/ui/Toast';
 import { clsx } from 'clsx';
+import { useStore } from '@tanstack/react-store';
+import { authStore } from '@/lib/stores';
+import { can } from '@/lib/permissions';
 
 export const Route = createFileRoute('/_authenticated/loans/$loanId')({
   component: LoanDetailPage,
@@ -40,6 +43,7 @@ type PaymentItem = {
 function LoanDetailPage() {
   const { loanId } = Route.useParams();
   const { t } = useTranslation();
+  const user = useStore(authStore, (s) => s.user);
   const [loan, setLoan] = useState<Awaited<ReturnType<typeof getLoanById>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(null);
@@ -166,9 +170,12 @@ function LoanDetailPage() {
     }
   };
 
-  const canDefault = loan.status === 'active' || loan.status === 'extended';
-  const canRevertActive = loan.status === 'defaulted';
-  const canExtend = loan.status === 'active' || loan.status === 'extended';
+  const canWriteLoans = can(user, 'loans.write');
+  const canMarkPayments = can(user, 'payments.write');
+  const canSendMessages = can(user, 'messages.send');
+  const canDefault = canWriteLoans && (loan.status === 'active' || loan.status === 'extended');
+  const canRevertActive = canWriteLoans && loan.status === 'defaulted';
+  const canExtend = canWriteLoans && (loan.status === 'active' || loan.status === 'extended');
   const paidInstallmentsForModal = loan.payments.filter((p) => p.status === 'paid').length;
 
   return (
@@ -189,7 +196,8 @@ function LoanDetailPage() {
           </Badge>
         </div>
 
-        {/* Actions menu */}
+        {/* Actions menu. Hidden outright when the role can use none of it. */}
+        {canWriteLoans && (
         <div className="relative shrink-0" ref={menuRef}>
           <button
             type="button"
@@ -234,6 +242,7 @@ function LoanDetailPage() {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* ── Section 1: Borrower ── */}
@@ -258,7 +267,7 @@ function LoanDetailPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </Link>
-        {isValidIndianMobile && (
+        {isValidIndianMobile && canSendMessages && (
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <Button
               variant="secondary"
@@ -402,7 +411,7 @@ function LoanDetailPage() {
         </div>
         <PaymentTimeline
           payments={loan.payments}
-          onPaymentTap={(payment) => setSelectedPayment(payment as PaymentItem)}
+          onPaymentTap={canMarkPayments ? (payment) => setSelectedPayment(payment as PaymentItem) : undefined}
         />
       </Card>
 
@@ -410,7 +419,7 @@ function LoanDetailPage() {
       <Card>
         <div className="flex items-center justify-between mb-2">
           <CardTitle>{t('common.notes')}</CardTitle>
-          {!editingNotes && (
+          {!editingNotes && canWriteLoans && (
             <button
               type="button"
               onClick={() => setEditingNotes(true)}

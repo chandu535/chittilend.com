@@ -20,6 +20,9 @@ import { useDebouncedValue } from '@/lib/useDebouncedValue';
 import { clsx } from 'clsx';
 import { ListPage } from '@/components/layout/PageLayout';
 import { ListError } from '@/components/shared/ListError';
+import { useStore } from '@tanstack/react-store';
+import { can } from '@/lib/permissions';
+import { authStore } from '@/lib/stores';
 
 export const Route = createFileRoute('/_authenticated/loans/')({
   component: LoansPage,
@@ -91,6 +94,9 @@ function LoansPage() {
 
   const { items, total, showSkeleton, refreshing } = list;
 
+  const user = useStore(authStore, (s) => s.user);
+  const canWriteLoans = can(user, 'loans.write');
+
   // Serial numbers continue across pages: row 11 on page 2 reads 11, not 1.
   // On mobile the pages accumulate, so the offset is always zero there.
   const serialStart = list.isDesktop ? (list.page - 1) * list.pageSize : 0;
@@ -126,9 +132,11 @@ function LoansPage() {
       {/* Title row */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-[22px] font-semibold text-slate-900 tracking-tight">{t('loans.title')}</h2>
-        <Link to="/loans/new">
-          <Button size="sm">{t('loans.newLoan')}</Button>
-        </Link>
+        {canWriteLoans && (
+          <Link to="/loans/new">
+            <Button size="sm">{t('loans.newLoan')}</Button>
+          </Link>
+        )}
       </div>
 
       {/* Controls. Stacked on mobile; a single row on desktop so the filters do not
@@ -206,9 +214,11 @@ function LoansPage() {
         <EmptyState
           title={t('loans.noLoans')}
           action={
-            <Link to="/loans/new">
-              <Button>{t('loans.newLoan')}</Button>
-            </Link>
+            canWriteLoans ? (
+              <Link to="/loans/new">
+                <Button>{t('loans.newLoan')}</Button>
+              </Link>
+            ) : undefined
           }
         />
       ) : (

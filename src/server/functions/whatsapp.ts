@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { loans, payments } from '../db/schema';
 import { getAuthenticatedUser } from '../middleware/auth';
-import { requireRole } from '../middleware/roleGuard';
+import { requirePermission } from '../middleware/roleGuard';
 
 const WHATSAPP_GRAPH_API_VERSION = 'v24.0';
 
@@ -227,7 +227,7 @@ export const sendPaymentWarningWhatsApp = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'messages.send');
     return sendWarningTemplate(data.loanId);
   });
 
@@ -244,7 +244,7 @@ export const sendLoanWelcomeWhatsApp = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'messages.send');
 
     const templateName = process.env.WHATSAPP_WELCOME_TEMPLATE_NAME;
     const templateLanguage = process.env.WHATSAPP_TEMPLATE_LANGUAGE;
@@ -413,6 +413,6 @@ export const sendLoanWhatsAppTemplate = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'messages.send');
     return sendReminderTemplate(data.loanId);
   });

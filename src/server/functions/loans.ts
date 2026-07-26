@@ -4,7 +4,7 @@ import { db } from '../db';
 import { loans, payments, borrowers, capitalPoolLog } from '../db/schema';
 import { createLoanSchema } from '../validators/loan';
 import { getAuthenticatedUser } from '../middleware/auth';
-import { requireRole } from '../middleware/roleGuard';
+import { requireRole, requirePermission } from '../middleware/roleGuard';
 import { calculateLoan, calculateStartMonth, generatePaymentSchedule } from '@/lib/calculations';
 import { DEFAULTS } from '@/lib/constants';
 
@@ -268,7 +268,7 @@ export const createLoan = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'loans.write');
 
     // Server-side calculation — NEVER trust client values
     const calc = calculateLoan(
@@ -361,7 +361,7 @@ export const updateLoan = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'loans.write');
 
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (data.notes !== undefined) updateData.notes = data.notes;
@@ -389,7 +389,7 @@ export const extendTenure = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'loans.write');
 
     const loan = await db.query.loans.findFirst({
       where: eq(loans.id, data.id),
@@ -479,7 +479,7 @@ export const changeStatus = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'loans.write');
 
     const [updated] = await db
       .update(loans)

@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { borrowers, loans } from '../db/schema';
 import { getAuthenticatedUser } from '../middleware/auth';
-import { requireRole } from '../middleware/roleGuard';
+import { requirePermission } from '../middleware/roleGuard';
 
 function validateToken(data: unknown): { token: string } {
   const token = (data as { token?: string }).token;
@@ -101,7 +101,7 @@ export const acceptLoanAsOwner = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'loans.write');
 
     const [loan] = await db
       .select({ id: loans.id, ownerAcceptedAt: loans.ownerAcceptedAt })

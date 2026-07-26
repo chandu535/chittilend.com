@@ -5,7 +5,7 @@ import { db } from '../db';
 import { payments, loans, borrowers, capitalPoolLog } from '../db/schema';
 import { markPaymentSchema, markWaivedSchema } from '../validators/payment';
 import { getAuthenticatedUser } from '../middleware/auth';
-import { requireRole } from '../middleware/roleGuard';
+import { requireRole, requirePermission } from '../middleware/roleGuard';
 import { sendPaymentReceipt, sendLoanClosed } from './whatsapp';
 import { DEFAULTS } from '@/lib/constants';
 
@@ -38,7 +38,7 @@ export const markPaymentPaid = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'payments.write');
 
     const [payment] = await db
       .select()
@@ -130,7 +130,7 @@ export const markPaymentPartial = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'payments.write');
 
     const [payment] = await db
       .select()
@@ -215,7 +215,7 @@ export const markPaymentWaived = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'payments.write');
 
     const [updated] = await db
       .update(payments)
@@ -382,7 +382,7 @@ export const revertPayment = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'payments.write');
 
     const [payment] = await db
       .select()
@@ -457,6 +457,11 @@ export const revertPayment = createServerFn({ method: 'POST' })
     return updated;
   });
 
+/**
+ * Housekeeping, not a user action: flips instalments whose due date has passed to
+ * overdue. The dashboard and the overdue tab call it on load, so it stays open to
+ * both roles — it records no money and decides nothing a person chose.
+ */
 export const bulkUpdateOverdueStatus = createServerFn({ method: 'POST' }).handler(async () => {
   const user = await getAuthenticatedUser();
   requireRole(user, ['admin', 'manager']);

@@ -204,7 +204,7 @@ export const listNotifications = createServerFn({ method: 'GET' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin']);
+    requireRole(user, ['admin', 'manager']);
 
     const rows = await db
       .select({

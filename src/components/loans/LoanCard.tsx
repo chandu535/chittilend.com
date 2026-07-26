@@ -10,6 +10,9 @@ import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
 import { PaymentTimeline } from './PaymentTimeline';
 import { PaymentMarkModal } from './PaymentMarkModal';
 import { getLoanById } from '@/server/functions/loans';
+import { useStore } from '@tanstack/react-store';
+import { authStore } from '@/lib/stores';
+import { can } from '@/lib/permissions';
 
 type LoanDetail = Awaited<ReturnType<typeof getLoanById>>;
 type PaymentItem = LoanDetail['payments'][0];
@@ -101,6 +104,8 @@ function LoanCardImpl({
   const [details, setDetails] = useState<LoanDetail | null>(null);
   const [fetching, setFetching] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(null);
+  const user = useStore(authStore, (s) => s.user);
+  const canMarkPayments = can(user, 'payments.write');
   const [nextPayment, setNextPayment] = useState<NextPayment | null>(nextPaymentProp ?? null);
 
   useEffect(() => { setNextPayment(nextPaymentProp ?? null); }, [nextPaymentProp]);
@@ -246,14 +251,14 @@ function LoanCardImpl({
                 {pill.label}
               </span>
 
-              {/* Quick-pay chip */}
+              {/* Quick-pay chip. Only offered to a role that may actually mark a payment. */}
               {status === 'completed' ? null : paidForCurrentMonth ? (
                 <div className="h-10 w-10 flex items-center justify-center rounded-2xl border border-slate-200 bg-white">
                   <svg className="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-              ) : nextPayment ? (
+              ) : nextPayment && canMarkPayments ? (
                 <button
                   type="button"
                   onClick={handleQuickMark}
@@ -432,7 +437,7 @@ function LoanCardImpl({
                   </p>
                   <PaymentTimeline
                     payments={details.payments}
-                    onPaymentTap={(p) => setSelectedPayment(p as PaymentItem)}
+                    onPaymentTap={canMarkPayments ? (p) => setSelectedPayment(p as PaymentItem) : undefined}
                   />
                 </div>
               </div>

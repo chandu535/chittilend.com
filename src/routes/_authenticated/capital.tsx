@@ -15,6 +15,9 @@ import { NameDisplay } from '@/components/shared/NameDisplay';
 import { toast } from '@/components/ui/Toast';
 import { getCapitalBalance, getCapitalLog, addInvestment } from '@/server/functions/capital';
 import { useScrollLock } from '@/lib/useScrollLock';
+import { useStore } from '@tanstack/react-store';
+import { can } from '@/lib/permissions';
+import { authStore } from '@/lib/stores';
 
 export const Route = createFileRoute('/_authenticated/capital')({
   component: CapitalPage,
@@ -45,6 +48,8 @@ function CapitalPage() {
   const [log, setLog] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInvestModal, setShowInvestModal] = useState(false);
+  const user = useStore(authStore, (s) => s.user);
+  const canWrite = can(user, 'capital.write');
 
   // Filters
   const [eventType, setEventType] = useState('all');
@@ -78,9 +83,11 @@ function CapitalPage() {
       <div className="max-w-2xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-900">{t('capital.title')}</h2>
-        <Button size="sm" onClick={() => setShowInvestModal(true)}>
-          {t('capital.addInvestment')}
-        </Button>
+        {canWrite && (
+          <Button size="sm" onClick={() => setShowInvestModal(true)}>
+            {t('capital.addInvestment')}
+          </Button>
+        )}
       </div>
 
       {/* Balance Card */}
@@ -184,7 +191,7 @@ function CapitalPage() {
       </Card>
 
       {/* Add Investment Modal */}
-      {showInvestModal && (
+      {showInvestModal && canWrite && (
         <InvestmentModal
           onClose={() => setShowInvestModal(false)}
           onSuccess={() => {

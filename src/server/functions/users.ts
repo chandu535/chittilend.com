@@ -4,7 +4,7 @@ import { hash } from 'bcryptjs';
 import { db } from '../db';
 import { users } from '../db/schema';
 import { getAuthenticatedUser } from '../middleware/auth';
-import { requireRole } from '../middleware/roleGuard';
+import { requireRole, requirePermission } from '../middleware/roleGuard';
 
 export const listManagers = createServerFn({ method: 'GET' }).handler(async () => {
   const user = await getAuthenticatedUser();
@@ -42,7 +42,7 @@ export const createManager = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin']);
+    requirePermission(user, 'users.manage');
 
     // Check if email already exists
     const [existing] = await db
@@ -85,7 +85,7 @@ export const toggleManagerActive = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin']);
+    requirePermission(user, 'users.manage');
 
     // Get current state
     const [manager] = await db

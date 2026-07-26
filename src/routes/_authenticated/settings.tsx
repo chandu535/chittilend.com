@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState, useEffect } from 'react';
@@ -12,8 +12,13 @@ import { toast } from '@/components/ui/Toast';
 import { listManagers, createManager, toggleManagerActive } from '@/server/functions/users';
 import { NotificationLog } from '@/components/settings/NotificationLog';
 import { useScrollLock } from '@/lib/useScrollLock';
+import { can } from '@/lib/permissions';
 
 export const Route = createFileRoute('/_authenticated/settings')({
+  // Typing the URL is not a way around a hidden button.
+  beforeLoad: ({ context }) => {
+    if (!can(context.user, 'users.manage')) throw redirect({ to: '/dashboard' });
+  },
   component: SettingsPage,
 });
 

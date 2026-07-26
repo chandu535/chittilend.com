@@ -5,7 +5,7 @@ import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from '@/lib/r2';
 import { db } from '../db';
 import { borrowers } from '../db/schema';
 import { getAuthenticatedUser } from '../middleware/auth';
-import { requireRole } from '../middleware/roleGuard';
+import { requirePermission } from '../middleware/roleGuard';
 
 export const uploadBorrowerPhoto = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => {
@@ -26,7 +26,7 @@ export const uploadBorrowerPhoto = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'borrowers.write');
 
     const ext = data.contentType === 'image/jpeg' ? 'jpg' : data.contentType.split('/')[1];
     const fileKey = `borrowers/${data.borrowerId}/${data.docType}/${Date.now()}.${ext}`;

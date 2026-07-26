@@ -5,7 +5,7 @@ import { db } from '../db';
 import { borrowers, loans } from '../db/schema';
 import { createBorrowerSchema, updateBorrowerSchema } from '../validators/borrower';
 import { getAuthenticatedUser } from '../middleware/auth';
-import { requireRole } from '../middleware/roleGuard';
+import { requireRole, requirePermission } from '../middleware/roleGuard';
 import { DEFAULTS } from '@/lib/constants';
 
 export const listBorrowers = createServerFn({ method: 'GET' })
@@ -114,7 +114,7 @@ export const createBorrower = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'borrowers.write');
 
     // Check duplicate mobile
     const existing = await db
@@ -165,7 +165,7 @@ export const updateBorrower = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'borrowers.write');
 
     const { id, ...updateData } = data;
 
@@ -207,7 +207,7 @@ export const generateNewMagicLink = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'borrowers.write');
 
     const portalToken = randomBytes(DEFAULTS.PORTAL_TOKEN_LENGTH).toString('hex');
 
@@ -262,7 +262,7 @@ export const deleteBorrower = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
+    requirePermission(user, 'borrowers.delete');
 
     // Check for active loans before deleting (DB has onDelete: 'restrict')
     const activeLoans = await db

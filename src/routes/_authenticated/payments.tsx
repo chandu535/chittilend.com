@@ -18,6 +18,9 @@ import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { NameDisplay } from '@/components/shared/NameDisplay';
 import { PaymentMarkModal } from '@/components/loans/PaymentMarkModal';
+import { useStore } from '@tanstack/react-store';
+import { can } from '@/lib/permissions';
+import { authStore } from '@/lib/stores';
 import {
   listUpcomingPayments,
   listOverduePayments,
@@ -81,7 +84,10 @@ function PaymentsPage() {
     { key: 'recent', label: t('payments.recent') },
   ];
 
-  const isActionable = tab !== 'recent';
+  // Recent payments are history, and a manager may not mark anything, so neither gets
+  // an action column.
+  const user = useStore(authStore, (s) => s.user);
+  const isActionable = tab !== 'recent' && can(user, 'payments.write');
 
   return (
     <ListPage

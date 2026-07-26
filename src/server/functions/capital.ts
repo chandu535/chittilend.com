@@ -3,7 +3,7 @@ import { eq, and, gte, lte, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { capitalPoolLog, loans, borrowers } from '../db/schema';
 import { getAuthenticatedUser } from '../middleware/auth';
-import { requireRole } from '../middleware/roleGuard';
+import { requireRole, requirePermission } from '../middleware/roleGuard';
 
 export const getCapitalBalance = createServerFn({ method: 'GET' }).handler(async () => {
   const user = await getAuthenticatedUser();
@@ -88,7 +88,7 @@ export const addInvestment = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requireRole(user, ['admin']);
+    requirePermission(user, 'capital.write');
 
     // Get current balance
     const lastEntry = await db

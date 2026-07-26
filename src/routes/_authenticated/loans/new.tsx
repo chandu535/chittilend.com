@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, redirect } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState, useMemo } from 'react';
@@ -17,8 +17,13 @@ import { toast } from '@/components/ui/Toast';
 import { searchBorrowers, createBorrower, updateBorrower } from '@/server/functions/borrowers';
 import { createLoan } from '@/server/functions/loans';
 import { calculateLoan, calculateStartMonth, generatePaymentSchedule } from '@/lib/calculations';
+import { can } from '@/lib/permissions';
 
 export const Route = createFileRoute('/_authenticated/loans/new')({
+  // Typing the URL is not a way around a hidden button.
+  beforeLoad: ({ context }) => {
+    if (!can(context.user, 'loans.write')) throw redirect({ to: '/loans' });
+  },
   component: NewLoanPage,
 });
 
