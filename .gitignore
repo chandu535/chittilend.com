@@ -3,7 +3,10 @@ node_modules
 dist
 dist-ssr
 *.local
+# Every env file, not just the bare one — .env alone does not match .env.prod
 .env
+.env.*
+!.env.example
 .nitro
 .tanstack
 .wrangler
@@ -14,3 +17,6 @@ todos.json
 
 # Vercel build output — regenerated on every deploy
 .vercel
+
+# Extracted legacy ledger — contains borrower PII and photographs
+.extract

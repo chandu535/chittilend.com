@@ -1,5 +1,5 @@
 {
-  "name": "chittilend",
+  "name": "sripay",
   "private": true,
   "type": "module",
   "imports": {
@@ -17,7 +17,9 @@
     "db:seed": "npx tsx src/server/db/seed.ts",
     "db:backfill-loan-numbers": "npx tsx src/server/db/backfill-loan-numbers.ts",
     "db:backfill-name-telugu": "npx tsx --env-file=.env src/server/db/backfill-name-telugu.ts",
-    "qr:generate": "npx tsx --env-file=.env scripts/generate-upi-qr.ts"
+    "qr:generate": "npx tsx --env-file=.env scripts/generate-upi-qr.ts",
+    "seed:prod": "npx tsx --env-file=.env.prod scripts/seed-ledger.ts",
+    "dev:prod": "node --env-file=.env.prod ./node_modules/.bin/vite dev --port 3005"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1000.0",
