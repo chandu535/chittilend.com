@@ -21,7 +21,7 @@
  */
 import { eq, asc, sql } from 'drizzle-orm';
 import { db } from '../src/server/db';
-import { loans, payments } from '../src/server/db/schema';
+import { loans, payments, capitalPoolLog } from '../src/server/db/schema';
 
 const WRITE = process.argv.includes('--write');
 const money = (n: number) => n.toFixed(2);
@@ -110,6 +110,14 @@ async function main() {
 
     if (!WRITE) continue;
 
+    // The capital pool has a collection entry against each of these rows. That money was
+    // genuinely collected and stays in the pool — only the pointer to a row about to
+    // disappear is cleared, and the loan reference is kept so the entry stays traceable.
+    for (const p of phantom) {
+      await db.update(capitalPoolLog)
+        .set({ referencePaymentId: null })
+        .where(eq(capitalPoolLog.referencePaymentId, p.id));
+    }
     for (const p of phantom) await db.delete(payments).where(eq(payments.id, p.id));
     for (const d of desired) {
       await db.update(payments).set({

@@ -180,7 +180,16 @@ async function main() {
     // Planned tenure: the app's 5-month default, widened when the sheet shows more
     // instalments were actually taken.
     const totalInstallments = Math.max(5, l.payments.length);
-    const installmentAmount = l.totalRepayment / totalInstallments;
+    // The last instalment absorbs the rounding, exactly as generatePaymentSchedule does,
+    // so the schedule sums to the amount repayable to the paisa. Splitting evenly left
+    // Rs 25,000 over six months as 6 x 4166.67 = 25,000.02, and the final instalment then
+    // read "partial" two paise short on a loan that was fully repaid.
+    const repayable = l.totalRepayment;
+    const installmentAmount = repayable / totalInstallments;
+    const evenShare = Math.round(installmentAmount * 100) / 100;
+    const dueFor = (n: number) => n === totalInstallments - 1
+      ? repayable - evenShare * (totalInstallments - 1)
+      : evenShare;
     const serviceCharge = l.primaryAmount * (l.serviceChargePercent / 100);
     const start = startMonth(l.dateGiven);
     // Completion is decided by the instalments, not by the money total. Deciding it on
@@ -204,7 +213,8 @@ async function main() {
     const rows: Array<Omit<typeof payments.$inferInsert, 'loanId'>> = [];
     for (let n = 0; n < totalInstallments; n++) {
       const due = new Date(start.getFullYear(), start.getMonth() + n, 1);
-      const take = Math.min(pool, installmentAmount);
+      const rowDue = dueFor(n);
+      const take = Math.min(pool, rowDue);
       pool -= take;
 
       let paidDate: string | null = null;
@@ -225,10 +235,10 @@ async function main() {
       rows.push({
         installmentNumber: n + 1,
         dueDate: dueStr,
-        amountDue: money(installmentAmount),
+        amountDue: money(rowDue),
         amountPaid: money(take),
         paidDate,
-        status: take >= installmentAmount - 0.01 ? 'paid'
+        status: take >= rowDue - 0.01 ? 'paid'
           : take > 0 ? 'partial'
           : dueStr <= todayStr ? 'overdue' : 'pending',
         paymentMethod: take > 0 ? 'cash' : null,
