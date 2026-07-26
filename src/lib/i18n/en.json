@@ -366,5 +366,10 @@
     "connectionBody": "You're online, but the server didn't respond. This is usually brief — please try again.",
     "retry": "Try again",
     "loadFailed": "Couldn't load this list"
+  },
+  "install": {
+    "title": "Install SriPay",
+    "subtitle": "Add it to your home screen",
+    "action": "Install"
   }
 }
