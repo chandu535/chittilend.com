@@ -43,9 +43,22 @@ export const listLoans = createServerFn({ method: 'GET' })
     requireRole(user, ['admin', 'manager']);
 
     const offset = (data.page - 1) * data.limit;
+
+    // The next instalment still owing, per loan — the same one the rows, the sort, the
+    // overdue filter and the overdue count all read, so they can never disagree.
+    const nextStatus = sql`(SELECT p.status FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1)`;
+    const nextDue = sql`(SELECT p.due_date FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1)`;
+    // "Today" in IST. The server runs on UTC, where CURRENT_DATE is still yesterday for
+    // the last five and a half hours of the Indian day.
+    const istToday = sql`(now() AT TIME ZONE 'Asia/Kolkata')::date`;
+
     const conditions = [];
 
-    if (data.status && data.status !== 'all') {
+    // "Overdue" is not a loan status — it is a loan whose next instalment is overdue, so
+    // it cuts across active and extended rather than sitting beside them.
+    if (data.status === 'overdue') {
+      conditions.push(sql`${nextStatus} = 'overdue'`);
+    } else if (data.status && data.status !== 'all') {
       conditions.push(eq(loans.status, data.status as 'active' | 'completed' | 'defaulted' | 'extended'));
     }
 
@@ -73,13 +86,6 @@ export const listLoans = createServerFn({ method: 'GET' })
     if (data.search) facetConditions.push(ilike(borrowers.name, `%${data.search}%`));
 
     const facetWhere = facetConditions.length > 0 ? and(...facetConditions) : undefined;
-
-    // The next instalment still owing, per loan — the same one the rows and the sort use.
-    const nextStatus = sql`(SELECT p.status FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1)`;
-    const nextDue = sql`(SELECT p.due_date FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1)`;
-    // "Today" in IST. The server runs on UTC, where CURRENT_DATE is still yesterday for
-    // the last five and a half hours of the Indian day.
-    const istToday = sql`(now() AT TIME ZONE 'Asia/Kolkata')::date`;
 
     // Counted over the whole filtered set, not the loaded page. Deriving these on the
     // client counted only the rows in hand, so desktop capped them at the page size while
@@ -109,14 +115,18 @@ export const listLoans = createServerFn({ method: 'GET' })
     const statusCounts = {
       all: 0,
       active: 0,
+      overdue: 0,
       completed: 0,
       defaulted: 0,
       extended: 0,
-    } as Record<'all' | 'active' | 'completed' | 'defaulted' | 'extended', number>;
+    } as Record<'all' | 'active' | 'overdue' | 'completed' | 'defaulted' | 'extended', number>;
     for (const row of facetRows) {
       statusCounts[row.status] = row.count;
       statusCounts.all += row.count;
     }
+    // Set after the loop, never added into `all`: an overdue loan is also an active one,
+    // so counting it again would make the chips sum to more than the list holds.
+    statusCounts.overdue = urgencyCounts.overdue;
 
     // If searching by borrower name, join
     if (data.search) {

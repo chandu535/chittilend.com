@@ -23,6 +23,7 @@ import { ListError } from '@/components/shared/ListError';
 import { useStore } from '@tanstack/react-store';
 import { can } from '@/lib/permissions';
 import { authStore } from '@/lib/stores';
+import { BorrowerFilter, type BorrowerOption } from '@/components/loans/BorrowerFilter';
 
 export const Route = createFileRoute('/_authenticated/loans/')({
   component: LoansPage,
@@ -74,22 +75,25 @@ function LoansPage() {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
+  const [borrower, setBorrower] = useState<BorrowerOption | null>(null);
   // Debounced so typing does not fire a request per keystroke.
   const debouncedSearch = useDebouncedValue(search, 300);
+  const borrowerId = borrower?.id ?? '';
 
   const fetchPage = useCallback(
-    (p: number, size: number) => listLoans({ data: { page: p, limit: size, status, search: debouncedSearch } }),
-    [status, debouncedSearch],
+    (p: number, size: number) =>
+      listLoans({ data: { page: p, limit: size, status, search: debouncedSearch, borrowerId } }),
+    [status, debouncedSearch, borrowerId],
   );
   const cacheKey = useCallback(
-    (p: number, size: number) => `loans:${p}:${size}:${status}:${debouncedSearch}`,
-    [status, debouncedSearch],
+    (p: number, size: number) => `loans:${p}:${size}:${status}:${debouncedSearch}:${borrowerId}`,
+    [status, debouncedSearch, borrowerId],
   );
 
   const list = usePaginatedList<LoanItem>({
     cacheKey,
     fetchPage: fetchPage as (p: number, size: number) => Promise<PageResult<LoanItem>>,
-    resetKey: `${status}|${debouncedSearch}`,
+    resetKey: `${status}|${debouncedSearch}|${borrowerId}`,
   });
 
   const { items, total, showSkeleton, refreshing } = list;
@@ -107,13 +111,16 @@ function LoansPage() {
 
   // From the server, over every loan the filters match. Counting the loaded rows instead
   // made desktop stop at the page size and mobile climb as infinite scroll appended.
+  // The overdue figure arrives inside statusCounts, since it labels a chip now.
   const urgencyCounts = (list.meta.urgencyCounts ?? {}) as { overdue?: number; dueToday?: number };
-  const overdueCount = urgencyCounts.overdue ?? 0;
   const dueTodayCount = urgencyCounts.dueToday ?? 0;
 
+  // Overdue sits next to active because that is where the eye goes first, and it cuts
+  // across the others rather than being a status of its own: an overdue loan is active.
   const statusOptions = [
     { value: 'all', label: t('common.all') },
     { value: 'active', label: t('loans.statusActive') },
+    { value: 'overdue', label: t('loans.statusOverdue') },
     { value: 'completed', label: t('loans.statusCompleted') },
     { value: 'defaulted', label: t('loans.statusDefaulted') },
     { value: 'extended', label: t('loans.statusExtended') },
@@ -156,6 +163,8 @@ function LoansPage() {
           />
         </div>
 
+        <BorrowerFilter value={borrower} onChange={setBorrower} />
+
         {/* The selected chip is the only filled one, so the active filter reads at a glance. */}
         <div
           role="group"
@@ -173,22 +182,13 @@ function LoansPage() {
           ))}
         </div>
 
-        {/* Read-only counts. Not filters — the list cannot be narrowed to them. */}
-        {(overdueCount > 0 || dueTodayCount > 0) && (
-          <div className="flex shrink-0 items-center gap-3 whitespace-nowrap text-xs">
-            {overdueCount > 0 && (
-              <span className="flex items-center gap-1.5 text-red-600">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                {overdueCount} overdue
-              </span>
-            )}
-            {dueTodayCount > 0 && (
-              <span className="flex items-center gap-1.5 text-amber-600">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                {dueTodayCount} due today
-              </span>
-            )}
-          </div>
+        {/* Overdue used to sit here as a read-only number; it is a chip now, so only
+            due-today remains as an indicator. */}
+        {dueTodayCount > 0 && (
+          <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs text-amber-600">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+            {dueTodayCount} due today
+          </span>
         )}
       </div>
       </>}

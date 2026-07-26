@@ -103,6 +103,7 @@
     "remaining": "మిగిలినది",
     "progress": "{{total, number}} లో {{paid, number}} చెల్లించారు",
     "statusActive": "చురుకైన",
+    "statusOverdue": "గడువు దాటింది",
     "statusCompleted": "పూర్తయింది",
     "statusDefaulted": "ఎగవేసింది",
     "statusExtended": "పొడిగించబడింది",
@@ -151,7 +152,11 @@
     "installmentAmount": "వాయిదా",
     "loanNo": "రుణ #",
     "sendWhatsAppWarning": "బాకీ హెచ్చరిక పంపండి",
-    "whatsappWarningSent": "హెచ్చరిక పంపబడింది"
+    "whatsappWarningSent": "హెచ్చరిక పంపబడింది",
+    "filterBorrower": "అప్పుదారు",
+    "filterBorrowerClear": "అప్పుదారు ఫిల్టర్ తీసివేయండి",
+    "filterBorrowerSearch": "పేరు లేదా మొబైల్ వెతకండి",
+    "filterBorrowerHint": "పేరు లేదా మొబైల్ నంబర్ టైప్ చేయండి"
   },
   "payments": {
     "title": "చెల్లింపులు",

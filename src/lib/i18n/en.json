@@ -103,6 +103,7 @@
     "remaining": "Remaining",
     "progress": "{{paid, number}} of {{total, number}} paid",
     "statusActive": "Active",
+    "statusOverdue": "Overdue",
     "statusCompleted": "Completed",
     "statusDefaulted": "Defaulted",
     "statusExtended": "Extended",
@@ -154,7 +155,11 @@
     "installmentAmount": "Instalment",
     "loanNo": "Loan #",
     "sendWhatsAppWarning": "Send overdue warning",
-    "whatsappWarningSent": "Warning sent"
+    "whatsappWarningSent": "Warning sent",
+    "filterBorrower": "Borrower",
+    "filterBorrowerClear": "Clear borrower filter",
+    "filterBorrowerSearch": "Search name or mobile",
+    "filterBorrowerHint": "Type a name or mobile number"
   },
   "payments": {
     "title": "Payments",
