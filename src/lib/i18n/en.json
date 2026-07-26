@@ -34,7 +34,8 @@
     "perPage": "{{count}}/page",
     "goTo": "Go to",
     "previous": "Previous",
-    "serial": "#"
+    "serial": "#",
+    "refresh": "Refresh"
   },
   "nav": {
     "home": "Home",
@@ -151,7 +152,9 @@
     "welcomeSentOn": "Welcome sent",
     "loanNumber": "Loan number",
     "installmentAmount": "Instalment",
-    "loanNo": "Loan #"
+    "loanNo": "Loan #",
+    "sendWhatsAppWarning": "Send overdue warning",
+    "whatsappWarningSent": "Warning sent"
   },
   "payments": {
     "title": "Payments",
@@ -308,7 +311,10 @@
     "managerEmail": "Manager Email",
     "managerPassword": "Temporary Password",
     "deactivate": "Deactivate",
-    "activate": "Activate"
+    "activate": "Activate",
+    "notifications": "WhatsApp notifications",
+    "noNotifications": "Nothing sent yet",
+    "notificationsFailed": "{{count}} failed"
   },
   "time": {
     "today": "Today",

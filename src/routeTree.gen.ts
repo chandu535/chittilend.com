@@ -21,6 +21,7 @@ import { Route as AuthenticatedCapitalRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedLoansIndexRouteImport } from './routes/_authenticated/loans/index'
 import { Route as AuthenticatedBorrowersIndexRouteImport } from './routes/_authenticated/borrowers/index'
+import { Route as ApiCronRemindersRouteImport } from './routes/api/cron/reminders'
 import { Route as AuthenticatedLoansNewRouteImport } from './routes/_authenticated/loans/new'
 import { Route as AuthenticatedLoansLoanIdRouteImport } from './routes/_authenticated/loans/$loanId'
 import { Route as AuthenticatedBorrowersNewRouteImport } from './routes/_authenticated/borrowers/new'
@@ -87,6 +88,11 @@ const AuthenticatedBorrowersIndexRoute =
     path: '/borrowers/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const ApiCronRemindersRoute = ApiCronRemindersRouteImport.update({
+  id: '/api/cron/reminders',
+  path: '/api/cron/reminders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedLoansNewRoute = AuthenticatedLoansNewRouteImport.update({
   id: '/loans/new',
   path: '/loans/new',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/borrowers/new': typeof AuthenticatedBorrowersNewRoute
   '/loans/$loanId': typeof AuthenticatedLoansLoanIdRoute
   '/loans/new': typeof AuthenticatedLoansNewRoute
+  '/api/cron/reminders': typeof ApiCronRemindersRoute
   '/borrowers/': typeof AuthenticatedBorrowersIndexRoute
   '/loans/': typeof AuthenticatedLoansIndexRoute
 }
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/borrowers/new': typeof AuthenticatedBorrowersNewRoute
   '/loans/$loanId': typeof AuthenticatedLoansLoanIdRoute
   '/loans/new': typeof AuthenticatedLoansNewRoute
+  '/api/cron/reminders': typeof ApiCronRemindersRoute
   '/borrowers': typeof AuthenticatedBorrowersIndexRoute
   '/loans': typeof AuthenticatedLoansIndexRoute
 }
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/_authenticated/borrowers/new': typeof AuthenticatedBorrowersNewRoute
   '/_authenticated/loans/$loanId': typeof AuthenticatedLoansLoanIdRoute
   '/_authenticated/loans/new': typeof AuthenticatedLoansNewRoute
+  '/api/cron/reminders': typeof ApiCronRemindersRoute
   '/_authenticated/borrowers/': typeof AuthenticatedBorrowersIndexRoute
   '/_authenticated/loans/': typeof AuthenticatedLoansIndexRoute
 }
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/borrowers/new'
     | '/loans/$loanId'
     | '/loans/new'
+    | '/api/cron/reminders'
     | '/borrowers/'
     | '/loans/'
   fileRoutesByTo: FileRoutesByTo
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/borrowers/new'
     | '/loans/$loanId'
     | '/loans/new'
+    | '/api/cron/reminders'
     | '/borrowers'
     | '/loans'
   id:
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/_authenticated/borrowers/new'
     | '/_authenticated/loans/$loanId'
     | '/_authenticated/loans/new'
+    | '/api/cron/reminders'
     | '/_authenticated/borrowers/'
     | '/_authenticated/loans/'
   fileRoutesById: FileRoutesById
@@ -225,6 +237,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   PortalTokenRoute: typeof PortalTokenRoute
   UserPaymentAcceptanceConsentTokenRoute: typeof UserPaymentAcceptanceConsentTokenRoute
+  ApiCronRemindersRoute: typeof ApiCronRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -313,6 +326,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBorrowersIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/cron/reminders': {
+      id: '/api/cron/reminders'
+      path: '/api/cron/reminders'
+      fullPath: '/api/cron/reminders'
+      preLoaderRoute: typeof ApiCronRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/loans/new': {
       id: '/_authenticated/loans/new'
       path: '/loans/new'
@@ -383,6 +403,7 @@ const rootRouteChildren: RootRouteChildren = {
   PortalTokenRoute: PortalTokenRoute,
   UserPaymentAcceptanceConsentTokenRoute:
     UserPaymentAcceptanceConsentTokenRoute,
+  ApiCronRemindersRoute: ApiCronRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

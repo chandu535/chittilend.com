@@ -168,6 +168,25 @@ export const capitalPoolLog = pgTable('capital_pool_log', {
   index('capital_pool_event_type_idx').on(table.eventType),
 ]);
 
+// ----- NOTIFICATION LOG (idempotency + audit trail for WhatsApp sends) -----
+export const notificationLog = pgTable('notification_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  borrowerId: uuid('borrower_id').notNull().references(() => borrowers.id, { onDelete: 'cascade' }),
+  loanId: uuid('loan_id').references(() => loans.id, { onDelete: 'cascade' }),
+  template: varchar('template', { length: 64 }).notNull(),
+  // Calendar day the send belongs to, in IST. Together with loan + template this is the
+  // idempotency key: a cron retry or a redeploy mid-run cannot message twice.
+  scheduledFor: date('scheduled_for').notNull(),
+  status: varchar('status', { length: 16 }).notNull().default('sent'),
+  waMessageId: text('wa_message_id'),
+  error: text('error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('notification_log_dedupe_idx').on(table.loanId, table.template, table.scheduledFor),
+  index('notification_log_borrower_day_idx').on(table.borrowerId, table.scheduledFor),
+  index('notification_log_created_idx').on(table.createdAt),
+]);
+
 // ===================== RELATIONS =====================
 
 export const usersRelations = relations(users, ({ many }) => ({

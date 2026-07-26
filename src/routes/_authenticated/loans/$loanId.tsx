@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getLoanById, updateLoan, changeStatus } from '@/server/functions/loans';
-import { sendLoanWhatsAppTemplate } from '@/server/functions/whatsapp';
+import { sendLoanWhatsAppTemplate, sendPaymentWarningWhatsApp } from '@/server/functions/whatsapp';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
@@ -52,6 +52,7 @@ function LoanDetailPage() {
   const [notesValue, setNotesValue] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
   const [whatsAppSending, setWhatsAppSending] = useState(false);
+  const [warningSending, setWarningSending] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const borrowerDisplayName = useLocalizedName(loan?.borrower?.name ?? '', loan?.borrower?.nameTelugu);
 
@@ -132,6 +133,23 @@ function LoanDetailPage() {
     ? (totalPaid / parseFloat(loan.totalRepayment)) * 100
     : 0;
   const isValidIndianMobile = /^[6-9]\d{9}$/.test(loan.borrower.mobile);
+  const hasOverduePayment = loan.payments.some(
+    (p) => p.status === 'overdue'
+      || (p.status !== 'paid' && p.status !== 'waived' && p.dueDate < new Date().toISOString().split('T')[0]),
+  );
+
+  const handleWhatsAppWarning = async () => {
+    if (!isValidIndianMobile) return;
+    setWarningSending(true);
+    try {
+      await sendPaymentWarningWhatsApp({ data: { loanId } });
+      toast(t('loans.whatsappWarningSent'), 'success');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : t('errors.generic'), 'error');
+    } finally {
+      setWarningSending(false);
+    }
+  };
 
   const handleWhatsAppReminder = async () => {
     if (!isValidIndianMobile) return;
@@ -238,16 +256,32 @@ function LoanDetailPage() {
           </svg>
         </Link>
         {isValidIndianMobile && (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="mt-3 w-full"
-            onClick={handleWhatsAppReminder}
-            loading={whatsAppSending}
-            disabled={whatsAppSending}
-          >
-            {t('loans.sendWhatsAppReminder')}
-          </Button>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1"
+              onClick={handleWhatsAppReminder}
+              loading={whatsAppSending}
+              disabled={whatsAppSending || warningSending}
+            >
+              {t('loans.sendWhatsAppReminder')}
+            </Button>
+            {/* Only offered once the instalment is actually overdue — a warning sent
+                before the deadline would be both wrong and needlessly harsh. */}
+            {hasOverduePayment && (
+              <Button
+                variant="danger"
+                size="sm"
+                className="flex-1"
+                onClick={handleWhatsAppWarning}
+                loading={warningSending}
+                disabled={whatsAppSending || warningSending}
+              >
+                {t('loans.sendWhatsAppWarning')}
+              </Button>
+            )}
+          </div>
         )}
       </Card>
 

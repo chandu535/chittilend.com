@@ -10,6 +10,7 @@ import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { toast } from '@/components/ui/Toast';
 import { listManagers, createManager, toggleManagerActive } from '@/server/functions/users';
+import { NotificationLog } from '@/components/settings/NotificationLog';
 import { useScrollLock } from '@/lib/useScrollLock';
 
 export const Route = createFileRoute('/_authenticated/settings')({
@@ -140,6 +141,8 @@ function SettingsPage() {
           </div>
         )}
       </Card>
+
+      <NotificationLog />
 
       {/* Add Manager Modal */}
       {showAddModal && (

@@ -34,7 +34,8 @@
     "perPage": "{{count}}/పేజీ",
     "goTo": "వెళ్లండి",
     "previous": "మునుపటి",
-    "serial": "#"
+    "serial": "#",
+    "refresh": "రిఫ్రెష్"
   },
   "nav": {
     "home": "హోమ్",
@@ -148,7 +149,9 @@
     "welcomeSentOn": "స్వాగతం పంపిన తేదీ",
     "loanNumber": "రుణ సంఖ్య",
     "installmentAmount": "వాయిదా",
-    "loanNo": "రుణ #"
+    "loanNo": "రుణ #",
+    "sendWhatsAppWarning": "బాకీ హెచ్చరిక పంపండి",
+    "whatsappWarningSent": "హెచ్చరిక పంపబడింది"
   },
   "payments": {
     "title": "చెల్లింపులు",
@@ -305,7 +308,10 @@
     "managerEmail": "మేనేజర్ ఈమెయిల్",
     "managerPassword": "తాత్కాలిక పాస్‌వర్డ్",
     "deactivate": "నిష్క్రియం చేయండి",
-    "activate": "సక్రియం చేయండి"
+    "activate": "సక్రియం చేయండి",
+    "notifications": "వాట్సాప్ నోటిఫికేషన్లు",
+    "noNotifications": "ఇంకా ఏమీ పంపలేదు",
+    "notificationsFailed": "{{count}} విఫలమయ్యాయి"
   },
   "time": {
     "today": "ఈ రోజు",

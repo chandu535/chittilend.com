@@ -6,6 +6,7 @@ import { payments, loans, borrowers, capitalPoolLog } from '../db/schema';
 import { markPaymentSchema, markWaivedSchema } from '../validators/payment';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole } from '../middleware/roleGuard';
+import { sendPaymentReceipt, sendLoanClosed } from './whatsapp';
 import { DEFAULTS } from '@/lib/constants';
 
 export const listPaymentsByLoan = createServerFn({ method: 'GET' })
@@ -49,6 +50,7 @@ export const markPaymentPaid = createServerFn({ method: 'POST' })
 
     const amountDue = parseFloat(payment.amountDue);
     const isFullPayment = data.amountPaid >= amountDue;
+    let justCompleted = false;
     const newStatus = isFullPayment ? 'paid' : 'partial';
 
     // Update payment
@@ -104,8 +106,16 @@ export const markPaymentPaid = createServerFn({ method: 'POST' })
           .update(loans)
           .set({ status: 'completed', updatedAt: new Date() })
           .where(eq(loans.id, payment.loanId));
+        justCompleted = true;
       }
     }
+
+    // Closure replaces the receipt rather than following it — two messages for the same
+    // event would read as spam. Both are best-effort and swallow their own errors: a
+    // WhatsApp outage must never make a recorded payment look like it failed. Awaited so
+    // the send finishes before the serverless function freezes.
+    if (justCompleted) await sendLoanClosed(payment.loanId);
+    else await sendPaymentReceipt(payment.id);
 
     return updated;
   });
@@ -130,12 +140,17 @@ export const markPaymentPartial = createServerFn({ method: 'POST' })
 
     if (!payment) throw new Error('Payment not found');
 
+    // Do not force 'partial'. An amount that covers the instalment must be recorded as
+    // paid, or the row is stranded: the loan never auto-completes and the reminder cron
+    // trips over an instalment it sees as open but cannot bill.
+    const coversInstalment = data.amountPaid >= parseFloat(payment.amountDue);
+
     const [updated] = await db
       .update(payments)
       .set({
         amountPaid: data.amountPaid.toFixed(2),
         paidDate: data.paidDate,
-        status: 'partial',
+        status: coversInstalment ? 'paid' : 'partial',
         paymentMethod: data.paymentMethod,
         notes: data.notes || null,
         recordedBy: user.id,
@@ -163,6 +178,29 @@ export const markPaymentPartial = createServerFn({ method: 'POST' })
       referencePaymentId: payment.id,
       recordedBy: user.id,
     });
+
+    let justCompleted = false;
+    if (coversInstalment) {
+      const unpaid = await db
+        .select({ id: payments.id })
+        .from(payments)
+        .where(and(
+          eq(payments.loanId, payment.loanId),
+          sql`${payments.status} NOT IN ('paid', 'waived')`,
+        ))
+        .limit(1);
+
+      if (unpaid.length === 0) {
+        await db
+          .update(loans)
+          .set({ status: 'completed', updatedAt: new Date() })
+          .where(eq(loans.id, payment.loanId));
+        justCompleted = true;
+      }
+    }
+
+    if (justCompleted) await sendLoanClosed(payment.loanId);
+    else await sendPaymentReceipt(payment.id);
 
     return updated;
   });
@@ -209,6 +247,8 @@ export const markPaymentWaived = createServerFn({ method: 'POST' })
         .update(loans)
         .set({ status: 'completed', updatedAt: new Date() })
         .where(eq(loans.id, updated.loanId));
+      // Waiving the last instalment closes the loan just as paying it would.
+      await sendLoanClosed(updated.loanId);
     }
 
     return updated;

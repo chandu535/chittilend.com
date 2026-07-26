@@ -149,7 +149,286 @@ and doing so means a new template and re-approval.
 
 ---
 
-# Template 2 — `loan_welcome_en` (optional)
+# Template 3 — `payment_warning_te`
+
+Sent after the 10th when the instalment is still unpaid. Text only — no payment link and
+no QR.
+
+## Category
+
+**Utility**
+
+A transactional payment notice, not promotional. If Meta reclassifies it as Marketing the
+cost goes from ~₹0.13 to ~₹0.85 per message and it becomes subject to the per-user daily
+cap.
+
+## Name
+
+```
+payment_warning_te
+```
+
+## Language
+
+**Telugu**
+
+## Header
+
+**None.** The ⚠️ opening the body carries the emphasis.
+
+## Body
+
+```
+⚠️ గుర్తు చేస్తున్నాము {{1}} గారు
+
+మీ వాయిదా చెల్లింపు గడువు {{2}} నాటికి ముగిసింది. ఇంకా చెల్లింపు అందలేదు.
+
+బాకీ మొత్తం: *{{3}}*
+
+దయచేసి త్వరగా చెల్లించండి 🙏
+
+ఏదైనా ఇబ్బంది ఉంటే మాతో మాట్లాడండి. మీకు అనుకూలమైన పరిష్కారం చూద్దాం.
+```
+
+The closing line is deliberate. RBI prohibits threatening or shaming language in recovery
+communication, and an offer to discuss is both compliant and likelier to recover the money
+than pressure. It also protects the template's quality rating — borrowers who feel
+harassed block the sender, and blocks degrade delivery for every other message.
+
+## Body sample values
+
+Meta rejects the template if any placeholder has no example.
+
+| # | Meaning | Paste this |
+|---|---|---|
+| `{{1}}` | Borrower name | `సాయి చంద్ర` |
+| `{{2}}` | Deadline that passed | `10-07-2026` |
+| `{{3}}` | Amount outstanding | `12500` |
+
+## Footer
+
+```
+చిట్టిలెండ్
+```
+
+## Buttons
+
+One button, **Call to action → Call phone number**. Optional but recommended — on an
+overdue notice, a way to reach you is more likely to recover money than a message that can
+only be ignored.
+
+Button text:
+
+```
+మాట్లాడండి
+```
+
+Phone number: your collection number, in `+91XXXXXXXXXX` form.
+
+## Finished message preview
+
+```
+⚠️ గుర్తు చేస్తున్నాము సాయి చంద్ర గారు
+
+మీ వాయిదా చెల్లింపు గడువు 10-07-2026 నాటికి ముగిసింది. ఇంకా చెల్లింపు అందలేదు.
+
+బాకీ మొత్తం: 12500
+
+దయచేసి త్వరగా చెల్లించండి 🙏
+
+ఏదైనా ఇబ్బంది ఉంటే మాతో మాట్లాడండి. మీకు అనుకూలమైన పరిష్కారం చూద్దాం.
+
+చిట్టిలెండ్
+┌──────────────────┐
+│  📞 మాట్లాడండి   │
+└──────────────────┘
+```
+
+## Notes
+
+- **3 variables, in this order.** `sendPaymentWarningWhatsApp` passes exactly these three;
+  a count mismatch fails the send outright rather than degrading.
+- `*{{3}}*` makes the amount bold. No space between the asterisk and the placeholder, or
+  WhatsApp renders literal asterisks.
+- No payment link. A `upi://pay` link with a prefilled amount to a personal address is
+  declined by UPI apps — the borrower pays however they normally do.
+
+---
+
+# Template 4 — `payment_received_te`
+
+Receipt, sent automatically when a payment is recorded. Confirms the money arrived and
+restates where the loan now stands.
+
+## Category
+
+**Utility**
+
+## Name
+
+```
+payment_received_te
+```
+
+## Language
+
+**Telugu**
+
+## Header
+
+**None.** The ✅ opening the body carries the confirmation.
+
+## Body
+
+```
+✅ చెల్లింపు అందింది, ధన్యవాదాలు {{1}} గారు 🙏
+
+అందిన మొత్తం: *{{2}}*
+
+చెల్లించిన వాయిదాలు: *{{3}} / {{4}}*
+మిగిలిన వాయిదాలు: *{{5}}*
+మిగిలిన మొత్తం: *{{6}}*
+
+ఈ చెల్లింపు మా రికార్డులో నమోదైంది.
+```
+
+## Body sample values
+
+Meta rejects the template if any placeholder has no example.
+
+| # | Meaning | Paste this |
+|---|---|---|
+| `{{1}}` | Borrower name | `సాయి చంద్ర` |
+| `{{2}}` | Amount received now | `12500` |
+| `{{3}}` | Instalments paid so far | `2` |
+| `{{4}}` | Total instalments | `5` |
+| `{{5}}` | Instalments remaining | `3` |
+| `{{6}}` | Amount still outstanding | `37500` |
+
+`{{5}}` is derivable from `{{3}}` and `{{4}}`, but stating it saves the borrower doing the
+arithmetic — which is the point of a receipt.
+
+## Footer
+
+```
+చిట్టిలెండ్
+```
+
+## Finished message preview
+
+```
+✅ చెల్లింపు అందింది, ధన్యవాదాలు సాయి చంద్ర గారు 🙏
+
+అందిన మొత్తం: 12500
+
+చెల్లించిన వాయిదాలు: 2 / 5
+మిగిలిన వాయిదాలు: 3
+మిగిలిన మొత్తం: 37500
+
+ఈ చెల్లింపు మా రికార్డులో నమోదైంది.
+
+చిట్టిలెండ్
+```
+
+## Notes
+
+- **6 variables, in this order.** `sendPaymentReceipt` passes exactly these six.
+- The closing line is not decoration: **Meta rejects a body that starts or ends with a
+  variable**, and without it the body would end on `{{6}}`.
+- Counts are computed *after* the payment is written, so they reflect the new state.
+- A **partial** payment still sends a receipt — the money did arrive — but the paid count
+  will not have moved, which is correct and not a bug.
+- Sending is **fire-and-forget**: a WhatsApp failure logs a warning and never fails the
+  payment itself. Recording money must not depend on a messaging API.
+- Until `WHATSAPP_RECEIPT_TEMPLATE_NAME` is set the send is skipped silently, so nothing
+  breaks before Meta approves the template.
+
+---
+
+# Template 5 — `loan_closed_te`
+
+Sent once, automatically, when the final instalment settles and the loan closes.
+
+## Category
+
+**Utility**
+
+This one needs care. A closure notice is transactional, but anything inviting the borrower
+to take another loan makes it **promotional** — Meta would reclassify it as Marketing,
+which costs ~6× more and falls under the per-user daily cap. The body below deliberately
+ends on the account being closed rather than on an offer.
+
+## Name
+
+```
+loan_closed_te
+```
+
+## Language
+
+**Telugu**
+
+## Header
+
+**None.** The 🎉 opening the body does the celebrating.
+
+## Body
+
+```
+🎉 అభినందనలు {{1}} గారు! 🎉
+
+మీ రుణం #{{2}} పూర్తిగా తీరిపోయింది ✅
+
+చెల్లించిన మొత్తం: *{{3}}*
+పూర్తయిన వాయిదాలు: *{{4}}*
+
+రుణాన్ని పూర్తిగా తీర్చినందుకు ధన్యవాదాలు 🙏
+మీ ఖాతా ఇప్పుడు పూర్తిగా క్లోజ్ చేయబడింది.
+```
+
+## Body sample values
+
+| # | Meaning | Paste this |
+|---|---|---|
+| `{{1}}` | Borrower name | `సాయి చంద్ర` |
+| `{{2}}` | Loan number | `11` |
+| `{{3}}` | Total repaid | `62500` |
+| `{{4}}` | Instalments completed | `5` |
+
+## Footer
+
+```
+చిట్టిలెండ్
+```
+
+## Finished message preview
+
+```
+🎉 అభినందనలు సాయి చంద్ర గారు! 🎉
+
+మీ రుణం #11 పూర్తిగా తీరిపోయింది ✅
+
+చెల్లించిన మొత్తం: 62500
+పూర్తయిన వాయిదాలు: 5
+
+రుణాన్ని పూర్తిగా తీర్చినందుకు ధన్యవాదాలు 🙏
+మీ ఖాతా ఇప్పుడు పూర్తిగా క్లోజ్ చేయబడింది.
+
+చిట్టిలెండ్
+```
+
+## Notes
+
+- **4 variables, in this order.** Body neither starts nor ends on a variable.
+- Sent **instead of** the receipt when a payment closes the loan, not in addition — two
+  messages arriving at once for the same event would read as spam.
+- Also fires when the last instalment is **waived**, since that closes the loan too.
+- Best-effort like the receipt: a WhatsApp failure never affects the payment record.
+- Skipped silently until `WHATSAPP_CLOSED_TEMPLATE_NAME` is set.
+
+---
+
+# Template 6 — `loan_welcome_en` (optional)
 
 Same category, header, sample values, footer and button as above. Submit only if you want
 an English variant; switch with `WHATSAPP_TEMPLATE_LANGUAGE=en`.
@@ -204,6 +483,21 @@ WHATSAPP_TEMPLATE_NAME=...
 
 # the welcome template created above
 WHATSAPP_WELCOME_TEMPLATE_NAME=loan_welcome_te
+
+# the overdue warning created above
+WHATSAPP_WARNING_TEMPLATE_NAME=payment_warning_te
+
+# the payment receipt created above
+WHATSAPP_RECEIPT_TEMPLATE_NAME=payment_received_te
+
+# the loan closure created above
+WHATSAPP_CLOSED_TEMPLATE_NAME=loan_closed_te
+
+# collection account, sent as text and encoded into the QR
+UPI_VPA=9553077886sai@ybl
+
+# public URL of the static QR used as the reminder header image
+UPI_QR_URL=https://pub-ee792e7de0ab406880a8622ea2af9ad1.r2.dev/static/upi-qr.png
 
 # must match the button's URL prefix — currently http://localhost:3004
 APP_URL=https://your-domain
