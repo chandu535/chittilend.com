@@ -452,7 +452,7 @@ function getResponse() {
   return event.res;
 }
 async function getStartManifest(matchedRoutes) {
-  const { tsrStartManifest } = await import("./_tanstack-start-manifest_v-CKtXIpnu.mjs");
+  const { tsrStartManifest } = await import("./_tanstack-start-manifest_v-DVrd-4hE.mjs");
   const startManifest = tsrStartManifest();
   const rootRoute = startManifest.routes[rootRouteId] = startManifest.routes[rootRouteId] || {};
   rootRoute.assets = rootRoute.assets || [];
@@ -678,24 +678,15 @@ const manifest = { "c66295356ee1bed9dcd6acc6996417714105d1c255d6dc117cb348c4624a
 }, "b5b76cdd5bf2632d2f5e9c07e7f1cee2047f8cc7b538a73532cb598e98860fc0": {
   functionName: "addInvestment_createServerFn_handler",
   importer: () => import("./capital-00ruq479.mjs")
-}, "c6aac2c5f1e616252a1cd37b59ff41c6b3ed900ab92cbd85e8c5b69b6725aef3": {
-  functionName: "listLoans_createServerFn_handler",
-  importer: () => import("./loans-EnIicyuY.mjs")
-}, "598abfe0b55db0d95b1f41e6294dee2fb9697115d41bec08c40a6a51475a1790": {
-  functionName: "getLoanById_createServerFn_handler",
-  importer: () => import("./loans-EnIicyuY.mjs")
-}, "dc465117bc796bf617a74a59b0b3cf5a9a299261996da1e1500aafb78575d145": {
-  functionName: "createLoan_createServerFn_handler",
-  importer: () => import("./loans-EnIicyuY.mjs")
-}, "deaca83f8752c79c3c1dda0649870988e1cf3c42f1baffc248e4cdec82929de1": {
-  functionName: "updateLoan_createServerFn_handler",
-  importer: () => import("./loans-EnIicyuY.mjs")
-}, "30b913d22c4bf7659f9f140cd86dc966712ef404a269811cd4222e03d847627f": {
-  functionName: "extendTenure_createServerFn_handler",
-  importer: () => import("./loans-EnIicyuY.mjs")
-}, "361d9805ac41dce6e3f105c867a61b961eed5b15f6fcfa1883da0be151707733": {
-  functionName: "changeStatus_createServerFn_handler",
-  importer: () => import("./loans-EnIicyuY.mjs")
+}, "4ac19b88fda24680112998290cab23be6b3ca6dbd7a210ce4a0ded515ed2c8ba": {
+  functionName: "listManagers_createServerFn_handler",
+  importer: () => import("./users-Cnpt9kgS.mjs")
+}, "3522d6afa08eb1863225729ae565bc746cf03f7dff76d212cb10a9b18ba28bbd": {
+  functionName: "createManager_createServerFn_handler",
+  importer: () => import("./users-Cnpt9kgS.mjs")
+}, "0de027824cdfd2a4d95cdce2b5fe1a4d14143af767c24d1ce2d191f08b910dc0": {
+  functionName: "toggleManagerActive_createServerFn_handler",
+  importer: () => import("./users-Cnpt9kgS.mjs")
 }, "2b1febee5c8352ad582297cea76d90d23bf6ab8bb6f7abdcc2d6b34723e07067": {
   functionName: "listBorrowers_createServerFn_handler",
   importer: () => import("./borrowers-C7M5H29w.mjs")
@@ -720,18 +711,27 @@ const manifest = { "c66295356ee1bed9dcd6acc6996417714105d1c255d6dc117cb348c4624a
 }, "faf23032f626d47cf6b4fdfa73ba96d0e74bb314fefc6c764d95b0f7bacf768d": {
   functionName: "listAreas_createServerFn_handler",
   importer: () => import("./borrowers-C7M5H29w.mjs")
+}, "c6aac2c5f1e616252a1cd37b59ff41c6b3ed900ab92cbd85e8c5b69b6725aef3": {
+  functionName: "listLoans_createServerFn_handler",
+  importer: () => import("./loans-EnIicyuY.mjs")
+}, "598abfe0b55db0d95b1f41e6294dee2fb9697115d41bec08c40a6a51475a1790": {
+  functionName: "getLoanById_createServerFn_handler",
+  importer: () => import("./loans-EnIicyuY.mjs")
+}, "dc465117bc796bf617a74a59b0b3cf5a9a299261996da1e1500aafb78575d145": {
+  functionName: "createLoan_createServerFn_handler",
+  importer: () => import("./loans-EnIicyuY.mjs")
+}, "deaca83f8752c79c3c1dda0649870988e1cf3c42f1baffc248e4cdec82929de1": {
+  functionName: "updateLoan_createServerFn_handler",
+  importer: () => import("./loans-EnIicyuY.mjs")
+}, "30b913d22c4bf7659f9f140cd86dc966712ef404a269811cd4222e03d847627f": {
+  functionName: "extendTenure_createServerFn_handler",
+  importer: () => import("./loans-EnIicyuY.mjs")
+}, "361d9805ac41dce6e3f105c867a61b961eed5b15f6fcfa1883da0be151707733": {
+  functionName: "changeStatus_createServerFn_handler",
+  importer: () => import("./loans-EnIicyuY.mjs")
 }, "542cd0838f496f237f9f1a986b69ea6cab57c0d2acf4519ea5d55ed771e7606a": {
   functionName: "uploadBorrowerPhoto_createServerFn_handler",
   importer: () => import("./upload-CEfkfd5L.mjs")
-}, "4ac19b88fda24680112998290cab23be6b3ca6dbd7a210ce4a0ded515ed2c8ba": {
-  functionName: "listManagers_createServerFn_handler",
-  importer: () => import("./users-Cnpt9kgS.mjs")
-}, "3522d6afa08eb1863225729ae565bc746cf03f7dff76d212cb10a9b18ba28bbd": {
-  functionName: "createManager_createServerFn_handler",
-  importer: () => import("./users-Cnpt9kgS.mjs")
-}, "0de027824cdfd2a4d95cdce2b5fe1a4d14143af767c24d1ce2d191f08b910dc0": {
-  functionName: "toggleManagerActive_createServerFn_handler",
-  importer: () => import("./users-Cnpt9kgS.mjs")
 }, "2f15cf97c55a997040ea638dacd5e036f9ef72c63417c6b0124d32db95c057d7": {
   functionName: "sendLoanWhatsAppTemplate_createServerFn_handler",
   importer: () => import("./whatsapp-YnvE5i-7.mjs")
@@ -1157,7 +1157,7 @@ let entriesPromise;
 let baseManifestPromise;
 let cachedFinalManifestPromise;
 async function loadEntries() {
-  const routerEntry = await import("./router-_jeUSzJ6.mjs").then((n) => n.r);
+  const routerEntry = await import("./router-BkdMoR6V.mjs").then((n) => n.r);
   const startEntry = await import("./start-HYkvq4Ni.mjs");
   return { startEntry, routerEntry };
 }
