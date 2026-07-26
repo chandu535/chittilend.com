@@ -4,14 +4,17 @@ import { useImagePreview } from '@/components/ui/ZoomableImage';
 
 interface BorrowerAvatarProps {
   name: string;
+  /** Human-confirmed Telugu spelling. Without it the avatar guesses, and a guess that
+      disagrees with the name shown beside it looks like a bug. */
+  nameTelugu?: string | null;
   photoUrl?: string | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-export function BorrowerAvatar({ name, photoUrl, size = 'md', className }: BorrowerAvatarProps) {
+export function BorrowerAvatar({ name, nameTelugu, photoUrl, size = 'md', className }: BorrowerAvatarProps) {
   const { open, previewElement } = useImagePreview();
-  const displayName = useLocalizedName(name);
+  const displayName = useLocalizedName(name, nameTelugu);
 
   const sizeClass =
     size === 'sm' ? 'h-8 w-8 text-xs' :

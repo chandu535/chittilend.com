@@ -243,6 +243,7 @@ function LoanDetailPage() {
         >
           <BorrowerAvatar
             name={loan.borrower.name}
+            nameTelugu={loan.borrower.nameTelugu}
             photoUrl={loan.borrower.profilePhotoUrl}
             size="md"
           />

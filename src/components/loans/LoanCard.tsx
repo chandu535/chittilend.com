@@ -27,6 +27,7 @@ interface LoanCardProps {
   id: string;
   loanNumber: number;
   borrowerName: string;
+  borrowerNameTelugu?: string | null;
   borrowerPhotoUrl?: string | null;
   nextPayment?: NextPayment | null;
   primaryAmount: string;
@@ -83,6 +84,7 @@ function LoanCardImpl({
   id,
   loanNumber,
   borrowerName,
+  borrowerNameTelugu,
   borrowerPhotoUrl,
   nextPayment: nextPaymentProp,
   primaryAmount,
@@ -94,7 +96,7 @@ function LoanCardImpl({
   dateGiven,
 }: LoanCardProps) {
   const { t } = useTranslation();
-  const displayName = useLocalizedName(borrowerName);
+  const displayName = useLocalizedName(borrowerName, borrowerNameTelugu);
   const [open, setOpen] = useState(false);
   const [details, setDetails] = useState<LoanDetail | null>(null);
   const [fetching, setFetching] = useState(false);
@@ -221,7 +223,7 @@ function LoanCardImpl({
           <div className="flex items-center gap-3.5 px-4 pt-4 pb-3">
             {/* Avatar */}
             <div className="shrink-0">
-              <BorrowerAvatar name={borrowerName} photoUrl={borrowerPhotoUrl} size="lg" />
+              <BorrowerAvatar name={borrowerName} nameTelugu={borrowerNameTelugu} photoUrl={borrowerPhotoUrl} size="lg" />
             </div>
 
             {/* Name + amount */}
@@ -467,6 +469,7 @@ export const LoanCard = memo(LoanCardImpl, (prev, next) => (
   && prev.paidAmount === next.paidAmount
   && prev.paidInstallments === next.paidInstallments
   && prev.borrowerName === next.borrowerName
+  && prev.borrowerNameTelugu === next.borrowerNameTelugu
   && prev.borrowerPhotoUrl === next.borrowerPhotoUrl
   && prev.nextPayment?.id === next.nextPayment?.id
   && prev.nextPayment?.status === next.nextPayment?.status

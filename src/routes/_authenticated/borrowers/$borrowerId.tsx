@@ -168,6 +168,7 @@ function BorrowerDetailPage() {
         <div className="flex items-start gap-4">
           <BorrowerAvatar
             name={borrower.name}
+            nameTelugu={borrower.nameTelugu}
             photoUrl={borrower.profilePhotoUrl}
             size="lg"
           />

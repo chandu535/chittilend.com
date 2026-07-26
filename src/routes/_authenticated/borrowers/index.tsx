@@ -147,6 +147,7 @@ function BorrowersPage() {
                 <BorrowerCard
                   id={b.id}
                   name={b.name}
+                  nameTelugu={b.nameTelugu}
                   mobile={b.mobile}
                   area={b.area}
                   photoUrl={b.profilePhotoUrl}
@@ -173,7 +174,7 @@ function BorrowersPage() {
                     <td className="py-3 text-sm text-slate-400 tabular-nums">{serialStart + index + 1}</td>
                     <td className="py-3 font-medium text-slate-900">
                       <div className="flex items-center gap-2.5">
-                        <BorrowerAvatar name={b.name} photoUrl={b.profilePhotoUrl} size="sm" />
+                        <BorrowerAvatar name={b.name} nameTelugu={b.nameTelugu} photoUrl={b.profilePhotoUrl} size="sm" />
                         <NameDisplay name={b.name} nameTelugu={b.nameTelugu} />
                       </div>
                     </td>

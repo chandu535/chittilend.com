@@ -250,6 +250,7 @@ function LoansPage() {
                   id={loan.id}
                   loanNumber={loan.loanNumber}
                   borrowerName={loan.borrowerName}
+                  borrowerNameTelugu={loan.borrowerNameTelugu}
                   borrowerPhotoUrl={loan.borrowerPhotoUrl}
                   nextPayment={loan.nextPayment}
                   primaryAmount={loan.primaryAmount}
@@ -293,7 +294,7 @@ function LoansPage() {
                       <td className="px-4 py-3 text-lg text-slate-500 font-bold tabular-nums">#{loan.loanNumber}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <BorrowerAvatar name={loan.borrowerName} photoUrl={loan.borrowerPhotoUrl} size="sm" />
+                          <BorrowerAvatar name={loan.borrowerName} nameTelugu={loan.borrowerNameTelugu} photoUrl={loan.borrowerPhotoUrl} size="sm" />
                           <div>
                             <NameDisplay name={loan.borrowerName} nameTelugu={loan.borrowerNameTelugu} className="font-medium text-slate-900" />
                             {loan.borrowerArea && (
