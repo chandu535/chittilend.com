@@ -28,6 +28,133 @@ export const listPaymentsByLoan = createServerFn({ method: 'GET' })
     return result;
   });
 
+/**
+ * Records money against a loan starting at one instalment and carrying any surplus
+ * forward to the instalments after it.
+ *
+ * A borrower repays an amount, not a calendar. One month they hand over more, the next
+ * less. Writing the whole amount onto the single instalment it was recorded against left
+ * the surplus stranded there: someone who paid two months in one go still showed the
+ * next month as owing, and the reminder cron would chase them for money already in hand.
+ *
+ * Whatever is left after the final instalment stays on that last row rather than being
+ * dropped, so an overpayment is visible instead of lost.
+ */
+async function applyToSchedule(
+  loanId: string,
+  fromInstalment: number,
+  amount: number,
+  ctx: { paidDate: string; paymentMethod: string; notes?: string | null; userId: string },
+) {
+  const rows = await db
+    .select()
+    .from(payments)
+    .where(eq(payments.loanId, loanId))
+    .orderBy(asc(payments.installmentNumber));
+
+  const targetIndex = rows.findIndex((r) => r.installmentNumber === fromInstalment);
+  if (targetIndex < 0) throw new Error('Instalment not found on this loan');
+
+  const target = rows[targetIndex];
+  const targetDue = parseFloat(target.amountDue);
+  const onTarget = Math.min(amount, targetDue);
+  let surplus = amount - onTarget;
+
+  const [updated] = await db
+    .update(payments)
+    .set({
+      amountPaid: onTarget.toFixed(2),
+      paidDate: ctx.paidDate,
+      status: onTarget >= targetDue - 0.01 ? 'paid' : 'partial',
+      paymentMethod: ctx.paymentMethod as 'cash' | 'upi' | 'bank_transfer' | 'other',
+      notes: ctx.notes || null,
+      recordedBy: ctx.userId,
+      updatedAt: new Date(),
+    })
+    .where(eq(payments.id, target.id))
+    .returning();
+
+  // Roll what is left onto the following instalments, earliest first.
+  for (let i = targetIndex + 1; i < rows.length && surplus > 0.005; i++) {
+    const row = rows[i];
+    if (row.status === 'waived') continue;
+
+    const due = parseFloat(row.amountDue);
+    const already = parseFloat(row.amountPaid);
+    const capacity = due - already;
+    if (capacity <= 0.005) continue;
+
+    const take = Math.min(surplus, capacity);
+    surplus -= take;
+    const now = already + take;
+
+    await db
+      .update(payments)
+      .set({
+        amountPaid: now.toFixed(2),
+        paidDate: row.paidDate ?? ctx.paidDate,
+        status: now >= due - 0.01 ? 'paid' : 'partial',
+        paymentMethod: (row.paymentMethod ?? ctx.paymentMethod) as 'cash' | 'upi' | 'bank_transfer' | 'other',
+        recordedBy: row.recordedBy ?? ctx.userId,
+        updatedAt: new Date(),
+      })
+      .where(eq(payments.id, row.id));
+  }
+
+  if (surplus > 0.005 && rows.length) {
+    const last = rows[rows.length - 1];
+    const [current] = await db.select({ amountPaid: payments.amountPaid })
+      .from(payments).where(eq(payments.id, last.id)).limit(1);
+    await db
+      .update(payments)
+      .set({
+        amountPaid: (parseFloat(current.amountPaid) + surplus).toFixed(2),
+        updatedAt: new Date(),
+      })
+      .where(eq(payments.id, last.id));
+  }
+
+  return updated;
+}
+
+/**
+ * Sets a loan's status from the money on it, and reports whether that just closed it.
+ *
+ * Completion is a question about an amount, not a period: the loan is over when the
+ * borrower has handed over what they owe, however many instalments that took and however
+ * uneven they were. A waived instalment counts as settled without money, since nothing
+ * further is expected against it.
+ *
+ * Reversible in both directions, so reversing a payment reopens a loan the same way
+ * recording one closes it. A defaulted loan is left alone — that status is a decision
+ * someone made, not something arithmetic should overwrite.
+ */
+async function syncLoanStatus(loanId: string): Promise<boolean> {
+  const [loan] = await db
+    .select({ id: loans.id, status: loans.status, totalRepayment: loans.totalRepayment })
+    .from(loans)
+    .where(eq(loans.id, loanId))
+    .limit(1);
+  if (!loan || loan.status === 'defaulted') return false;
+
+  const [{ settled }] = await db
+    .select({
+      settled: sql<string>`COALESCE(SUM(CASE WHEN ${payments.status} = 'waived'
+        THEN ${payments.amountDue} ELSE ${payments.amountPaid} END), 0)`,
+    })
+    .from(payments)
+    .where(eq(payments.loanId, loanId));
+
+  const isRepaid = parseFloat(settled) >= parseFloat(loan.totalRepayment) - 0.01;
+  const target = isRepaid ? 'completed' as const : 'active' as const;
+  if (loan.status === target) return false;
+
+  await db.update(loans)
+    .set({ status: target, updatedAt: new Date() })
+    .where(eq(loans.id, loanId));
+  return isRepaid;
+}
+
 export const markPaymentPaid = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => {
     const { error, value } = markPaymentSchema.validate(data, { abortEarly: false });
@@ -48,25 +175,14 @@ export const markPaymentPaid = createServerFn({ method: 'POST' })
 
     if (!payment) throw new Error('Payment not found');
 
-    const amountDue = parseFloat(payment.amountDue);
-    const isFullPayment = data.amountPaid >= amountDue;
-    let justCompleted = false;
-    const newStatus = isFullPayment ? 'paid' : 'partial';
-
-    // Update payment
-    const [updated] = await db
-      .update(payments)
-      .set({
-        amountPaid: data.amountPaid.toFixed(2),
-        paidDate: data.paidDate,
-        status: newStatus as 'paid' | 'partial',
-        paymentMethod: data.paymentMethod,
-        notes: data.notes || null,
-        recordedBy: user.id,
-        updatedAt: new Date(),
-      })
-      .where(eq(payments.id, data.paymentId))
-      .returning();
+    // Anything beyond this instalment rolls onto the ones after it, so paying two
+    // months in one go actually clears two months.
+    const updated = await applyToSchedule(
+      payment.loanId,
+      payment.installmentNumber,
+      data.amountPaid,
+      { paidDate: data.paidDate, paymentMethod: data.paymentMethod, notes: data.notes, userId: user.id },
+    );
 
     // Capital pool: collection entry
     const lastEntry = await db
@@ -88,27 +204,7 @@ export const markPaymentPaid = createServerFn({ method: 'POST' })
       recordedBy: user.id,
     });
 
-    // Check if all payments for this loan are paid → auto-complete loan
-    if (isFullPayment) {
-      const unpaid = await db
-        .select({ id: payments.id })
-        .from(payments)
-        .where(
-          and(
-            eq(payments.loanId, payment.loanId),
-            sql`${payments.status} NOT IN ('paid', 'waived')`,
-          ),
-        )
-        .limit(1);
-
-      if (unpaid.length === 0) {
-        await db
-          .update(loans)
-          .set({ status: 'completed', updatedAt: new Date() })
-          .where(eq(loans.id, payment.loanId));
-        justCompleted = true;
-      }
-    }
+    const justCompleted = await syncLoanStatus(payment.loanId);
 
     // Closure replaces the receipt rather than following it — two messages for the same
     // event would read as spam. Both are best-effort and swallow their own errors: a
@@ -140,24 +236,14 @@ export const markPaymentPartial = createServerFn({ method: 'POST' })
 
     if (!payment) throw new Error('Payment not found');
 
-    // Do not force 'partial'. An amount that covers the instalment must be recorded as
-    // paid, or the row is stranded: the loan never auto-completes and the reminder cron
-    // trips over an instalment it sees as open but cannot bill.
-    const coversInstalment = data.amountPaid >= parseFloat(payment.amountDue);
-
-    const [updated] = await db
-      .update(payments)
-      .set({
-        amountPaid: data.amountPaid.toFixed(2),
-        paidDate: data.paidDate,
-        status: coversInstalment ? 'paid' : 'partial',
-        paymentMethod: data.paymentMethod,
-        notes: data.notes || null,
-        recordedBy: user.id,
-        updatedAt: new Date(),
-      })
-      .where(eq(payments.id, data.paymentId))
-      .returning();
+    // The same path as a full payment. An amount that covers the instalment is recorded
+    // as paid rather than forced to 'partial', and anything over it rolls forward.
+    const updated = await applyToSchedule(
+      payment.loanId,
+      payment.installmentNumber,
+      data.amountPaid,
+      { paidDate: data.paidDate, paymentMethod: data.paymentMethod, notes: data.notes, userId: user.id },
+    );
 
     // Capital pool: collection entry
     const lastEntry = await db
@@ -179,25 +265,7 @@ export const markPaymentPartial = createServerFn({ method: 'POST' })
       recordedBy: user.id,
     });
 
-    let justCompleted = false;
-    if (coversInstalment) {
-      const unpaid = await db
-        .select({ id: payments.id })
-        .from(payments)
-        .where(and(
-          eq(payments.loanId, payment.loanId),
-          sql`${payments.status} NOT IN ('paid', 'waived')`,
-        ))
-        .limit(1);
-
-      if (unpaid.length === 0) {
-        await db
-          .update(loans)
-          .set({ status: 'completed', updatedAt: new Date() })
-          .where(eq(loans.id, payment.loanId));
-        justCompleted = true;
-      }
-    }
+    const justCompleted = await syncLoanStatus(payment.loanId);
 
     if (justCompleted) await sendLoanClosed(payment.loanId);
     else await sendPaymentReceipt(payment.id);
@@ -230,26 +298,8 @@ export const markPaymentWaived = createServerFn({ method: 'POST' })
 
     if (!updated) throw new Error('Payment not found');
 
-    // Check if all payments for this loan are paid/waived → auto-complete
-    const unpaid = await db
-      .select({ id: payments.id })
-      .from(payments)
-      .where(
-        and(
-          eq(payments.loanId, updated.loanId),
-          sql`${payments.status} NOT IN ('paid', 'waived')`,
-        ),
-      )
-      .limit(1);
-
-    if (unpaid.length === 0) {
-      await db
-        .update(loans)
-        .set({ status: 'completed', updatedAt: new Date() })
-        .where(eq(loans.id, updated.loanId));
-      // Waiving the last instalment closes the loan just as paying it would.
-      await sendLoanClosed(updated.loanId);
-    }
+    // Waiving the last of what is owed closes the loan just as paying it would.
+    if (await syncLoanStatus(updated.loanId)) await sendLoanClosed(updated.loanId);
 
     return updated;
   });
@@ -440,19 +490,9 @@ export const revertPayment = createServerFn({ method: 'POST' })
       });
     }
 
-    // If the loan was completed, revert it back to active
-    const [loan] = await db
-      .select({ id: loans.id, status: loans.status })
-      .from(loans)
-      .where(eq(loans.id, payment.loanId))
-      .limit(1);
-
-    if (loan && loan.status === 'completed') {
-      await db
-        .update(loans)
-        .set({ status: 'active', updatedAt: new Date() })
-        .where(eq(loans.id, loan.id));
-    }
+    // Reopen only if the reversal actually leaves money owing. Reversing one instalment
+    // on a loan the borrower had overpaid should not drag it back to active.
+    await syncLoanStatus(payment.loanId);
 
     return updated;
   });
