@@ -40,6 +40,26 @@ const description = isProduction
   ? 'Manage borrowers, loans and collections for your chitti lending business.'
   : `Development build of SriPay, from the ${current} branch.`;
 
+/**
+ * Production shows the coin alone. A maskable icon must fill its canvas, and the launcher
+ * crops that to a circle — which is where the violet ring around the coin came from. So
+ * SriPay declares only `any` icons on transparency and the coin stands on its own.
+ *
+ * The dev build keeps the violet, which is now the quickest way to tell the two installed
+ * apps apart on the same home screen.
+ */
+const icons = isProduction
+  ? [
+    { src: '/icon-coin-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+    { src: '/icon-coin-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+  ]
+  : [
+    { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+    { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    { src: '/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+    { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+  ];
+
 const manifest = {
   id: '/',
   name: isProduction ? 'SriPay — Chitti Lending Manager' : 'ChittiLend (dev)',
@@ -55,13 +75,11 @@ const manifest = {
   theme_color: '#7C3AED',
   background_color: '#F5F4FF',
   categories: ['finance', 'business', 'productivity'],
-  icons: [
-    { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-    { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-    { src: '/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-    { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-  ],
+  icons,
 };
 
 writeFileSync('public/manifest.json', `${JSON.stringify(manifest, null, 2)}\n`);
-console.log(`manifest.json -> "${manifest.short_name}" (branch ${current}${isProduction ? ', production' : ''})`);
+console.log(
+  `manifest.json -> "${manifest.short_name}" (branch ${current}${isProduction ? ', production' : ''})`
+  + `, icons: ${isProduction ? 'coin on transparency' : 'coin on violet, maskable'}`,
+);

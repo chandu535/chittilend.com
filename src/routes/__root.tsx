@@ -23,8 +23,8 @@ export const Route = createRootRoute({
     links: [
       { rel: 'stylesheet', href: appCss },
       { rel: 'manifest', href: '/manifest.json' },
-      { rel: 'icon', href: '/icon-192.png', type: 'image/png', sizes: '192x192' },
-      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      { rel: 'icon', href: '/icon-coin-192.png', type: 'image/png', sizes: '192x192' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon-coin.png' },
     ],
   }),
   component: RootComponent,
