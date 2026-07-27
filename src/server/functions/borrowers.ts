@@ -1,11 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
-import { eq, ilike, or, sql, desc, asc, count, and } from 'drizzle-orm';
+import { eq, or, sql, desc, asc, count, and } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { db } from '../db';
 import { borrowers, loans } from '../db/schema';
 import { createBorrowerSchema, updateBorrowerSchema } from '../validators/borrower';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole, requirePermission } from '../middleware/roleGuard';
+import { borrowerSearchCondition } from '../db/search';
 import { DEFAULTS } from '@/lib/constants';
 
 export const listBorrowers = createServerFn({ method: 'GET' })
@@ -30,16 +31,8 @@ export const listBorrowers = createServerFn({ method: 'GET' })
     const offset = (data.page - 1) * data.limit;
     const conditions = [];
 
-    if (data.search) {
-      const pattern = `%${data.search}%`;
-      conditions.push(
-        or(
-          ilike(borrowers.name, pattern),
-          ilike(borrowers.nameTelugu, pattern),
-          ilike(borrowers.mobile, pattern),
-        ),
-      );
-    }
+    const searchCondition = borrowerSearchCondition(data.search);
+    if (searchCondition) conditions.push(searchCondition);
 
     if (data.area && data.area !== 'all') {
       conditions.push(eq(borrowers.area, data.area));
@@ -233,14 +226,7 @@ export const searchBorrowers = createServerFn({ method: 'GET' })
     const user = await getAuthenticatedUser();
     requireRole(user, ['admin', 'manager']);
 
-    const pattern = `%${data.query}%`;
-    const where = data.query
-      ? or(
-        ilike(borrowers.name, pattern),
-        ilike(borrowers.nameTelugu, pattern),
-        ilike(borrowers.mobile, pattern),
-      )
-      : undefined;
+    const where = borrowerSearchCondition(data.query);
 
     return db
       .select({

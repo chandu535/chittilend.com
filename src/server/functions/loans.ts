@@ -1,10 +1,11 @@
 import { createServerFn } from '@tanstack/react-start';
-import { eq, and, desc, count, gte, lte, ilike, sql } from 'drizzle-orm';
+import { eq, and, desc, count, gte, lte, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { loans, payments, borrowers, capitalPoolLog } from '../db/schema';
 import { createLoanSchema } from '../validators/loan';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole, requirePermission } from '../middleware/roleGuard';
+import { borrowerSearchCondition } from '../db/search';
 import { calculateLoan, calculateStartMonth, generatePaymentSchedule } from '@/lib/calculations';
 import { DEFAULTS } from '@/lib/constants';
 
@@ -83,7 +84,8 @@ export const listLoans = createServerFn({ method: 'GET' })
     if (data.borrowerId) facetConditions.push(eq(loans.borrowerId, data.borrowerId));
     if (data.dateFrom) facetConditions.push(gte(loans.dateGiven, data.dateFrom));
     if (data.dateTo) facetConditions.push(lte(loans.dateGiven, data.dateTo));
-    if (data.search) facetConditions.push(ilike(borrowers.name, `%${data.search}%`));
+    const searchCondition = borrowerSearchCondition(data.search);
+    if (searchCondition) facetConditions.push(searchCondition);
 
     const facetWhere = facetConditions.length > 0 ? and(...facetConditions) : undefined;
 
@@ -128,11 +130,9 @@ export const listLoans = createServerFn({ method: 'GET' })
     // so counting it again would make the chips sum to more than the list holds.
     statusCounts.overdue = urgencyCounts.overdue;
 
-    // If searching by borrower name, join
-    if (data.search) {
-      const pattern = `%${data.search}%`;
-      const searchCondition = ilike(borrowers.name, pattern);
-      const fullWhere = where ? and(where, searchCondition) : searchCondition;
+    // Searching joins borrowers, so it needs its own branch.
+    if (searchCondition) {
+      const fullWhere = where && searchCondition ? and(where, searchCondition) : (searchCondition ?? where);
 
       const [items, totalResult] = await Promise.all([
         db
