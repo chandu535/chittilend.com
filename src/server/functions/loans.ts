@@ -284,7 +284,7 @@ export const createLoan = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
-    requirePermission(user, 'loans.write');
+    requirePermission(user, 'loans.create');
 
     // Server-side calculation — NEVER trust client values
     const calc = calculateLoan(

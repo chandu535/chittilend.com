@@ -8,6 +8,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
 import { formatPhone } from '@/lib/formatters';
 import { clsx } from 'clsx';
+import { VoiceInput } from '@/components/ui/VoiceInput';
 
 export type BorrowerOption = {
   id: string;
@@ -78,14 +79,15 @@ export function BorrowerFilter({ value, onChange, className }: BorrowerFilterPro
     >
       {(close) => (
         <>
-          <div className="border-b border-slate-100 p-2">
+          <div className="flex items-center gap-1 border-b border-slate-100 p-2">
             <input
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('loans.filterBorrowerSearch')}
-              className="min-h-11 w-full rounded-xl bg-slate-50 px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="min-h-11 w-full min-w-0 flex-1 rounded-xl bg-slate-50 px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
+            <VoiceInput size="sm" onResult={setQuery} />
           </div>
 
           <div className="max-h-[min(60dvh,22rem)] overflow-y-auto overscroll-contain">

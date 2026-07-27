@@ -13,6 +13,16 @@ describe('permissions', () => {
     expect(can(manager, 'borrowers.write')).toBe(true);
   });
 
+  it('lets a manager issue a loan', () => {
+    expect(can(manager, 'loans.create')).toBe(true);
+  });
+
+  it('keeps decisions about an existing debt with the owner', () => {
+    // Extending a tenure, marking someone defaulted and signing the owner's acceptance
+    // all sit behind loans.write, which a manager does not hold.
+    expect(can(manager, 'loans.write')).toBe(false);
+  });
+
   it.each<Permission>([
     'loans.write',
     'payments.write',
@@ -25,7 +35,7 @@ describe('permissions', () => {
   });
 
   it('grants an admin everything a manager holds, and more', () => {
-    const managerHolds: Permission[] = ['view', 'borrowers.write'];
+    const managerHolds: Permission[] = ['view', 'borrowers.write', 'loans.create'];
     for (const permission of managerHolds) expect(can(admin, permission)).toBe(true);
     expect(can(admin, 'loans.write')).toBe(true);
   });
@@ -37,6 +47,8 @@ describe('permissions', () => {
 
   it('reports which roles hold a permission, for the server guards', () => {
     expect(rolesWith('borrowers.write').sort()).toEqual(['admin', 'manager']);
+    expect(rolesWith('loans.create').sort()).toEqual(['admin', 'manager']);
+    expect(rolesWith('loans.write')).toEqual(['admin']);
     expect(rolesWith('payments.write')).toEqual(['admin']);
   });
 });

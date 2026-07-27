@@ -247,7 +247,12 @@
     "hasActiveLoans": "Cannot delete borrower with active loans",
     "teluguName": "Telugu:",
     "teluguConverting": "Converting…",
-    "teluguEdit": "Tap to edit the Telugu spelling"
+    "teluguEdit": "Tap to edit the Telugu spelling",
+    "locationCaptured": "Location captured with the photo",
+    "cameraUnavailable": "Camera not available",
+    "switchCamera": "Switch camera",
+    "retakePhoto": "Retake photo",
+    "captureAadhaar": "Photograph Aadhaar"
   },
   "analytics": {
     "title": "Analytics",
@@ -381,5 +386,18 @@
   "contact": {
     "call": "Call",
     "whatsapp": "WhatsApp"
+  },
+  "voice": {
+    "speak": "Speak the name",
+    "stop": "Stop",
+    "listening": "Listening…",
+    "tapToSpeak": "Tap the microphone and say the name",
+    "pickOne": "Choose the right spelling",
+    "best": "best",
+    "again": "Speak again",
+    "permission": "Microphone access was refused. Allow it in your browser settings.",
+    "noSpeech": "Nothing was heard. Tap the microphone and try again.",
+    "network": "Speech needs an internet connection.",
+    "failed": "Could not recognise that. Please try again."
   }
 }

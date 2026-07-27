@@ -20,7 +20,9 @@ export type Permission =
   | 'borrowers.write'
   /** Delete a borrower outright. */
   | 'borrowers.delete'
-  /** Create or edit a loan, extend its tenure, change its status, accept it as owner. */
+  /** Issue a new loan. */
+  | 'loans.create'
+  /** Edit a loan, extend its tenure, change its status, accept it as owner. */
   | 'loans.write'
   /** Mark an instalment paid, partial or waived, or revert one. */
   | 'payments.write'
@@ -36,13 +38,16 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     'view',
     'borrowers.write',
     'borrowers.delete',
+    'loans.create',
     'loans.write',
     'payments.write',
     'messages.send',
     'capital.write',
     'users.manage',
   ],
-  manager: ['view', 'borrowers.write'],
+  // Issuing a loan is day-to-day work; extending a tenure, marking someone defaulted and
+  // signing the owner's acceptance are decisions about a debt, and stay with the owner.
+  manager: ['view', 'borrowers.write', 'loans.create'],
 };
 
 export function can(

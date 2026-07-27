@@ -35,7 +35,7 @@ function BorrowerDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const user = useStore(authStore, (s) => s.user);
   const canDelete = can(user, 'borrowers.delete');
-  const canWriteLoans = can(user, 'loans.write');
+  const canWriteLoans = can(user, 'loans.create');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [locationSaving, setLocationSaving] = useState(false);

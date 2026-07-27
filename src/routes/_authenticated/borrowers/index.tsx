@@ -21,6 +21,7 @@ import { ListPage } from '@/components/layout/PageLayout';
 import { ListError } from '@/components/shared/ListError';
 import { formatPhone } from '@/lib/formatters';
 import { useTeluguSearchTerm } from '@/lib/useTeluguSearchTerm';
+import { VoiceInput } from '@/components/ui/VoiceInput';
 
 export const Route = createFileRoute('/_authenticated/borrowers/')({
   component: BorrowersPage,
@@ -100,14 +101,21 @@ function BorrowersPage() {
             placeholder={t('common.search')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            rightSlot={teluguTerm ? (
-              <span
-                className="max-w-[7rem] truncate rounded-md bg-violet-50 px-1.5 py-0.5 text-xs font-medium text-violet-700"
-                title={teluguTerm}
-              >
-                {teluguTerm}
-              </span>
-            ) : undefined}
+            rightSlot={
+              <>
+                {teluguTerm && (
+                  <span
+                    className="pointer-events-none max-w-[6rem] truncate rounded-md bg-violet-50 px-1.5 py-0.5 text-xs font-medium text-violet-700"
+                    title={teluguTerm}
+                  >
+                    {teluguTerm}
+                  </span>
+                )}
+                {/* Speaking a name searches for it. The reading comes back in Telugu,
+                    which is how most of these names are stored. */}
+                <VoiceInput size="sm" onResult={setSearch} />
+              </>
+            }
             className="lg:min-h-10 lg:py-2 lg:text-sm"
             leftIcon={
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

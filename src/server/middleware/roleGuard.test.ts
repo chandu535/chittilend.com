@@ -7,7 +7,7 @@ const mk = (role: 'admin' | 'manager') =>
 
 // Exactly the permission each write endpoint now guards on, taken from the source.
 const ENDPOINTS: Array<[string, Parameters<typeof requirePermission>[1]]> = [
-  ['createLoan', 'loans.write'], ['updateLoan', 'loans.write'],
+  ['updateLoan', 'loans.write'],
   ['extendTenure', 'loans.write'], ['changeStatus', 'loans.write'],
   ['acceptLoanAsOwner', 'loans.write'],
   ['markPaymentPaid', 'payments.write'], ['markPaymentPartial', 'payments.write'],
@@ -31,4 +31,8 @@ describe('a manager keeps their own module', () => {
     '%s', () => {
       expect(() => requirePermission(mk('manager'), 'borrowers.write')).not.toThrow();
     });
+
+  it('createLoan — issuing a loan is day-to-day work', () => {
+    expect(() => requirePermission(mk('manager'), 'loans.create')).not.toThrow();
+  });
 });

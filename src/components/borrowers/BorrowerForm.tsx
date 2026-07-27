@@ -9,6 +9,8 @@ import { TeluguNamePreview } from './TeluguNamePreview';
 import { MapPinIcon, LocateIcon } from '@/components/shared/icons';
 import { toast } from '@/components/ui/Toast';
 import { hasTeluguScript } from '@/lib/transliterate';
+import { VoiceInput } from '@/components/ui/VoiceInput';
+import { sanitiseSpokenName } from '@/lib/borrowerPayload';
 
 interface BorrowerFormData {
   name: string;
@@ -125,12 +127,27 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Dictation writes both fields. What comes back is already Telugu, so it is the
+          name and its Telugu spelling at once — there is nothing to transliterate, and
+          nothing for a transliteration to get wrong. */}
       <Input
         label={t('borrowers.name')}
         value={data.name}
         onChange={(e) => setData((d) => ({ ...d, name: e.target.value }))}
         error={errors.name}
         required
+        rightSlot={
+          <VoiceInput
+            size="sm"
+            prompt={t('voice.speak')}
+            onResult={(spoken) => {
+              const name = sanitiseSpokenName(spoken);
+              if (!name) return;
+              setData((d) => ({ ...d, name, nameTelugu: name }));
+              setErrors((current) => ({ ...current, name: '' }));
+            }}
+          />
+        }
       />
 
       <TeluguNamePreview

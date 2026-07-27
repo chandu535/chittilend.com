@@ -4,8 +4,7 @@ import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState, useMemo } from 'react';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { TeluguNamePreview } from '@/components/borrowers/TeluguNamePreview';
-import { hasTeluguScript } from '@/lib/transliterate';
+import { BorrowerCreateFlow } from '@/components/borrowers/BorrowerCreateFlow';
 import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Button } from '@/components/ui/Button';
@@ -14,7 +13,7 @@ import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { NameDisplay } from '@/components/shared/NameDisplay';
 import { toast } from '@/components/ui/Toast';
-import { searchBorrowers, createBorrower, updateBorrower } from '@/server/functions/borrowers';
+import { searchBorrowers } from '@/server/functions/borrowers';
 import { createLoan } from '@/server/functions/loans';
 import { calculateLoan, calculateStartMonth, generatePaymentSchedule } from '@/lib/calculations';
 import { can } from '@/lib/permissions';
@@ -22,7 +21,7 @@ import { can } from '@/lib/permissions';
 export const Route = createFileRoute('/_authenticated/loans/new')({
   // Typing the URL is not a way around a hidden button.
   beforeLoad: ({ context }) => {
-    if (!can(context.user, 'loans.write')) throw redirect({ to: '/loans' });
+    if (!can(context.user, 'loans.create')) throw redirect({ to: '/loans' });
   },
   component: NewLoanPage,
 });
@@ -41,12 +40,7 @@ function NewLoanPage() {
   const [borrowerQuery, setBorrowerQuery] = useState('');
   const [borrowerResults, setBorrowerResults] = useState<Array<{ id: string; name: string; nameTelugu: string | null; mobile: string; area: string | null }>>([]);
   const [selectedBorrower, setSelectedBorrower] = useState<{ id: string; name: string; nameTelugu: string | null; mobile: string; area: string | null } | null>(null);
-  const [newBorrower, setNewBorrower] = useState({ name: '', nameTelugu: '', mobile: '', area: '', address: '' });
-  const [newBorrowerErrors, setNewBorrowerErrors] = useState<Record<string, string>>({});
-  const [creatingBorrower, setCreatingBorrower] = useState(false);
-  // A borrower is created before the loan details are entered. Keep its id so that
-  // returning to this step lets the user edit the same borrower instead of creating a duplicate.
-  const [createdBorrowerId, setCreatedBorrowerId] = useState<string | null>(null);
+
 
   // Step 2: Amount
   const [primaryAmount, setPrimaryAmount] = useState('');
@@ -66,47 +60,6 @@ function NewLoanPage() {
     const startMonth = calculateStartMonth(new Date(dateGiven));
     return generatePaymentSchedule(startMonth, calc.totalRepayment, calc.totalInstallments, frequency);
   }, [calc, dateGiven, frequency]);
-
-  function validateNewBorrower(data: typeof newBorrower) {
-    const errors: Record<string, string> = {};
-    if (!data.name.trim() || data.name.trim().length < 2) errors.name = 'Name must be at least 2 characters';
-    if (!/^[6-9]\d{9}$/.test(data.mobile)) errors.mobile = 'Enter a valid 10-digit Indian mobile number';
-    return errors;
-  }
-
-  const handleStep1Next = async () => {
-    if (borrowerMode === 'search') {
-      setStep('amount');
-      return;
-    }
-    const errors = validateNewBorrower(newBorrower);
-    if (Object.keys(errors).length > 0) {
-      setNewBorrowerErrors(errors);
-      return;
-    }
-    setCreatingBorrower(true);
-    try {
-      const borrowerData = {
-        name: newBorrower.name.trim(),
-        nameTelugu: hasTeluguScript(newBorrower.name.trim()) ? newBorrower.name.trim() : newBorrower.nameTelugu.trim() || undefined,
-        mobile: newBorrower.mobile,
-        area: newBorrower.area.trim() || undefined,
-        address: newBorrower.address.trim() || undefined,
-        suretyType: 'owner' as const,
-      };
-      const borrower = createdBorrowerId
-        ? await updateBorrower({ data: { id: createdBorrowerId, ...borrowerData } })
-        : await createBorrower({ data: borrowerData });
-
-      setCreatedBorrowerId(borrower.id);
-      setSelectedBorrower({ id: borrower.id, name: borrower.name, nameTelugu: borrower.nameTelugu, mobile: borrower.mobile, area: borrower.area });
-      setStep('amount');
-    } catch (err) {
-      setNewBorrowerErrors({ mobile: err instanceof Error ? err.message : 'Failed to create borrower' });
-    } finally {
-      setCreatingBorrower(false);
-    }
-  };
 
   const handleBorrowerSearch = async (query: string) => {
     setBorrowerQuery(query);
@@ -178,7 +131,6 @@ function NewLoanPage() {
                 setBorrowerMode('search');
                 setSelectedBorrower(null);
                 setBorrowerQuery('');
-                setCreatedBorrowerId(null);
               }}
               className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all ${
                 borrowerMode === 'search'
@@ -193,7 +145,6 @@ function NewLoanPage() {
               onClick={() => {
                 setBorrowerMode('create');
                 setSelectedBorrower(null);
-                setNewBorrowerErrors({});
               }}
               className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all ${
                 borrowerMode === 'create'
@@ -254,57 +205,33 @@ function NewLoanPage() {
                 </>
               )
             ) : (
-              <>
-                <Input
-                  label={t('borrowers.name')}
-                  value={newBorrower.name}
-                  onChange={(e) => {
-                    setNewBorrower((p) => ({ ...p, name: e.target.value }));
-                    setNewBorrowerErrors((p) => ({ ...p, name: '' }));
-                  }}
-                  error={newBorrowerErrors.name}
-                  placeholder="Full name"
-                />
-                <TeluguNamePreview
-                  name={newBorrower.name}
-                  value={newBorrower.nameTelugu}
-                  onChange={(nameTelugu) => setNewBorrower((p) => ({ ...p, nameTelugu }))}
-                />
-                <Input
-                  label={t('borrowers.mobile')}
-                  value={newBorrower.mobile}
-                  onChange={(e) => {
-                    setNewBorrower((p) => ({ ...p, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) }));
-                    setNewBorrowerErrors((p) => ({ ...p, mobile: '' }));
-                  }}
-                  error={newBorrowerErrors.mobile}
-                  inputMode="numeric"
-                  placeholder="10-digit mobile"
-                />
-                <Input
-                  label={t('borrowers.area')}
-                  value={newBorrower.area}
-                  onChange={(e) => setNewBorrower((p) => ({ ...p, area: e.target.value }))}
-                  placeholder={t('common.optional')}
-                />
-                <Input
-                  label={t('borrowers.address')}
-                  value={newBorrower.address}
-                  onChange={(e) => setNewBorrower((p) => ({ ...p, address: e.target.value }))}
-                  placeholder={t('common.optional')}
-                />
-                <p className="text-xs text-slate-400">{t('loans.photosLaterHint')}</p>
-              </>
+              /* The whole add-borrower flow, not a cut-down copy of it. Someone added
+                 while writing a loan gets the same photo, Aadhaar, location and surety as
+                 one added from the Borrowers page — it is the same component. */
+              <BorrowerCreateFlow
+                saveLabel={t('common.next')}
+                onCreated={(borrower) => {
+                  // Switching back to 'search' matters: moving on unmounts the creation
+                  // flow, so returning to this step would otherwise show an empty form
+                  // and saving again would write a second borrower. Showing them as the
+                  // selected borrower makes going back safe and says who was chosen.
+                  setSelectedBorrower(borrower);
+                  setBorrowerMode('search');
+                  setBorrowerQuery(borrower.name);
+                  setStep('amount');
+                }}
+              />
             )}
 
-            <Button
-              className="w-full"
-              onClick={handleStep1Next}
-              disabled={(borrowerMode === 'search' && !selectedBorrower) || creatingBorrower}
-              loading={creatingBorrower}
-            >
-              {t('common.next')}
-            </Button>
+            {borrowerMode === 'search' && (
+              <Button
+                className="w-full"
+                onClick={() => setStep('amount')}
+                disabled={!selectedBorrower}
+              >
+                {t('common.next')}
+              </Button>
+            )}
           </div>
         </Card>
       )}

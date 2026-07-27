@@ -52,8 +52,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
             {...props}
           />
+          {/* Not pointer-events-none as a whole, because a slot may hold a control such
+              as the dictation button. Anything purely decorative in there opts out. */}
           {rightSlot && (
-            <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
+            <div className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center gap-1">
               {rightSlot}
             </div>
           )}
