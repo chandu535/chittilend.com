@@ -20,3 +20,7 @@ todos.json
 
 # Extracted legacy ledger — contains borrower PII and photographs
 .extract
+
+# Generated per branch by scripts/generate-manifest.ts so the installed app name
+# matches the branch it was built from.
+public/manifest.json
