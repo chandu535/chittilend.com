@@ -80,18 +80,22 @@ function BorrowersPage() {
   return (
     <ListPage
       header={<>
-      {/* Title and action first, controls beneath — matching the loans page. Putting the
-          search, the area filter and the button on one row crushed all three on a phone. */}
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="truncate text-2xl font-bold text-slate-900">{t('borrowers.title')}</h2>
-        <Link to="/borrowers/new" className="shrink-0">
-          <Button size="sm">{t('borrowers.newBorrower')}</Button>
-        </Link>
-      </div>
+      {/* One line on desktop: the title holds the left, and search, the area filter and the
+          action group against the right. Mobile keeps the title with its action and the
+          controls beneath, since three of them crush each other at 375px. */}
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
+        {/* Dissolved on desktop so both become items of the one row, the action last. */}
+        <div className="flex items-center justify-between gap-3 lg:contents">
+          <h2 className="truncate text-2xl font-bold text-slate-900 lg:shrink-0">{t('borrowers.title')}</h2>
+          <Link to="/borrowers/new" className="shrink-0 lg:order-last">
+            <Button size="sm">{t('borrowers.newBorrower')}</Button>
+          </Link>
+        </div>
 
-      <div className="flex items-center gap-2">
-        {/* min-w-0 lets the field shrink instead of forcing the row wider than the screen. */}
-        <div className="min-w-0 flex-1 lg:w-64 lg:flex-none xl:w-72">
+        <div className="flex items-center gap-2 lg:contents">
+        {/* min-w-0 lets the field shrink instead of forcing the row wider than the screen.
+            ml-auto pushes this and everything after it to the right edge. */}
+        <div className="min-w-0 flex-1 lg:ml-auto lg:w-60 lg:flex-none xl:w-72">
           <Input
             placeholder={t('common.search')}
             value={search}
@@ -113,7 +117,7 @@ function BorrowersPage() {
           />
         </div>
         {/* Bounded so a long area name cannot starve the search field. */}
-        <div className="w-32 shrink-0 sm:w-40">
+        <div className="w-32 shrink-0 sm:w-40 lg:w-36">
           <Select
             value={area}
             onChange={(e) => setArea(e.target.value)}
@@ -123,6 +127,7 @@ function BorrowersPage() {
               ...areas.map((a) => ({ value: a, label: a })),
             ]}
           />
+        </div>
         </div>
       </div>
 
