@@ -159,7 +159,8 @@
     "filterBorrower": "Borrower",
     "filterBorrowerClear": "Clear borrower filter",
     "filterBorrowerSearch": "Search name or mobile",
-    "filterBorrowerHint": "Type a name or mobile number"
+    "filterBorrowerHint": "Type a name or mobile number",
+    "nextPayment": "Next"
   },
   "payments": {
     "title": "Payments",

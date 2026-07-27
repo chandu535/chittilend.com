@@ -310,10 +310,15 @@ function LoanCardImpl({
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <div className="flex justify-between text-[11px] mt-1.5">
-              <DateDisplay date={dateGiven} className="text-slate-400" />
-              {chipOverdue && nextPayment && (
-                <span className="text-red-500 font-semibold">{overdueDays(nextPayment.dueDate)}d overdue</span>
+            {/* The pay chip above already shouts "483d overdue"; repeating it here said
+                the same thing twice and crowded out the one fact the collapsed card was
+                missing — when the next instalment is actually due. */}
+            <div className="flex justify-between gap-2 text-[11px] mt-1.5">
+              <DateDisplay date={dateGiven} className="shrink-0 text-slate-400" />
+              {nextPayment && (
+                <span className={clsx('truncate', chipOverdue ? 'font-semibold text-red-500' : 'text-slate-400')}>
+                  {t('loans.nextPayment')} <DateDisplay date={nextPayment.dueDate} />
+                </span>
               )}
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { eq, ilike, or, sql, desc, count, and } from 'drizzle-orm';
+import { eq, ilike, or, sql, desc, asc, count, and } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { db } from '../db';
 import { borrowers, loans } from '../db/schema';
@@ -224,34 +224,43 @@ export const generateNewMagicLink = createServerFn({ method: 'POST' })
 
 export const searchBorrowers = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => {
-    const query = (data as { query: string }).query;
-    if (!query || query.length < 1) throw new Error('Search query required');
-    return { query };
+    const d = data as { query?: string; limit?: number };
+    // An empty query is a valid request, not an error: the borrower picker opens showing
+    // the list rather than an empty box waiting to be typed into.
+    return { query: (d.query ?? '').trim(), limit: Math.min(d.limit ?? 20, 50) };
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
     requireRole(user, ['admin', 'manager']);
 
     const pattern = `%${data.query}%`;
-    const results = await db
+    const where = data.query
+      ? or(
+        ilike(borrowers.name, pattern),
+        ilike(borrowers.nameTelugu, pattern),
+        ilike(borrowers.mobile, pattern),
+      )
+      : undefined;
+
+    return db
       .select({
         id: borrowers.id,
         name: borrowers.name,
         nameTelugu: borrowers.nameTelugu,
         mobile: borrowers.mobile,
         area: borrowers.area,
+        profilePhotoUrl: borrowers.profilePhotoUrl,
+        // The outer table is named explicitly and the inner one aliased. Interpolating
+        // ${borrowers.id} here renders as bare "id" on a single-table select with no
+        // join, which inside the subquery resolves to loans.id — a comparison that is
+        // always false and silently counts zero rather than failing.
+        loanCount: sql<number>`(SELECT COUNT(*)::int FROM loans l WHERE l.borrower_id = borrowers.id)`,
       })
       .from(borrowers)
-      .where(
-        or(
-          ilike(borrowers.name, pattern),
-          ilike(borrowers.nameTelugu, pattern),
-          ilike(borrowers.mobile, pattern),
-        ),
-      )
-      .limit(10);
-
-    return results;
+      .where(where)
+      // Busiest first when browsing, so the people you actually chase are at the top.
+      .orderBy(desc(sql`(SELECT COUNT(*) FROM loans l WHERE l.borrower_id = borrowers.id)`), asc(borrowers.name))
+      .limit(data.limit);
   });
 
 export const deleteBorrower = createServerFn({ method: 'POST' })

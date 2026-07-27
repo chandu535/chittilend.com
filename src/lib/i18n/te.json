@@ -156,7 +156,8 @@
     "filterBorrower": "అప్పుదారు",
     "filterBorrowerClear": "అప్పుదారు ఫిల్టర్ తీసివేయండి",
     "filterBorrowerSearch": "పేరు లేదా మొబైల్ వెతకండి",
-    "filterBorrowerHint": "పేరు లేదా మొబైల్ నంబర్ టైప్ చేయండి"
+    "filterBorrowerHint": "పేరు లేదా మొబైల్ నంబర్ టైప్ చేయండి",
+    "nextPayment": "తదుపరి"
   },
   "payments": {
     "title": "చెల్లింపులు",

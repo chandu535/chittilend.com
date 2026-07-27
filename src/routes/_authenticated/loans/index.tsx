@@ -24,6 +24,7 @@ import { useStore } from '@tanstack/react-store';
 import { can } from '@/lib/permissions';
 import { authStore } from '@/lib/stores';
 import { BorrowerFilter, type BorrowerOption } from '@/components/loans/BorrowerFilter';
+import { FilterDropdown, FilterOption } from '@/components/ui/FilterDropdown';
 
 export const Route = createFileRoute('/_authenticated/loans/')({
   component: LoansPage,
@@ -146,10 +147,11 @@ function LoansPage() {
         )}
       </div>
 
-      {/* Controls. Stacked on mobile; a single row on desktop so the filters do not
-          eat vertical space that belongs to the list. */}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
-        <div className="lg:w-64 lg:shrink-0 xl:w-72">
+      {/* One toolbar on both breakpoints. Six status chips wrapped to a second row on
+          desktop and scrolled off the right edge on mobile, hiding whole filters; two
+          dropdowns cost a fixed amount of space however many options exist. */}
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
+        <div className="min-w-0 lg:max-w-sm lg:flex-1">
           <Input
             placeholder={t('common.search')}
             value={search}
@@ -163,29 +165,39 @@ function LoansPage() {
           />
         </div>
 
-        <BorrowerFilter value={borrower} onChange={setBorrower} />
-
-        {/* The selected chip is the only filled one, so the active filter reads at a glance. */}
-        <div
-          role="group"
-          aria-label={t('common.status')}
-          className="flex items-center gap-2 overflow-x-auto overscroll-x-contain lg:min-w-0 lg:flex-1 lg:flex-wrap lg:overflow-visible"
+        {/* Their own row on mobile — three controls across 375px would squeeze the search
+            box to about a hundred pixels. `lg:contents` dissolves this wrapper on
+            desktop so both triggers rejoin the single toolbar row. */}
+        <div className="flex gap-2 lg:contents">
+        <FilterDropdown
+          label={t('common.status')}
+          value={status === 'all' ? null : statusOptions.find((o) => o.value === status)?.label}
+          count={statusCounts[status] ?? 0}
+          onClear={status === 'all' ? undefined : () => setStatus('all')}
+          clearLabel={t('common.all')}
+          className="min-w-0 flex-1 lg:flex-none"
         >
-          {statusOptions.map((option) => (
-            <FilterChip
-              key={option.value}
-              label={option.label}
-              count={statusCounts[option.value]}
-              selected={status === option.value}
-              onClick={() => setStatus(option.value)}
-            />
-          ))}
+          {(close) => (
+            <div role="listbox" className="max-h-[min(60dvh,22rem)] overflow-y-auto overscroll-contain py-1">
+              {statusOptions.map((option) => (
+                <FilterOption
+                  key={option.value}
+                  label={option.label}
+                  count={statusCounts[option.value] ?? 0}
+                  selected={status === option.value}
+                  onSelect={() => { setStatus(option.value); close(); }}
+                />
+              ))}
+            </div>
+          )}
+        </FilterDropdown>
+
+        <BorrowerFilter value={borrower} onChange={setBorrower} className="min-w-0 flex-1 lg:flex-none" />
         </div>
 
-        {/* Overdue used to sit here as a read-only number; it is a chip now, so only
-            due-today remains as an indicator. */}
+        {/* Read-only, and the first thing to go when space is tight. */}
         {dueTodayCount > 0 && (
-          <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs text-amber-600">
+          <span className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap text-xs text-amber-600 xl:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
             {dueTodayCount} due today
           </span>
@@ -371,53 +383,5 @@ function LoansPage() {
         </div>
       )}
     </ListPage>
-  );
-}
-
-function FilterChip({
-  label,
-  count,
-  selected,
-  onClick,
-}: {
-  label: string;
-  count?: number;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  const empty = count === 0;
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className={clsx(
-        'shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2',
-        'text-sm font-medium transition-colors',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
-        selected
-          ? 'border-primary bg-primary text-white'
-          : empty
-            // Still selectable — an empty result is a legitimate answer — but muted so
-            // the eye goes to the filters that would actually return something.
-            ? 'border-slate-100 bg-white text-slate-300 hover:text-slate-500'
-            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900',
-      )}
-    >
-      {label}
-      {count !== undefined && (
-        <span
-          className={clsx(
-            'rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums',
-            selected ? 'bg-white/20 text-white'
-              : empty ? 'bg-slate-50 text-slate-300'
-                : 'bg-slate-100 text-slate-500',
-          )}
-        >
-          {count}
-        </span>
-      )}
-    </button>
   );
 }
