@@ -115,8 +115,86 @@ body {
   overflow-anchor: auto;
 }
 
+/* ========================================
+   Sheets and dialogs
+   ========================================
+
+  A panel that appears instantly reads as a jump cut: nothing tells you where it came
+  from. Sliding up from the edge it is anchored to gives it an origin, and the backdrop
+  fading in underneath separates it from the page behind.
+
+  The easing matters more than the duration. A plain ease-out decelerates evenly and
+  feels mechanical; this curve overshoots very slightly at the end, which reads as weight
+  settling. 260ms in, 200ms out — closing faster than opening is what makes dismissal
+  feel responsive rather than sluggish.
+*/
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes sheet-out {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+
+/* Centred dialogs have no edge to come from, so they scale up from slightly small
+   instead — the same gesture, expressed for a panel floating in the middle. */
+@keyframes dialog-in {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes dialog-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.96) translateY(8px); }
+}
+
+@keyframes backdrop-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes backdrop-out { from { opacity: 1; } to { opacity: 0; } }
+
+.sheet-panel {
+  animation: sheet-in 260ms cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  will-change: transform;
+}
+
+.sheet-panel[data-closing='true'] {
+  animation: sheet-out 200ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.sheet-backdrop {
+  animation: backdrop-in 260ms ease-out both;
+}
+
+.sheet-backdrop[data-closing='true'] {
+  animation: backdrop-out 200ms ease-in both;
+}
+
+/* From `sm` up these panels are centred rather than docked to the bottom edge. */
+@media (min-width: 640px) {
+  .sheet-panel--responsive {
+    animation: dialog-in 220ms cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  }
+
+  .sheet-panel--responsive[data-closing='true'] {
+    animation: dialog-out 180ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  /* Opacity only. Motion is the part that causes trouble, and removing the animation
+     outright would make panels appear with no transition at all. */
+  .sheet-panel,
+  .sheet-panel[data-closing='true'],
+  .sheet-panel--responsive,
+  .sheet-panel--responsive[data-closing='true'],
+  .sheet-backdrop,
+  .sheet-backdrop[data-closing='true'] {
+    animation-name: backdrop-in;
+    animation-duration: 120ms;
   }
 }

@@ -7,6 +7,7 @@ import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { toast } from '@/components/ui/Toast';
 import { extendTenure } from '@/server/functions/loans';
 import { useScrollLock } from '@/lib/useScrollLock';
+import { useSheetTransition } from '@/lib/useSheetTransition';
 
 interface ExtendTenureModalProps {
   loan: {
@@ -24,6 +25,7 @@ interface ExtendTenureModalProps {
 }
 
 export function ExtendTenureModal({ loan, onClose, onSuccess }: ExtendTenureModalProps) {
+  const { closing, requestClose } = useSheetTransition(onClose);
   const { t } = useTranslation();
   const [newTenure, setNewTenure] = useState('');
   const [loading, setLoading] = useState(false);
@@ -60,13 +62,16 @@ export function ExtendTenureModal({ loan, onClose, onSuccess }: ExtendTenureModa
   // `content-visibility` on list rows creates exactly that containing block.
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl">
+      <div className="sheet-backdrop absolute inset-0 bg-black/40" data-closing={closing} onClick={requestClose} />
+      <div
+        className="sheet-panel sheet-panel--responsive relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl"
+        data-closing={closing}
+      >
         <div className="sticky top-0 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
           <h3 className="text-lg font-semibold text-slate-900">{t('loans.extendTenure')}</h3>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="min-h-11 min-w-11 flex items-center justify-center text-slate-400 hover:text-slate-600"
           >
             <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -123,7 +128,7 @@ export function ExtendTenureModal({ loan, onClose, onSuccess }: ExtendTenureModa
             <Button className="w-full" onClick={handleSubmit} loading={loading} disabled={!isValid || loading}>
               Extend to {newTenureNum > 0 ? `${newTenureNum} months` : '...'}
             </Button>
-            <Button variant="ghost" className="w-full" onClick={onClose} disabled={loading}>
+            <Button variant="ghost" className="w-full" onClick={requestClose} disabled={loading}>
               {t('common.cancel')}
             </Button>
           </div>

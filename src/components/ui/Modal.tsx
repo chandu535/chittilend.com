@@ -2,6 +2,7 @@ import { clsx } from 'clsx';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useScrollLock } from '@/lib/useScrollLock';
+import { useSheetTransition } from '@/lib/useSheetTransition';
 
 interface ModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ const sizeStyles = {
 };
 
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+  const { closing, requestClose } = useSheetTransition(onClose);
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -27,12 +29,12 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     if (!isOpen) return;
 
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') requestClose();
     };
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen, requestClose]);
 
   if (!isOpen) return null;
 
@@ -42,14 +44,14 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={(e) => {
-        if (e.target === overlayRef.current) onClose();
+        if (e.target === overlayRef.current) requestClose();
       }}
     >
-      <div className="fixed inset-0 bg-black/50" />
+      <div className="sheet-backdrop fixed inset-0 bg-black/50" data-closing={closing} />
       <div
         ref={contentRef}
         className={clsx(
-          'relative w-full rounded-xl bg-white shadow-xl',
+          'sheet-panel sheet-panel--responsive relative w-full rounded-xl bg-white shadow-xl',
           'max-h-[90dvh] overflow-y-auto overscroll-contain',
           sizeStyles[size],
         )}
@@ -61,7 +63,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
             <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
             <button
-              onClick={onClose}
+              onClick={requestClose}
               className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Close"
             >

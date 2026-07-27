@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
 import { useIsDesktop } from '@/lib/useMediaQuery';
 import { useScrollLock } from '@/lib/useScrollLock';
+import { useSheetExit } from '@/lib/useSheetTransition';
 
 interface FilterDropdownProps {
   /** Short label shown when nothing is chosen, e.g. "Status". */
@@ -45,7 +46,11 @@ export function FilterDropdown({
 
   useScrollLock(open && !isDesktop);
 
-  const close = useCallback(() => setOpen(false), []);
+  const hide = useCallback(() => { setOpen(false); setClosing(false); }, []);
+  const { closing, requestClose, setClosing } = useSheetExit(hide, isDesktop);
+  // Choices inside the panel dismiss it the same way, so picking a filter slides the
+  // sheet away instead of making it vanish under your thumb.
+  const close = requestClose;
   const reposition = useCallback(() => {
     if (triggerRef.current) setRect(triggerRef.current.getBoundingClientRect());
   }, []);
@@ -147,19 +152,20 @@ export function FilterDropdown({
 
       {open && !isDesktop && createPortal(
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
-          <div className="absolute inset-0 bg-black/40" onClick={close} aria-hidden />
+          <div className="sheet-backdrop absolute inset-0 bg-black/40" data-closing={closing} onClick={requestClose} aria-hidden />
           <div
             ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-label={label}
-            className="relative max-h-[80dvh] overflow-hidden rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl"
+            className="sheet-panel relative max-h-[80dvh] overflow-hidden rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl"
+            data-closing={closing}
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <h2 className="text-base font-semibold text-slate-900">{label}</h2>
               <button
                 type="button"
-                onClick={close}
+                onClick={requestClose}
                 aria-label={clearLabel ?? 'Close'}
                 className="-mr-1 rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
               >

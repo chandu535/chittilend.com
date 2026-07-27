@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { toast } from '@/components/ui/Toast';
 import { markPaymentPaid, markPaymentWaived, revertPayment } from '@/server/functions/payments';
 import { useScrollLock } from '@/lib/useScrollLock';
+import { useSheetTransition } from '@/lib/useSheetTransition';
 
 interface Payment {
   id: string;
@@ -28,6 +29,10 @@ interface PaymentMarkModalProps {
 }
 
 export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkModalProps) {
+  // Dismissals go through requestClose so the sheet animates out before it unmounts.
+  // onSuccess is left alone: the list behind it should refresh the moment the write
+  // lands, not after an animation.
+  const { closing, requestClose } = useSheetTransition(onClose);
   const { t } = useTranslation();
   const amountDue = parseFloat(payment.amountDue);
   const alreadyPaid = parseFloat(payment.amountPaid);
@@ -128,11 +133,16 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="sheet-backdrop absolute inset-0 bg-black/40" data-closing={closing} onClick={requestClose} />
 
       {/* Sheet. dvh so mobile browser chrome is accounted for; the bottom padding keeps
-          the last action clear of the home indicator. */}
-      <div className="relative flex max-h-[88dvh] w-full flex-col overflow-y-auto overscroll-contain rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] shadow-xl sm:max-w-md sm:rounded-2xl sm:pb-0">
+          the last action clear of the home indicator. It slides up from the bottom edge
+          on a phone and scales up when centred from `sm`, so the motion always starts
+          where the panel actually sits. */}
+      <div
+        className="sheet-panel sheet-panel--responsive relative flex max-h-[88dvh] w-full flex-col overflow-y-auto overscroll-contain rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] shadow-xl sm:max-w-md sm:rounded-2xl sm:pb-0"
+        data-closing={closing}
+      >
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
           <h3 className="text-lg font-semibold text-slate-900">
@@ -140,7 +150,7 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
           </h3>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-600"
           >
             <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -206,7 +216,7 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
                 >
                   {t('payments.revertPayment')}
                 </Button>
-                <Button variant="ghost" className="w-full" onClick={onClose} disabled={loading !== null}>
+                <Button variant="ghost" className="w-full" onClick={requestClose} disabled={loading !== null}>
                   {t('common.cancel')}
                 </Button>
               </div>
