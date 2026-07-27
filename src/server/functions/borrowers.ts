@@ -6,7 +6,7 @@ import { borrowers, loans } from '../db/schema';
 import { createBorrowerSchema, updateBorrowerSchema } from '../validators/borrower';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole, requirePermission } from '../middleware/roleGuard';
-import { borrowerSearchCondition } from '../db/search';
+import { borrowerSearchCondition, borrowerSearchRelevance } from '../db/search';
 import { DEFAULTS } from '@/lib/constants';
 
 export const listBorrowers = createServerFn({ method: 'GET' })
@@ -44,12 +44,15 @@ export const listBorrowers = createServerFn({ method: 'GET' })
       ? sql`${sql.join(conditions.map(c => c!), sql` AND `)}`
       : undefined;
 
+    // While searching, the closest match belongs at the top; otherwise newest first.
+    const relevance = borrowerSearchRelevance(data.search, data.searchTelugu);
+
     const [items, totalResult] = await Promise.all([
       db
         .select()
         .from(borrowers)
         .where(where)
-        .orderBy(desc(borrowers.createdAt))
+        .orderBy(...(relevance ? [desc(relevance), desc(borrowers.createdAt)] : [desc(borrowers.createdAt)]))
         .limit(data.limit)
         .offset(offset),
       db
@@ -233,6 +236,7 @@ export const searchBorrowers = createServerFn({ method: 'GET' })
     requireRole(user, ['admin', 'manager']);
 
     const where = borrowerSearchCondition(data.query, data.queryTelugu);
+    const pickerRelevance = borrowerSearchRelevance(data.query, data.queryTelugu);
 
     return db
       .select({
@@ -250,8 +254,13 @@ export const searchBorrowers = createServerFn({ method: 'GET' })
       })
       .from(borrowers)
       .where(where)
-      // Busiest first when browsing, so the people you actually chase are at the top.
-      .orderBy(desc(sql`(SELECT COUNT(*) FROM loans l WHERE l.borrower_id = borrowers.id)`), asc(borrowers.name))
+      // Closest match first when searching; busiest first when simply browsing, so the
+      // people you actually chase are at the top.
+      .orderBy(
+        ...(pickerRelevance ? [desc(pickerRelevance)] : []),
+        desc(sql`(SELECT COUNT(*) FROM loans l WHERE l.borrower_id = borrowers.id)`),
+        asc(borrowers.name),
+      )
       .limit(data.limit);
   });
 

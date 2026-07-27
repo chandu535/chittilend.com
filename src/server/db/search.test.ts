@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { borrowerSearchCondition } from './search';
+import { borrowerSearchCondition, borrowerSearchRelevance } from './search';
 
 /**
  * The loans list once matched only `name` while the borrowers list also matched the
@@ -25,7 +25,8 @@ describe('borrowerSearchCondition', () => {
     expect(query.sql).toContain('"name"');
     expect(query.sql).toContain('"name_telugu"');
     expect(query.sql).toContain('"mobile"');
-    expect(query.params).toHaveLength(3);
+    // Three exact patterns, plus the term and threshold for each fuzzy comparison.
+    expect(query.params.filter((p) => p === '%venkata%')).toHaveLength(3);
   });
 
   it('matches any of the three rather than all of them', () => {
@@ -42,7 +43,7 @@ describe('borrowerSearchCondition', () => {
   });
 
   it('matches on a fragment rather than the whole value', () => {
-    expect(compile('venkata')!.params).toEqual(['%venkata%', '%venkata%', '%venkata%']);
+    expect(compile('venkata')!.params).toContain('%venkata%');
   });
 
   it('keeps Telugu text intact', () => {
@@ -50,17 +51,26 @@ describe('borrowerSearchCondition', () => {
   });
 
   describe('typed in English, searched in Telugu too', () => {
-    it('searches every Telugu reading alongside the English text', () => {
-      // The ledger is stored in Telugu, so an English keyboard reaches it only through
-      // these. Three fields x three terms.
-      const q = dialect.sqlToQuery(
-        borrowerSearchCondition('ramakrishna', ['రామకృష్ణ', 'రామక్రిష్ణ'])!,
-      );
-      expect(q.params).toEqual([
-        '%ramakrishna%', '%ramakrishna%', '%ramakrishna%',
-        '%రామకృష్ణ%', '%రామకృష్ణ%', '%రామకృష్ణ%',
-        '%రామక్రిష్ణ%', '%రామక్రిష్ణ%', '%రామక్రిష్ణ%',
-      ]);
+    it('searches the Telugu reading alongside the English text', () => {
+      const q = dialect.sqlToQuery(borrowerSearchCondition('venkata', ['వెంకట'])!);
+      expect(q.params).toContain('%venkata%');
+      expect(q.params).toContain('%వెంకట%');
+    });
+
+    it('uses one reading, not all of them', () => {
+      // Fuzzy matching already bridges spelling variants, and the extra guesses were
+      // where false positives came from: the third reading of "yesu" is ఎస్, which sits
+      // inside the unrelated ఎస్ రాంబాబు.
+      const q = dialect.sqlToQuery(borrowerSearchCondition('yesu', ['యేసు', 'ఏసు', 'ఎస్'])!);
+      expect(q.params).toContain('%యేసు%');
+      expect(q.params).not.toContain('%ఏసు%');
+      expect(q.params).not.toContain('%ఎస్%');
+    });
+
+    it('rejects a reading that is one character repeated', () => {
+      // "qqqq" transliterates to క్క్క్క్, which trigram-matched 42 of 178 borrowers.
+      const q = dialect.sqlToQuery(borrowerSearchCondition('qqqq', ['క్క్క్క్'])!);
+      expect(q.params).toEqual(['%qqqq%', '%qqqq%', '%qqqq%', 'qqqq', 0.3, 'qqqq', 0.3]);
     });
 
     it('accepts a single reading as a plain string', () => {
@@ -68,19 +78,38 @@ describe('borrowerSearchCondition', () => {
         .toContain('%వెంకట%');
     });
 
-    it('drops duplicates, so an already-Telugu term is not searched twice', () => {
-      const q = dialect.sqlToQuery(borrowerSearchCondition('వెంకట', ['వెంకట'])!);
-      expect(q.params).toEqual(['%వెంకట%', '%వెంకట%', '%వెంకట%']);
-    });
-
-    it('ignores empty readings', () => {
-      const q = dialect.sqlToQuery(borrowerSearchCondition('venkata', ['', '  '])!);
-      expect(q.params).toHaveLength(3);
-    });
-
     it('still returns nothing when there is no term at all', () => {
       expect(borrowerSearchCondition('', [])).toBeUndefined();
       expect(borrowerSearchCondition('', ['వెంకట'])).toBeDefined();
+    });
+  });
+
+  describe('matching close spellings, not just exact ones', () => {
+    it('compares the term against part of the name', () => {
+      expect(dialect.sqlToQuery(borrowerSearchCondition('venkata')!).sql)
+        .toContain('word_similarity');
+    });
+
+    it('does not fuzzy-match a mobile number', () => {
+      // A near-miss on a phone number is simply a different phone number.
+      const q = dialect.sqlToQuery(borrowerSearchCondition('9876543210')!);
+      expect(q.sql).not.toContain('word_similarity');
+    });
+
+    it('does not fuzzy-match on one or two characters', () => {
+      expect(dialect.sqlToQuery(borrowerSearchCondition('ve')!).sql)
+        .not.toContain('word_similarity');
+    });
+
+    it('ranks exact hits above close ones', () => {
+      const q = dialect.sqlToQuery(borrowerSearchRelevance('venkata')!);
+      // The exact branch scores 2, above any similarity, which cannot exceed 1.
+      expect(q.sql).toContain('THEN 2');
+      expect(q.sql).toContain('GREATEST');
+    });
+
+    it('has no relevance to report without a term', () => {
+      expect(borrowerSearchRelevance('', [])).toBeUndefined();
     });
   });
 });
