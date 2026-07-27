@@ -7,6 +7,7 @@ import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { useLocalizedName } from '@/components/shared/NameDisplay';
 import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
+import { ContactActions } from '@/components/shared/ContactActions';
 import { PaymentTimeline } from './PaymentTimeline';
 import { PaymentMarkModal } from './PaymentMarkModal';
 import { getLoanById } from '@/server/functions/loans';
@@ -32,6 +33,7 @@ interface LoanCardProps {
   borrowerName: string;
   borrowerNameTelugu?: string | null;
   borrowerPhotoUrl?: string | null;
+  borrowerMobile?: string | null;
   nextPayment?: NextPayment | null;
   primaryAmount: string;
   totalRepayment: string;
@@ -88,7 +90,7 @@ function LoanCardImpl({
   loanNumber,
   borrowerName,
   borrowerNameTelugu,
-  borrowerPhotoUrl,
+  borrowerPhotoUrl, borrowerMobile,
   nextPayment: nextPaymentProp,
   primaryAmount,
   totalRepayment,
@@ -324,6 +326,13 @@ function LoanCardImpl({
           </div>
         </div>
 
+        {/* Outside the header above, which toggles the card: a tap on Call must dial,
+            not expand. Collections happen on the phone, so this is one tap from the list
+            rather than a number to read off the screen and type into the dialler. */}
+        {borrowerMobile && (
+          <ContactActions mobile={borrowerMobile} name={displayName} className="px-4 pb-3" />
+        )}
+
         {/* ── Expanded content ── */}
         {open && (
           <div className="border-t border-slate-50">
@@ -482,6 +491,7 @@ export const LoanCard = memo(LoanCardImpl, (prev, next) => (
   && prev.borrowerName === next.borrowerName
   && prev.borrowerNameTelugu === next.borrowerNameTelugu
   && prev.borrowerPhotoUrl === next.borrowerPhotoUrl
+  && prev.borrowerMobile === next.borrowerMobile
   && prev.nextPayment?.id === next.nextPayment?.id
   && prev.nextPayment?.status === next.nextPayment?.status
   && prev.nextPayment?.amountPaid === next.nextPayment?.amountPaid

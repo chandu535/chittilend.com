@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { formatPhone } from '@/lib/formatters';
 import { useLocalizedName } from '@/components/shared/NameDisplay';
 import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
+import { ContactActions } from '@/components/shared/ContactActions';
 
 interface BorrowerCardProps {
   id: string;
@@ -19,11 +20,14 @@ export function BorrowerCard({ id, name, nameTelugu, mobile, area, photoUrl, loa
   const displayName = useLocalizedName(name, nameTelugu);
 
   return (
-    <Link
-      to="/borrowers/$borrowerId"
-      params={{ borrowerId: id }}
-      className="block rounded-xl border border-slate-200 bg-white p-4 hover:shadow-md transition-shadow"
-    >
+    // The card is a container rather than a link: an anchor may not contain the call and
+    // WhatsApp anchors, so only the part that navigates is wrapped.
+    <div className="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md">
+      <Link
+        to="/borrowers/$borrowerId"
+        params={{ borrowerId: id }}
+        className="block"
+      >
       <div className="flex items-center gap-3">
         <BorrowerAvatar name={name} nameTelugu={nameTelugu} photoUrl={photoUrl} size="md" />
         <div className="min-w-0 flex-1">
@@ -41,6 +45,9 @@ export function BorrowerCard({ id, name, nameTelugu, mobile, area, photoUrl, loa
           {t('borrowers.activeLoans')}: {loanCount}
         </div>
       )}
-    </Link>
+      </Link>
+
+      <ContactActions mobile={mobile} name={displayName} className="mt-3" />
+    </div>
   );
 }

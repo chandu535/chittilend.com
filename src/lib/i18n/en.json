@@ -373,5 +373,9 @@
     "title": "Install SriPay",
     "subtitle": "Add it to your home screen",
     "action": "Install"
+  },
+  "contact": {
+    "call": "Call",
+    "whatsapp": "WhatsApp"
   }
 }

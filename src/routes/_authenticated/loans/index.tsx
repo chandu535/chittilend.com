@@ -261,6 +261,7 @@ function LoansPage() {
                   borrowerName={loan.borrowerName}
                   borrowerNameTelugu={loan.borrowerNameTelugu}
                   borrowerPhotoUrl={loan.borrowerPhotoUrl}
+                  borrowerMobile={loan.borrowerMobile}
                   nextPayment={loan.nextPayment}
                   primaryAmount={loan.primaryAmount}
                   totalRepayment={loan.totalRepayment}
