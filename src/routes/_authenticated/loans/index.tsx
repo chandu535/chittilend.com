@@ -137,21 +137,25 @@ function LoansPage() {
   return (
     <ListPage
       header={<>
-      {/* Title row */}
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[22px] font-semibold text-slate-900 tracking-tight">{t('loans.title')}</h2>
-        {canWriteLoans && (
-          <Link to="/loans/new">
-            <Button size="sm">{t('loans.newLoan')}</Button>
-          </Link>
-        )}
-      </div>
-
-      {/* One toolbar on both breakpoints. Six status chips wrapped to a second row on
-          desktop and scrolled off the right edge on mobile, hiding whole filters; two
-          dropdowns cost a fixed amount of space however many options exist. */}
+      {/* Title, filters and the action share one line on desktop. Six status chips
+          wrapped to a second row there and scrolled off the right edge on mobile, hiding
+          whole filters; a dropdown costs the same space however many options exist, which
+          is what frees the row. Mobile keeps them stacked — none of this fits at 375px. */}
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
-        <div className="min-w-0 lg:max-w-sm lg:flex-1">
+        {/* Dissolved on desktop so the title and the action become items of the one row;
+            the action stays last in the group. */}
+        <div className="flex items-center justify-between gap-3 lg:contents">
+          <h2 className="text-[22px] font-semibold tracking-tight text-slate-900 lg:shrink-0">{t('loans.title')}</h2>
+          {canWriteLoans && (
+            <Link to="/loans/new" className="shrink-0 lg:order-last">
+              <Button size="sm">{t('loans.newLoan')}</Button>
+            </Link>
+          )}
+        </div>
+
+        {/* `ml-auto` here pushes this and everything after it to the right edge, so the
+            title keeps the left and the controls group together rather than trailing it. */}
+        <div className="min-w-0 lg:ml-auto lg:w-60 xl:w-72">
           <Input
             placeholder={t('common.search')}
             value={search}
