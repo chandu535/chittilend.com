@@ -28,6 +28,7 @@ export const listLoans = createServerFn({ method: 'GET' })
       dateFrom?: string;
       dateTo?: string;
       search?: string;
+      searchTelugu?: string[];
     };
     return {
       page: d.page || 1,
@@ -37,6 +38,7 @@ export const listLoans = createServerFn({ method: 'GET' })
       dateFrom: d.dateFrom || '',
       dateTo: d.dateTo || '',
       search: d.search || '',
+      searchTelugu: (d.searchTelugu ?? []).filter((t) => typeof t === 'string' && t.trim()).slice(0, 3),
     };
   })
   .handler(async ({ data }) => {
@@ -84,7 +86,7 @@ export const listLoans = createServerFn({ method: 'GET' })
     if (data.borrowerId) facetConditions.push(eq(loans.borrowerId, data.borrowerId));
     if (data.dateFrom) facetConditions.push(gte(loans.dateGiven, data.dateFrom));
     if (data.dateTo) facetConditions.push(lte(loans.dateGiven, data.dateTo));
-    const searchCondition = borrowerSearchCondition(data.search);
+    const searchCondition = borrowerSearchCondition(data.search, data.searchTelugu);
     if (searchCondition) facetConditions.push(searchCondition);
 
     const facetWhere = facetConditions.length > 0 ? and(...facetConditions) : undefined;

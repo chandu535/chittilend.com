@@ -14,14 +14,26 @@ import { borrowers } from './schema';
  * whichever one is on screen is the one someone will type; and a mobile number is often
  * the only thing that separates two people with the same name.
  */
-export function borrowerSearchCondition(term: string): SQL | undefined {
-  const trimmed = term.trim();
-  if (!trimmed) return undefined;
+export function borrowerSearchCondition(
+  term: string,
+  alsoTelugu: string | string[] = [],
+): SQL | undefined {
+  // Telugu readings of a term typed in English. Most names here are stored in Telugu
+  // script, so without these an English keyboard cannot reach them at all. Several
+  // candidates rather than one: "durgarao" transliterates to both దుర్గారావు and
+  // దుర్గరావు, and the ledger does not consistently use the first.
+  const candidates = (Array.isArray(alsoTelugu) ? alsoTelugu : [alsoTelugu]).map((c) => c.trim());
+  const terms = [...new Set([term.trim(), ...candidates])].filter(Boolean);
+  if (!terms.length) return undefined;
 
-  const pattern = `%${trimmed}%`;
-  return or(
-    ilike(borrowers.name, pattern),
-    ilike(borrowers.nameTelugu, pattern),
-    ilike(borrowers.mobile, pattern),
-  );
+  const matches = terms.flatMap((value) => {
+    const pattern = `%${value}%`;
+    return [
+      ilike(borrowers.name, pattern),
+      ilike(borrowers.nameTelugu, pattern),
+      ilike(borrowers.mobile, pattern),
+    ];
+  });
+
+  return matches.length === 1 ? matches[0] : or(...matches);
 }

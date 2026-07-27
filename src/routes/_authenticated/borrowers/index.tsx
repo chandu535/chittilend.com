@@ -20,6 +20,7 @@ import { clsx } from 'clsx';
 import { ListPage } from '@/components/layout/PageLayout';
 import { ListError } from '@/components/shared/ListError';
 import { formatPhone } from '@/lib/formatters';
+import { useTeluguSearchTerm } from '@/lib/useTeluguSearchTerm';
 
 export const Route = createFileRoute('/_authenticated/borrowers/')({
   component: BorrowersPage,
@@ -31,6 +32,16 @@ function BorrowersPage() {
   const [area, setArea] = useState('all');
   const [areas, setAreas] = useState<string[]>([]);
   const debouncedSearch = useDebouncedValue(search, 300);
+  // Typed in English, this is the Telugu reading of it — searched alongside, and shown
+  // in the field so it is clear what else is being looked for.
+  const { telugu: teluguTerm, candidates: teluguCandidates } = useTeluguSearchTerm(search);
+  // Joined for the debounce and the cache key, which both need a stable primitive.
+  const debouncedTelugu = useDebouncedValue(teluguCandidates.join('|'), 300);
+  const teluguTerms = debouncedTelugu ? debouncedTelugu.split('|') : [];
+  // "No borrowers yet" is only true of an empty ledger. Saying it when a search simply
+  // did not match reads as though the data is gone, which is exactly how a slow or
+  // unmatched search came across.
+  const filtersActive = Boolean(debouncedSearch.trim()) || (area !== 'all' && area !== '');
 
   type BorrowerItem = {
     id: string;
@@ -42,18 +53,19 @@ function BorrowersPage() {
   };
 
   const fetchPage = useCallback(
-    (p: number, size: number) => listBorrowers({ data: { page: p, limit: size, area, search: debouncedSearch } }),
-    [area, debouncedSearch],
+    (p: number, size: number) =>
+      listBorrowers({ data: { page: p, limit: size, area, search: debouncedSearch, searchTelugu: teluguTerms } }),
+    [area, debouncedSearch, debouncedTelugu],
   );
   const cacheKey = useCallback(
-    (p: number, size: number) => `borrowers:${p}:${size}:${area}:${debouncedSearch}`,
-    [area, debouncedSearch],
+    (p: number, size: number) => `borrowers:${p}:${size}:${area}:${debouncedSearch}:${debouncedTelugu}`,
+    [area, debouncedSearch, debouncedTelugu],
   );
 
   const list = usePaginatedList<BorrowerItem>({
     cacheKey,
     fetchPage: fetchPage as (p: number, size: number) => Promise<PageResult<BorrowerItem>>,
-    resetKey: `${area}|${debouncedSearch}`,
+    resetKey: `${area}|${debouncedSearch}|${debouncedTelugu}`,
   });
 
   const { items, total, showSkeleton, refreshing } = list;
@@ -84,6 +96,14 @@ function BorrowersPage() {
             placeholder={t('common.search')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            rightSlot={teluguTerm ? (
+              <span
+                className="max-w-[7rem] truncate rounded-md bg-violet-50 px-1.5 py-0.5 text-xs font-medium text-violet-700"
+                title={teluguTerm}
+              >
+                {teluguTerm}
+              </span>
+            ) : undefined}
             className="lg:min-h-10 lg:py-2 lg:text-sm"
             leftIcon={
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -127,7 +147,8 @@ function BorrowersPage() {
         <ListError message={list.errorMessage} onRetry={list.refresh} />
       ) : items.length === 0 ? (
         <EmptyState
-          title={t('borrowers.noBorrowers')}
+          title={filtersActive ? t('common.noMatches') : t('borrowers.noBorrowers')}
+          description={filtersActive ? t('common.noMatchesHint') : undefined}
           action={
             <Link to="/borrowers/new">
               <Button>{t('borrowers.newBorrower')}</Button>

@@ -48,4 +48,39 @@ describe('borrowerSearchCondition', () => {
   it('keeps Telugu text intact', () => {
     expect(compile('నాగరాజు')!.params[0]).toBe('%నాగరాజు%');
   });
+
+  describe('typed in English, searched in Telugu too', () => {
+    it('searches every Telugu reading alongside the English text', () => {
+      // The ledger is stored in Telugu, so an English keyboard reaches it only through
+      // these. Three fields x three terms.
+      const q = dialect.sqlToQuery(
+        borrowerSearchCondition('ramakrishna', ['రామకృష్ణ', 'రామక్రిష్ణ'])!,
+      );
+      expect(q.params).toEqual([
+        '%ramakrishna%', '%ramakrishna%', '%ramakrishna%',
+        '%రామకృష్ణ%', '%రామకృష్ణ%', '%రామకృష్ణ%',
+        '%రామక్రిష్ణ%', '%రామక్రిష్ణ%', '%రామక్రిష్ణ%',
+      ]);
+    });
+
+    it('accepts a single reading as a plain string', () => {
+      expect(dialect.sqlToQuery(borrowerSearchCondition('venkata', 'వెంకట')!).params)
+        .toContain('%వెంకట%');
+    });
+
+    it('drops duplicates, so an already-Telugu term is not searched twice', () => {
+      const q = dialect.sqlToQuery(borrowerSearchCondition('వెంకట', ['వెంకట'])!);
+      expect(q.params).toEqual(['%వెంకట%', '%వెంకట%', '%వెంకట%']);
+    });
+
+    it('ignores empty readings', () => {
+      const q = dialect.sqlToQuery(borrowerSearchCondition('venkata', ['', '  '])!);
+      expect(q.params).toHaveLength(3);
+    });
+
+    it('still returns nothing when there is no term at all', () => {
+      expect(borrowerSearchCondition('', [])).toBeUndefined();
+      expect(borrowerSearchCondition('', ['వెంకట'])).toBeDefined();
+    });
+  });
 });

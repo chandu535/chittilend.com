@@ -16,12 +16,14 @@ export const listBorrowers = createServerFn({ method: 'GET' })
       limit?: number;
       area?: string;
       search?: string;
+      searchTelugu?: string[];
     };
     return {
       page: d.page || 1,
       limit: d.limit || DEFAULTS.ITEMS_PER_PAGE,
       area: d.area || '',
       search: d.search || '',
+      searchTelugu: (d.searchTelugu ?? []).filter((t) => typeof t === 'string' && t.trim()).slice(0, 3),
     };
   })
   .handler(async ({ data }) => {
@@ -31,7 +33,7 @@ export const listBorrowers = createServerFn({ method: 'GET' })
     const offset = (data.page - 1) * data.limit;
     const conditions = [];
 
-    const searchCondition = borrowerSearchCondition(data.search);
+    const searchCondition = borrowerSearchCondition(data.search, data.searchTelugu);
     if (searchCondition) conditions.push(searchCondition);
 
     if (data.area && data.area !== 'all') {
@@ -217,16 +219,20 @@ export const generateNewMagicLink = createServerFn({ method: 'POST' })
 
 export const searchBorrowers = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => {
-    const d = data as { query?: string; limit?: number };
+    const d = data as { query?: string; queryTelugu?: string[]; limit?: number };
     // An empty query is a valid request, not an error: the borrower picker opens showing
     // the list rather than an empty box waiting to be typed into.
-    return { query: (d.query ?? '').trim(), limit: Math.min(d.limit ?? 20, 50) };
+    return {
+      query: (d.query ?? '').trim(),
+      queryTelugu: (d.queryTelugu ?? []).filter((t) => typeof t === 'string' && t.trim()).slice(0, 3),
+      limit: Math.min(d.limit ?? 20, 50),
+    };
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
     requireRole(user, ['admin', 'manager']);
 
-    const where = borrowerSearchCondition(data.query);
+    const where = borrowerSearchCondition(data.query, data.queryTelugu);
 
     return db
       .select({

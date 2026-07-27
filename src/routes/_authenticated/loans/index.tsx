@@ -25,6 +25,7 @@ import { can } from '@/lib/permissions';
 import { authStore } from '@/lib/stores';
 import { BorrowerFilter, type BorrowerOption } from '@/components/loans/BorrowerFilter';
 import { FilterDropdown, FilterOption } from '@/components/ui/FilterDropdown';
+import { useTeluguSearchTerm } from '@/lib/useTeluguSearchTerm';
 
 export const Route = createFileRoute('/_authenticated/loans/')({
   component: LoansPage,
@@ -79,22 +80,31 @@ function LoansPage() {
   const [borrower, setBorrower] = useState<BorrowerOption | null>(null);
   // Debounced so typing does not fire a request per keystroke.
   const debouncedSearch = useDebouncedValue(search, 300);
+  // Typed in English, this is the Telugu reading of it — searched alongside, and shown
+  // in the field so it is clear what else is being looked for.
+  const { telugu: teluguTerm, candidates: teluguCandidates } = useTeluguSearchTerm(search);
+  // Joined for the debounce and the cache key, which both need a stable primitive.
+  const debouncedTelugu = useDebouncedValue(teluguCandidates.join('|'), 300);
+  const teluguTerms = debouncedTelugu ? debouncedTelugu.split('|') : [];
   const borrowerId = borrower?.id ?? '';
+  // "No loans yet" is only true of an empty book; an unmatched search is a different
+  // thing and needs to say so.
+  const filtersActive = Boolean(debouncedSearch.trim()) || status !== 'all' || Boolean(borrowerId);
 
   const fetchPage = useCallback(
     (p: number, size: number) =>
-      listLoans({ data: { page: p, limit: size, status, search: debouncedSearch, borrowerId } }),
-    [status, debouncedSearch, borrowerId],
+      listLoans({ data: { page: p, limit: size, status, search: debouncedSearch, searchTelugu: teluguTerms, borrowerId } }),
+    [status, debouncedSearch, debouncedTelugu, borrowerId],
   );
   const cacheKey = useCallback(
-    (p: number, size: number) => `loans:${p}:${size}:${status}:${debouncedSearch}:${borrowerId}`,
-    [status, debouncedSearch, borrowerId],
+    (p: number, size: number) => `loans:${p}:${size}:${status}:${debouncedSearch}:${debouncedTelugu}:${borrowerId}`,
+    [status, debouncedSearch, debouncedTelugu, borrowerId],
   );
 
   const list = usePaginatedList<LoanItem>({
     cacheKey,
     fetchPage: fetchPage as (p: number, size: number) => Promise<PageResult<LoanItem>>,
-    resetKey: `${status}|${debouncedSearch}|${borrowerId}`,
+    resetKey: `${status}|${debouncedSearch}|${debouncedTelugu}|${borrowerId}`,
   });
 
   const { items, total, showSkeleton, refreshing } = list;
@@ -160,6 +170,14 @@ function LoansPage() {
             placeholder={t('common.search')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            rightSlot={teluguTerm ? (
+              <span
+                className="max-w-[7rem] truncate rounded-md bg-violet-50 px-1.5 py-0.5 text-xs font-medium text-violet-700"
+                title={teluguTerm}
+              >
+                {teluguTerm}
+              </span>
+            ) : undefined}
             className="lg:min-h-10 lg:py-2 lg:text-sm"
             leftIcon={
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -228,7 +246,8 @@ function LoansPage() {
         <ListError message={list.errorMessage} onRetry={list.refresh} />
       ) : items.length === 0 ? (
         <EmptyState
-          title={t('loans.noLoans')}
+          title={filtersActive ? t('common.noMatches') : t('loans.noLoans')}
+          description={filtersActive ? t('common.noMatchesHint') : undefined}
           action={
             canWriteLoans ? (
               <Link to="/loans/new">

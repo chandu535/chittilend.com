@@ -6,10 +6,13 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   hint?: string;
   leftIcon?: ReactNode;
+  /** Sits inside the field against the right edge. Used for the Telugu reading of what
+   *  has been typed, which belongs with the text rather than in a row of its own. */
+  rightSlot?: ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, leftIcon, className, id, ...props }, ref) => {
+  ({ label, error, hint, leftIcon, rightSlot, className, id, ...props }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
     return (
@@ -42,12 +45,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 ? 'border-red-300 focus:ring-red-300/60 focus:border-red-400'
                 : 'border-slate-200',
               leftIcon && 'pl-10',
+              rightSlot && 'pr-28',
               className,
             )}
             aria-invalid={error ? 'true' : undefined}
             aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
             {...props}
           />
+          {rightSlot && (
+            <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
+              {rightSlot}
+            </div>
+          )}
         </div>
         {error && (
           <p id={`${inputId}-error`} className="mt-1 text-sm text-danger">

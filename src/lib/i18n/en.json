@@ -35,7 +35,9 @@
     "goTo": "Go to",
     "previous": "Previous",
     "serial": "#",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "noMatches": "Nothing matches your search",
+    "noMatchesHint": "Try a different name, or clear the filters."
   },
   "nav": {
     "home": "Home",
