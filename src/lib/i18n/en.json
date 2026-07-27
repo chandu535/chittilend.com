@@ -162,7 +162,9 @@
     "filterBorrowerClear": "Clear borrower filter",
     "filterBorrowerSearch": "Search name or mobile",
     "filterBorrowerHint": "Type a name or mobile number",
-    "nextPayment": "Next"
+    "nextPayment": "Next",
+    "repayable": "Repayable",
+    "left": "left"
   },
   "payments": {
     "title": "Payments",

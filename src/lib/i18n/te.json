@@ -159,7 +159,9 @@
     "filterBorrowerClear": "అప్పుదారు ఫిల్టర్ తీసివేయండి",
     "filterBorrowerSearch": "పేరు లేదా మొబైల్ వెతకండి",
     "filterBorrowerHint": "పేరు లేదా మొబైల్ నంబర్ టైప్ చేయండి",
-    "nextPayment": "తదుపరి"
+    "nextPayment": "తదుపరి",
+    "repayable": "తిరిగి చెల్లించాల్సినది",
+    "left": "మిగిలింది"
   },
   "payments": {
     "title": "చెల్లింపులు",

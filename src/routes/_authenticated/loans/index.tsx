@@ -282,7 +282,6 @@ function LoansPage() {
                   borrowerPhotoUrl={loan.borrowerPhotoUrl}
                   borrowerMobile={loan.borrowerMobile}
                   nextPayment={loan.nextPayment}
-                  primaryAmount={loan.primaryAmount}
                   totalRepayment={loan.totalRepayment}
                   paidAmount={loan.paidAmount}
                   status={loan.status}
@@ -302,7 +301,7 @@ function LoansPage() {
                   <th className="px-4 py-3 font-semibold whitespace-nowrap w-12">{t('common.serial')}</th>
                   <th className="px-4 py-3 font-semibold whitespace-nowrap w-20">{t('loans.loanNo')}</th>
                   <th className="px-4 py-3 font-semibold whitespace-nowrap">{t('borrowers.name')}</th>
-                  <th className="px-4 py-3 font-semibold whitespace-nowrap">{t('loans.primaryAmount')}</th>
+                  <th className="px-4 py-3 font-semibold whitespace-nowrap">{t('loans.repayable')}</th>
                   <th className="px-4 py-3 font-semibold whitespace-nowrap">{t('common.status')}</th>
                   <th className="px-4 py-3 font-semibold whitespace-nowrap">Progress</th>
                   <th className="px-4 py-3 font-semibold whitespace-nowrap">Next Payment</th>
@@ -311,6 +310,7 @@ function LoansPage() {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {sortedLoans.map((loan, index) => {
+                  const remaining = Math.max(0, parseFloat(loan.totalRepayment) - parseFloat(loan.paidAmount));
                   const progress = parseFloat(loan.totalRepayment) > 0
                     ? Math.min(100, Math.round((parseFloat(loan.paidAmount) / parseFloat(loan.totalRepayment)) * 100))
                     : 0;
@@ -332,8 +332,16 @@ function LoansPage() {
                           </div>
                         </div>
                       </td>
+                      {/* What the borrower owes in total, not what was handed over — the
+                          figure that matters when chasing a payment. The amount still
+                          outstanding sits under it, and disappears once nothing is left. */}
                       <td className="px-4 py-3">
-                        <CurrencyDisplay amount={parseFloat(loan.primaryAmount)} className="font-semibold text-slate-900" />
+                        <CurrencyDisplay amount={parseFloat(loan.totalRepayment)} className="font-semibold text-slate-900" />
+                        {remaining > 0 && (
+                          <p className="mt-0.5 text-xs text-slate-400">
+                            <CurrencyDisplay amount={remaining} /> {t('loans.left')}
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <Badge status={loan.status}>

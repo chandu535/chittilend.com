@@ -35,7 +35,6 @@ interface LoanCardProps {
   borrowerPhotoUrl?: string | null;
   borrowerMobile?: string | null;
   nextPayment?: NextPayment | null;
-  primaryAmount: string;
   totalRepayment: string;
   paidAmount: string;
   status: 'active' | 'completed' | 'defaulted' | 'extended';
@@ -92,7 +91,6 @@ function LoanCardImpl({
   borrowerNameTelugu,
   borrowerPhotoUrl, borrowerMobile,
   nextPayment: nextPaymentProp,
-  primaryAmount,
   totalRepayment,
   paidAmount: paidAmountProp,
   status,
@@ -134,6 +132,8 @@ function LoanCardImpl({
     ? details.payments.reduce((sum, payment) => sum + parseFloat(payment.amountPaid), 0)
     : parseFloat(paidAmountProp);
   const repaymentAmount = details ? parseFloat(details.totalRepayment) : parseFloat(totalRepayment);
+  // Never negative: a borrower can overpay, and "-500 left" is not a thing.
+  const remainingAmount = Math.max(0, repaymentAmount - paidAmount);
   // Capped for the same reason as the detail screen — see the note there.
   const progress = repaymentAmount > 0 ? Math.min(100, (paidAmount / repaymentAmount) * 100) : 0;
 
@@ -240,10 +240,20 @@ function LoanCardImpl({
                 #{loanNumber}
               </p>
               <p className="font-semibold text-slate-800 text-[15px] leading-snug truncate">{displayName}</p>
-              <CurrencyDisplay
-                amount={parseFloat(primaryAmount)}
-                className="text-[22px] font-bold text-slate-900 leading-tight"
-              />
+              {/* The total owed rather than the amount handed over: on a collections
+                  screen the debt is the number you want. What is still outstanding sits
+                  beside it, and drops away once the loan is settled. */}
+              <div className="flex items-baseline gap-2">
+                <CurrencyDisplay
+                  amount={repaymentAmount}
+                  className="text-[22px] font-bold text-slate-900 leading-tight"
+                />
+                {remainingAmount > 0 && (
+                  <span className="whitespace-nowrap text-[11px] font-medium text-slate-400">
+                    <CurrencyDisplay amount={remainingAmount} /> {t('loans.left')}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Right column */}
