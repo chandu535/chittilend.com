@@ -6,7 +6,7 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3004",
+    "dev": "node --env-file=.env ./node_modules/.bin/vite dev --port 3004",
     "build": "vite build",
     "start": "node .output/server/index.mjs --port 3004",
     "test": "vitest run",

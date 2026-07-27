@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { login } from '@/server/functions/auth';
 import { setAuthUser } from '@/lib/stores';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
+import { isConnectionError } from '@/lib/connection';
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -29,7 +30,9 @@ function LoginPage() {
       setAuthUser(user);
       navigate({ to: '/loans' });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errors.generic'));
+      // Distinguish "we could not reach the server" from "those details are wrong",
+      // so a network blip does not read as a rejected password.
+      setError(isConnectionError(err) ? t('errors.offline') : err instanceof Error ? err.message : t('errors.generic'));
     } finally {
       setLoading(false);
     }

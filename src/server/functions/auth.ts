@@ -7,6 +7,7 @@ import { db } from '../db';
 import { users, borrowers } from '../db/schema';
 import { loginSchema } from '../validators/auth';
 import { getOptionalUser, type AuthUser } from '../middleware/auth';
+import { CONNECTION_ERROR, isDatabaseUnreachable } from '@/lib/connection';
 
 const COOKIE_NAME = 'session';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days in seconds
@@ -27,11 +28,20 @@ export const login = createServerFn({ method: 'POST' })
     return value as { email: string; password: string };
   })
   .handler(async ({ data }) => {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, data.email))
-      .limit(1);
+    // A database that cannot be reached is not a rejected login. Without this the driver
+    // error travelled to the browser verbatim — raw SQL, and the email address in the
+    // query parameters — where it read as though the credentials were at fault.
+    let user;
+    try {
+      [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, data.email))
+        .limit(1);
+    } catch (err) {
+      if (isDatabaseUnreachable(err)) throw new Error(CONNECTION_ERROR);
+      throw new Error('Could not sign in. Please try again.');
+    }
 
     if (!user) {
       throw new Error('Invalid email or password');
