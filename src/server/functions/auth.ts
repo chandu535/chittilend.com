@@ -2,9 +2,10 @@ import { createServerFn } from '@tanstack/react-start';
 import { setCookie, deleteCookie } from '@tanstack/react-start/server';
 import { SignJWT } from 'jose';
 import { compare } from 'bcryptjs';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { users, borrowers } from '../db/schema';
+import { borrowerLive } from '../db/softDelete';
 import { loginSchema } from '../validators/auth';
 import { getOptionalUser, type AuthUser } from '../middleware/auth';
 import { CONNECTION_ERROR, isDatabaseUnreachable } from '@/lib/connection';
@@ -103,10 +104,11 @@ export const verifyPortalToken = createServerFn({ method: 'GET' })
     return { token };
   })
   .handler(async ({ data }) => {
+    // Binned borrowers have no portal. Indistinguishable from an unknown token by design.
     const [borrower] = await db
       .select()
       .from(borrowers)
-      .where(eq(borrowers.portalToken, data.token))
+      .where(and(eq(borrowers.portalToken, data.token), borrowerLive))
       .limit(1);
 
     if (!borrower) {

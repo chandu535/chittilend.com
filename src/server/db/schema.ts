@@ -78,11 +78,23 @@ export const borrowers = pgTable('borrowers', {
   createdBy: uuid('created_by').notNull().references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  // In the Bin. Null means live — so every existing row is live with no backfill.
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  deletedBy: uuid('deleted_by').references(() => users.id),
 }, (table) => [
-  uniqueIndex('borrowers_mobile_idx').on(table.mobile),
+  // Partial, and that is the whole point: mobile is the identity key here, and an
+  // unconditional index would let a binned borrower hold their number hostage for ever,
+  // so the same person could never be entered again. `mobileFree` in db/softDelete.ts
+  // repeats this predicate exactly — change one and you must change the other.
+  uniqueIndex('borrowers_mobile_idx').on(table.mobile).where(sql`deleted_at IS NULL`),
+  // Left unconditional on purpose. Nobody is ever blocked from creating a borrower
+  // because a binned one holds a random 64-hex string, and keeping it total preserves the
+  // guarantee that a token resolves to at most one row ever — which is what the portal
+  // and consent lookups rely on when they take the first match.
   uniqueIndex('borrowers_portal_token_idx').on(table.portalToken),
   index('borrowers_area_idx').on(table.area),
   index('borrowers_name_idx').on(table.name),
+  index('borrowers_deleted_at_idx').on(table.deletedAt),
 ]);
 
 // ----- LOANS -----
@@ -121,13 +133,20 @@ export const loans = pgTable('loans', {
   createdBy: uuid('created_by').notNull().references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  // In the Bin. A binned loan keeps its number and its payments — nothing is destroyed
+  // until someone purges it, and the capital pool never hears about this at all.
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  deletedBy: uuid('deleted_by').references(() => users.id),
 }, (table) => [
+  // Total, not partial. A binned loan keeps its number so the capital ledger entries that
+  // name it stay traceable, and the number is never handed out again.
   uniqueIndex('loans_loan_number_idx').on(table.loanNumber),
   uniqueIndex('loans_consent_token_idx').on(table.consentToken),
   index('loans_borrower_id_idx').on(table.borrowerId),
   index('loans_status_idx').on(table.status),
   index('loans_date_given_idx').on(table.dateGiven),
   index('loans_created_by_idx').on(table.createdBy),
+  index('loans_deleted_at_idx').on(table.deletedAt),
 ]);
 
 // ----- PAYMENTS (individual installments) -----

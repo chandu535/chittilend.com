@@ -29,9 +29,20 @@ describe('permissions', () => {
     'messages.send',
     'capital.write',
     'users.manage',
-    'borrowers.delete',
+    'bin.view',
+    'bin.write',
+    'bin.purge',
   ])('denies a manager %s', (permission) => {
     expect(can(manager, permission)).toBe(false);
+  });
+
+  it('keeps removal entirely with the owner, the Bin included', () => {
+    // A manager cannot even see what has been removed — the Bin is where the evidence of
+    // a mistaken deletion lives, and it is the owner's to look at.
+    expect(can(manager, 'bin.view')).toBe(false);
+    expect(can(admin, 'bin.view')).toBe(true);
+    expect(can(admin, 'bin.write')).toBe(true);
+    expect(can(admin, 'bin.purge')).toBe(true);
   });
 
   it('grants an admin everything a manager holds, and more', () => {
@@ -50,5 +61,7 @@ describe('permissions', () => {
     expect(rolesWith('loans.create').sort()).toEqual(['admin', 'manager']);
     expect(rolesWith('loans.write')).toEqual(['admin']);
     expect(rolesWith('payments.write')).toEqual(['admin']);
+    expect(rolesWith('bin.write')).toEqual(['admin']);
+    expect(rolesWith('bin.purge')).toEqual(['admin']);
   });
 });

@@ -1,10 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
-import { getRequestIP, getRequestHeader } from '@tanstack/react-start/server';
-import { eq } from 'drizzle-orm';
+// Acceptance removed — used only by the commented-out handlers below.
+// import { getRequestIP, getRequestHeader } from '@tanstack/react-start/server';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { borrowers, loans } from '../db/schema';
-import { getAuthenticatedUser } from '../middleware/auth';
-import { requirePermission } from '../middleware/roleGuard';
+import { loanAndBorrowerLive } from '../db/softDelete';
+// import { getAuthenticatedUser } from '../middleware/auth';
+// import { requirePermission } from '../middleware/roleGuard';
 
 function validateToken(data: unknown): { token: string } {
   const token = (data as { token?: string }).token;
@@ -37,7 +39,8 @@ export const getLoanForConsent = createServerFn({ method: 'GET' })
       })
       .from(loans)
       .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-      .where(eq(loans.consentToken, data.token))
+      // A binned loan's acceptance link stops resolving, same as an unknown token.
+      .where(and(eq(loans.consentToken, data.token), loanAndBorrowerLive))
       .limit(1);
 
     if (!row) throw new Error('Invalid or expired link');
@@ -59,7 +62,13 @@ export const getLoanForConsent = createServerFn({ method: 'GET' })
  */
 export const acceptLoanAsBorrower = createServerFn({ method: 'POST' })
   .inputValidator(validateToken)
-  .handler(async ({ data }) => {
+  .handler(async () => {
+    // Acceptance has been removed. Links already sent stay valid in the database and the
+    // route still resolves, so the refusal belongs here rather than in the page — reaching
+    // this function at all now means an old link, and it must not write.
+    throw new Error('Acceptance is no longer required for this loan.');
+
+    /*
     const [loan] = await db
       .select({
         id: loans.id,
@@ -90,6 +99,7 @@ export const acceptLoanAsBorrower = createServerFn({ method: 'POST' })
       .where(eq(loans.id, loan.id));
 
     return { acceptedAt, alreadyAccepted: false };
+    */
   });
 
 /** Records the lender's side of the same agreement. */
@@ -99,7 +109,11 @@ export const acceptLoanAsOwner = createServerFn({ method: 'POST' })
     if (!loanId) throw new Error('Loan ID is required');
     return { loanId };
   })
-  .handler(async ({ data }) => {
+  .handler(async () => {
+    // Acceptance has been removed — see acceptLoanAsBorrower above.
+    throw new Error('Acceptance is no longer required for this loan.');
+
+    /*
     const user = await getAuthenticatedUser();
     requirePermission(user, 'loans.write');
 
@@ -121,4 +135,5 @@ export const acceptLoanAsOwner = createServerFn({ method: 'POST' })
       .where(eq(loans.id, loan.id));
 
     return { acceptedAt, alreadyAccepted: false };
+    */
   });

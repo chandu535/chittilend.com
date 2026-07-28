@@ -1,12 +1,13 @@
 import { createServerFn } from '@tanstack/react-start';
-import { eq, or, sql, desc, asc, count, and } from 'drizzle-orm';
+import { eq, sql, desc, asc, count, and } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { db } from '../db';
-import { borrowers, loans } from '../db/schema';
+import { borrowers } from '../db/schema';
 import { createBorrowerSchema, updateBorrowerSchema } from '../validators/borrower';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole, requirePermission } from '../middleware/roleGuard';
 import { borrowerSearchCondition, borrowerSearchRelevance } from '../db/search';
+import { borrowerLive, loanLive, sameLiveMobile } from '../db/softDelete';
 import { DEFAULTS } from '@/lib/constants';
 
 export const listBorrowers = createServerFn({ method: 'GET' })
@@ -31,7 +32,10 @@ export const listBorrowers = createServerFn({ method: 'GET' })
     requireRole(user, ['admin', 'manager']);
 
     const offset = (data.page - 1) * data.limit;
-    const conditions = [];
+    // Everything in here is AND-ed, which is the only safe place for the live predicate:
+    // the search condition is an OR of match rules, and folding it in there would make
+    // every row match.
+    const conditions = [borrowerLive];
 
     const searchCondition = borrowerSearchCondition(data.search, data.searchTelugu);
     if (searchCondition) conditions.push(searchCondition);
@@ -40,7 +44,7 @@ export const listBorrowers = createServerFn({ method: 'GET' })
       conditions.push(eq(borrowers.area, data.area));
     }
 
-    const where = conditions.length > 0
+    const liveWhere = conditions.length > 0
       ? sql`${sql.join(conditions.map(c => c!), sql` AND `)}`
       : undefined;
 
@@ -51,14 +55,14 @@ export const listBorrowers = createServerFn({ method: 'GET' })
       db
         .select()
         .from(borrowers)
-        .where(where)
+        .where(liveWhere)
         .orderBy(...(relevance ? [desc(relevance), desc(borrowers.createdAt)] : [desc(borrowers.createdAt)]))
         .limit(data.limit)
         .offset(offset),
       db
         .select({ count: count() })
         .from(borrowers)
-        .where(where),
+        .where(liveWhere),
     ]);
 
     return {
@@ -81,9 +85,13 @@ export const getBorrowerById = createServerFn({ method: 'GET' })
     requireRole(user, ['admin', 'manager']);
 
     const borrower = await db.query.borrowers.findFirst({
-      where: eq(borrowers.id, data.id),
+      where: and(eq(borrowers.id, data.id), borrowerLive),
       with: {
         loans: {
+          // Binned loans are excluded, which also makes `borrower.loans.length` the exact
+          // live-loan count the detail page needs to decide whether this borrower can go
+          // to the Bin — no second query for it.
+          where: loanLive,
           columns: {
             id: true,
             loanNumber: true,
@@ -114,11 +122,15 @@ export const createBorrower = createServerFn({ method: 'POST' })
     const user = await getAuthenticatedUser();
     requirePermission(user, 'borrowers.write');
 
-    // Check duplicate mobile
+    // Only live borrowers hold a number, matching the partial unique index exactly — a
+    // binned borrower's mobile is free, which is what lets a duplicate record be cleaned
+    // up and the person entered again. Disagreeing with the index in either direction
+    // means either refusing what the database would accept, or promising what it will
+    // then reject with an unreadable constraint error.
     const existing = await db
       .select({ id: borrowers.id })
       .from(borrowers)
-      .where(eq(borrowers.mobile, data.mobile))
+      .where(sameLiveMobile(data.mobile))
       .limit(1);
 
     if (existing.length > 0) {
@@ -167,15 +179,15 @@ export const updateBorrower = createServerFn({ method: 'POST' })
 
     const { id, ...updateData } = data;
 
-    // If mobile changed, check duplicate
+    // Same rule as create: live borrowers only, mirroring the partial index.
     if (updateData.mobile) {
       const existing = await db
         .select({ id: borrowers.id })
         .from(borrowers)
-        .where(eq(borrowers.mobile, updateData.mobile))
+        .where(sameLiveMobile(updateData.mobile, id))
         .limit(1);
 
-      if (existing.length > 0 && existing[0].id !== id) {
+      if (existing.length > 0) {
         throw new Error('This mobile number is already registered');
       }
     }
@@ -189,7 +201,8 @@ export const updateBorrower = createServerFn({ method: 'POST' })
         locationLng: updateData.locationLng?.toString() || undefined,
         updatedAt: new Date(),
       })
-      .where(eq(borrowers.id, id))
+      // A binned borrower is not editable — it would be edited out from under the Bin.
+      .where(and(eq(borrowers.id, id), borrowerLive))
       .returning();
 
     if (!updated) throw new Error('Borrower not found');
@@ -212,7 +225,8 @@ export const generateNewMagicLink = createServerFn({ method: 'POST' })
     const [updated] = await db
       .update(borrowers)
       .set({ portalToken, updatedAt: new Date() })
-      .where(eq(borrowers.id, data.id))
+      // No reissuing a link for a borrower who is in the Bin.
+      .where(and(eq(borrowers.id, data.id), borrowerLive))
       .returning();
 
     if (!updated) throw new Error('Borrower not found');
@@ -250,55 +264,24 @@ export const searchBorrowers = createServerFn({ method: 'GET' })
         // ${borrowers.id} here renders as bare "id" on a single-table select with no
         // join, which inside the subquery resolves to loans.id — a comparison that is
         // always false and silently counts zero rather than failing.
-        loanCount: sql<number>`(SELECT COUNT(*)::int FROM loans l WHERE l.borrower_id = borrowers.id)`,
+        loanCount: sql<number>`(SELECT COUNT(*)::int FROM loans l WHERE l.borrower_id = borrowers.id AND l.deleted_at IS NULL)`,
       })
       .from(borrowers)
-      .where(where)
+      // AND-ed outside the search condition, which is an OR of match rules.
+      .where(where ? and(where, borrowerLive) : borrowerLive)
       // Closest match first when searching; busiest first when simply browsing, so the
       // people you actually chase are at the top.
       .orderBy(
         ...(pickerRelevance ? [desc(pickerRelevance)] : []),
-        desc(sql`(SELECT COUNT(*) FROM loans l WHERE l.borrower_id = borrowers.id)`),
+        desc(sql`(SELECT COUNT(*) FROM loans l WHERE l.borrower_id = borrowers.id AND l.deleted_at IS NULL)`),
         asc(borrowers.name),
       )
       .limit(data.limit);
   });
 
-export const deleteBorrower = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => {
-    const id = (data as { id: string }).id;
-    if (!id) throw new Error('Borrower ID is required');
-    return { id };
-  })
-  .handler(async ({ data }) => {
-    const user = await getAuthenticatedUser();
-    requirePermission(user, 'borrowers.delete');
-
-    // Check for active loans before deleting (DB has onDelete: 'restrict')
-    const activeLoans = await db
-      .select({ id: loans.id })
-      .from(loans)
-      .where(
-        and(
-          eq(loans.borrowerId, data.id),
-          or(eq(loans.status, 'active'), eq(loans.status, 'extended')),
-        ),
-      )
-      .limit(1);
-
-    if (activeLoans.length > 0) {
-      throw new Error('BORROWER_HAS_ACTIVE_LOANS');
-    }
-
-    const [deleted] = await db
-      .delete(borrowers)
-      .where(eq(borrowers.id, data.id))
-      .returning({ id: borrowers.id });
-
-    if (!deleted) throw new Error('Borrower not found');
-
-    return { success: true };
-  });
+// Removal lives in server/functions/bin.ts now. It used to be a hard `db.delete` here,
+// guarded by a check for active loans that the database's onDelete: 'restrict' then
+// contradicted — a borrower with a completed loan got a raw Postgres error instead.
 
 export const listAreas = createServerFn({ method: 'GET' }).handler(async () => {
   const user = await getAuthenticatedUser();
@@ -307,7 +290,7 @@ export const listAreas = createServerFn({ method: 'GET' }).handler(async () => {
   const areas = await db
     .selectDistinct({ area: borrowers.area })
     .from(borrowers)
-    .where(sql`${borrowers.area} IS NOT NULL AND ${borrowers.area} != ''`)
+    .where(and(sql`${borrowers.area} IS NOT NULL AND ${borrowers.area} != ''`, borrowerLive))
     .orderBy(borrowers.area);
 
   return areas.map((a) => a.area!);

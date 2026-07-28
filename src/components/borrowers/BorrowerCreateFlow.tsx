@@ -4,6 +4,7 @@ import { Card, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { BorrowerForm } from '@/components/borrowers/BorrowerForm';
 import { CameraCapture } from '@/components/ui/CameraCapture';
+import { fileToBase64 } from '@/lib/fileToBase64';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { createBorrower, updateBorrower } from '@/server/functions/borrowers';
 import { uploadBorrowerPhoto } from '@/server/functions/upload';
@@ -24,14 +25,6 @@ interface BorrowerCreateFlowProps {
   secondaryAction?: React.ReactNode;
   saveLabel?: string;
 }
-
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
 /**
  * Adding a borrower: details, then photos, then the record.

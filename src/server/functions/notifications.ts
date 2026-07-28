@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { borrowers, loans, notificationLog, payments } from '../db/schema';
+import { borrowerLive, loanAndBorrowerLive } from '../db/softDelete';
 import { sendReminderTemplate, sendWarningTemplate } from './whatsapp';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole } from '../middleware/roleGuard';
@@ -79,7 +80,13 @@ export async function dispatchDailyReminders(
     await db
       .update(payments)
       .set({ status: 'overdue', updatedAt: now })
-      .where(and(eq(payments.status, 'pending'), sql`${payments.dueDate} <= ${istDate}`));
+      // The second overdue sweep in the app, independent of bulkUpdateOverdueStatus and
+      // reached from the cron. Same EXISTS guard, for the same reason.
+      .where(and(
+        eq(payments.status, 'pending'),
+        sql`${payments.dueDate} <= ${istDate}`,
+        sql`EXISTS (SELECT 1 FROM loans l WHERE l.id = ${payments.loanId} AND l.deleted_at IS NULL)`,
+      ));
   }
 
   // Earliest unpaid instalment per active loan.
@@ -99,6 +106,9 @@ export async function dispatchDailyReminders(
     .innerJoin(payments, eq(payments.loanId, loans.id))
     .where(and(
       inArray(loans.status, ['active', 'extended']),
+      // A binned borrower must never be messaged. Of everything in this sweep this is the
+      // one that reaches outside the app.
+      loanAndBorrowerLive,
       sql`${payments.status} NOT IN ('paid', 'waived')`,
       // Only the earliest open instalment on each loan.
       sql`${payments.installmentNumber} = (
@@ -221,6 +231,7 @@ export const listNotifications = createServerFn({ method: 'GET' })
       .from(notificationLog)
       .innerJoin(borrowers, eq(notificationLog.borrowerId, borrowers.id))
       .leftJoin(loans, eq(notificationLog.loanId, loans.id))
+      .where(borrowerLive)
       .orderBy(desc(notificationLog.createdAt))
       .limit(data.limit);
 

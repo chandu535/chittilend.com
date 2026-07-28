@@ -43,6 +43,7 @@ describe('STATUS_COLORS', () => {
     expect(keys).toContain('partial');
     expect(keys).toContain('overdue');
     expect(keys).toContain('waived');
+    expect(keys).toContain('deleted');
   });
 
   it('each value contains Tailwind bg and text classes', () => {

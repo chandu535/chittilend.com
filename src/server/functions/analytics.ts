@@ -3,6 +3,7 @@ import { eq, and, gte, lte, sql, desc, count, sum } from 'drizzle-orm';
 import { db } from '../db';
 import { loans, payments, borrowers, capitalPoolLog } from '../db/schema';
 import { getAuthenticatedUser } from '../middleware/auth';
+import { borrowerLive, loanAndBorrowerLive, loanLive } from '../db/softDelete';
 import { requireRole } from '../middleware/roleGuard';
 
 // ============================================================
@@ -31,8 +32,12 @@ export const getDashboardSummary = createServerFn({ method: 'GET' }).handler(asy
     db
       .select({ total: sum(loans.primaryAmount) })
       .from(loans)
-      .where(eq(loans.status, 'active')),
+      .where(and(eq(loans.status, 'active'), loanLive)),
 
+    // soft-delete-exempt: capital_pool_log is the record of cash that actually moved.
+    // Its running_balance is a stored cumulative figure that cannot be recomputed, so
+    // binning a loan deliberately leaves it untouched. This figure and the loan totals
+    // above will legitimately disagree once anything has been binned.
     // Available Capital (latest running_balance from capital_pool_log)
     db
       .select({ balance: capitalPoolLog.runningBalance })
@@ -50,6 +55,7 @@ export const getDashboardSummary = createServerFn({ method: 'GET' }).handler(asy
       .where(
         and(
           eq(loans.status, 'active'),
+          loanLive,
           sql`${payments.status} IN ('pending', 'partial', 'overdue')`,
         ),
       ),
@@ -58,28 +64,34 @@ export const getDashboardSummary = createServerFn({ method: 'GET' }).handler(asy
     db
       .select({ total: sum(loans.profitAmount) })
       .from(loans)
-      .where(eq(loans.status, 'completed')),
+      .where(and(eq(loans.status, 'completed'), loanLive)),
 
     // Active Loans Count
     db
       .select({ count: count() })
       .from(loans)
-      .where(eq(loans.status, 'active')),
+      .where(and(eq(loans.status, 'active'), loanLive)),
 
     // Overdue Payments Count
+    // The join is new. This counted straight from payments, so there was nothing to hang
+    // the loan predicate on and a binned loan's instalments would still be counted.
     db
       .select({ count: count() })
       .from(payments)
-      .where(eq(payments.status, 'overdue')),
+      .innerJoin(loans, eq(payments.loanId, loans.id))
+      .where(and(eq(payments.status, 'overdue'), loanLive)),
 
     // This Month Collections
+    // Join added for the same reason as the overdue count above.
     db
       .select({ total: sum(payments.amountPaid) })
       .from(payments)
+      .innerJoin(loans, eq(payments.loanId, loans.id))
       .where(
         and(
           gte(payments.paidDate, firstOfMonth),
           lte(payments.paidDate, lastOfMonth),
+          loanLive,
         ),
       ),
 
@@ -91,6 +103,7 @@ export const getDashboardSummary = createServerFn({ method: 'GET' }).handler(asy
         and(
           gte(loans.dateGiven, firstOfMonth),
           lte(loans.dateGiven, lastOfMonth),
+          loanLive,
         ),
       ),
   ]);
@@ -131,12 +144,14 @@ export const getRangeSummary = createServerFn({ method: 'GET' })
       db
         .select({ total: sum(loans.primaryAmount), count: count() })
         .from(loans)
-        .where(and(gte(loans.dateGiven, data.dateFrom), lte(loans.dateGiven, data.dateTo))),
+        .where(and(gte(loans.dateGiven, data.dateFrom), lte(loans.dateGiven, data.dateTo), loanLive)),
 
+      // Join added: counting from payments alone left nothing to filter the loan by.
       db
         .select({ total: sum(payments.amountPaid), count: count() })
         .from(payments)
-        .where(and(gte(payments.paidDate, data.dateFrom), lte(payments.paidDate, data.dateTo))),
+        .innerJoin(loans, eq(payments.loanId, loans.id))
+        .where(and(gte(payments.paidDate, data.dateFrom), lte(payments.paidDate, data.dateTo), loanLive)),
 
       // Profit cannot be dated by loan completion — there is no completed_at column, and
       // a lump sum on completion would misrepresent when the money actually arrived.
@@ -151,7 +166,7 @@ export const getRangeSummary = createServerFn({ method: 'GET' })
         })
         .from(payments)
         .innerJoin(loans, eq(payments.loanId, loans.id))
-        .where(and(gte(payments.paidDate, data.dateFrom), lte(payments.paidDate, data.dateTo))),
+        .where(and(gte(payments.paidDate, data.dateFrom), lte(payments.paidDate, data.dateTo), loanLive)),
 
       db
         .select({ count: count() })
@@ -159,6 +174,7 @@ export const getRangeSummary = createServerFn({ method: 'GET' })
         .where(and(
           gte(borrowers.createdAt, new Date(`${data.dateFrom}T00:00:00.000Z`)),
           lte(borrowers.createdAt, new Date(`${data.dateTo}T23:59:59.999Z`)),
+          borrowerLive,
         )),
     ]);
 
@@ -191,6 +207,8 @@ export const getCashflowTimeline = createServerFn({ method: 'GET' })
     const user = await getAuthenticatedUser();
     requireRole(user, ['admin', 'manager']);
 
+    // soft-delete-exempt: the cash ledger. These months describe money that moved, and
+    // must keep describing it after a loan is binned.
     const result = await db
       .select({
         month: sql<string>`TO_CHAR(${capitalPoolLog.eventDate}, 'YYYY-MM')`,
@@ -232,9 +250,11 @@ export const getAreaBreakdown = createServerFn({ method: 'GET' })
     const user = await getAuthenticatedUser();
     requireRole(user, ['admin', 'manager']);
 
-    const conditions = [];
+    const conditions = [loanLive, borrowerLive];
     if (data.dateFrom) conditions.push(gte(loans.dateGiven, data.dateFrom));
     if (data.dateTo) conditions.push(lte(loans.dateGiven, data.dateTo));
+
+    const liveWhere = and(...conditions);
 
     const result = await db
       .select({
@@ -246,7 +266,7 @@ export const getAreaBreakdown = createServerFn({ method: 'GET' })
       })
       .from(loans)
       .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .where(liveWhere)
       .groupBy(borrowers.area)
       .orderBy(sql`SUM(CAST(${loans.primaryAmount} AS numeric)) DESC`);
 
@@ -285,6 +305,7 @@ export const getBorrowerRanking = createServerFn({ method: 'GET' }).handler(asyn
     .from(borrowers)
     .innerJoin(loans, eq(loans.borrowerId, borrowers.id))
     .innerJoin(payments, eq(payments.loanId, loans.id))
+    .where(loanAndBorrowerLive)
     .groupBy(borrowers.id, borrowers.name, borrowers.nameTelugu, borrowers.mobile, borrowers.area)
     .orderBy(sql`ROUND(
       SUM(CASE WHEN ${payments.status} = 'paid' AND ${payments.paidDate} <= ${payments.dueDate} THEN 1 ELSE 0 END)::numeric
@@ -318,6 +339,7 @@ export const getStatusDistribution = createServerFn({ method: 'GET' }).handler(a
       count: count(),
     })
     .from(loans)
+    .where(loanLive)
     .groupBy(loans.status);
 
   return result.map((r) => ({
@@ -352,15 +374,18 @@ export const getMonthlySnapshot = createServerFn({ method: 'GET' })
           total: sum(loans.primaryAmount),
         })
         .from(loans)
-        .where(and(gte(loans.dateGiven, firstDay), lte(loans.dateGiven, lastDay))),
+        .where(and(gte(loans.dateGiven, firstDay), lte(loans.dateGiven, lastDay), loanLive)),
 
+      // Join added, as in the other two collection sums.
       db
         .select({ total: sum(payments.amountPaid) })
         .from(payments)
+        .innerJoin(loans, eq(payments.loanId, loans.id))
         .where(
           and(
             gte(payments.paidDate, firstDay),
             lte(payments.paidDate, lastDay),
+            loanLive,
           ),
         ),
 
@@ -371,6 +396,7 @@ export const getMonthlySnapshot = createServerFn({ method: 'GET' })
           and(
             gte(borrowers.createdAt, new Date(`${firstDay}T00:00:00Z`)),
             lte(borrowers.createdAt, new Date(`${lastDay}T23:59:59Z`)),
+            borrowerLive,
           ),
         ),
     ]);
@@ -393,6 +419,9 @@ export const getRecentActivity = createServerFn({ method: 'GET' }).handler(async
   const user = await getAuthenticatedUser();
   requireRole(user, ['admin', 'manager']);
 
+  // soft-delete-exempt: the cash ledger again. The leftJoins below already yield a null
+  // borrower name rather than dropping the row, so a binned borrower's entry stays in the
+  // feed as an unnamed movement of money — which is what it is.
   // Get recent capital pool events (which cover loans, payments, investments)
   const events = await db
     .select({

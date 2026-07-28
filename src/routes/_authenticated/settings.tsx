@@ -10,7 +10,8 @@ import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { toast } from '@/components/ui/Toast';
 import { listManagers, createManager, toggleManagerActive } from '@/server/functions/users';
-import { NotificationLog } from '@/components/settings/NotificationLog';
+// Messaging disabled.
+// import { NotificationLog } from '@/components/settings/NotificationLog';
 import { useScrollLock } from '@/lib/useScrollLock';
 import { can } from '@/lib/permissions';
 
@@ -147,7 +148,10 @@ function SettingsPage() {
         )}
       </Card>
 
+      {/* Messaging disabled — nothing writes to the log any more, so it would only ever
+          show an empty panel or a frozen history.
       <NotificationLog />
+      */}
 
       {/* Add Manager Modal */}
       {showAddModal && (

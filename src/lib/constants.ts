@@ -32,4 +32,7 @@ export const STATUS_COLORS = {
   partial:   'bg-amber-50 text-amber-700',
   overdue:   'bg-red-50 text-red-600',
   waived:    'bg-purple-50 text-purple-700',
+  // Not a loan or payment status — worn by a row in the Bin. Deliberately the quietest
+  // colour here: something removed should not shout louder than a live debt.
+  deleted:   'bg-slate-100 text-slate-500',
 } as const;

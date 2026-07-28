@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { CameraCapture } from '@/components/ui/CameraCapture';
+import { fileToBase64 } from '@/lib/fileToBase64';
 import { toast } from '@/components/ui/Toast';
 import { uploadBorrowerPhoto } from '@/server/functions/upload';
 
@@ -11,14 +12,6 @@ interface DocumentUploadProps {
   onAadhaarPhoto: (file: File | null) => void;
   onLocation?: (lat: number, lng: number) => void;
 }
-
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
 export function DocumentUpload({ borrowerId, onProfilePhoto, onAadhaarPhoto, onLocation }: DocumentUploadProps) {
   const { t } = useTranslation();

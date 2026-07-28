@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useCallback } from 'react';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
@@ -10,7 +10,22 @@ import { useLocalizedName } from '@/components/shared/NameDisplay';
 import { toast } from '@/components/ui/Toast';
 import { getLoanForConsent, acceptLoanAsBorrower } from '@/server/functions/consent';
 
+/**
+ * Acceptance has been removed — nothing is accepted any more.
+ *
+ * Consent links were already sent to some borrowers and stay valid in the database, so the
+ * route cannot simply be deleted: those URLs would land on a 404. It sends them to the
+ * home page instead, and the acceptance itself is refused server-side in
+ * server/functions/consent.ts so an old link cannot record anything.
+ *
+ * The page below is intact. Restoring the flow is swapping the component back.
+ */
 export const Route = createFileRoute('/user-payment-acceptance/$consentToken')({
+  // beforeLoad runs first and never returns, so the component below is left wired up but
+  // never rendered. Restoring the flow is deleting these three lines.
+  beforeLoad: () => {
+    throw redirect({ to: '/' });
+  },
   component: LoanAcceptancePage,
 });
 

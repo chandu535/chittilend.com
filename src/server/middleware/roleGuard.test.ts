@@ -16,7 +16,10 @@ const ENDPOINTS: Array<[string, Parameters<typeof requirePermission>[1]]> = [
   ['sendLoanWhatsAppTemplate', 'messages.send'],
   ['addInvestment', 'capital.write'],
   ['createManager', 'users.manage'], ['toggleManagerActive', 'users.manage'],
-  ['deleteBorrower', 'borrowers.delete'],
+  ['binLoan', 'bin.write'], ['binBorrower', 'bin.write'],
+  ['restoreLoan', 'bin.write'], ['restoreBorrower', 'bin.write'],
+  ['purgeLoan', 'bin.purge'], ['purgeBorrower', 'bin.purge'],
+  ['listBinnedLoans', 'bin.view'], ['listBinnedBorrowers', 'bin.view'],
 ];
 
 describe('a manager is refused every write outside their module', () => {

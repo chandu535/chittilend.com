@@ -3,7 +3,12 @@
  *
  * A manager may read every page, and may add and edit borrowers. Nothing else is
  * theirs to change: no loans, no marking payments, no messages to borrowers, no
- * money in or out. An admin may do all of it.
+ * money in or out, and nothing removed. An admin may do all of it.
+ *
+ * Deleting is split three ways rather than held under one flag. Binning is reversible and
+ * purging is not, so they are worth separating even while the same person holds both —
+ * it leaves somewhere to stand if a second admin should ever be able to tidy up without
+ * being able to destroy anything.
  *
  * Both the server guards and the UI import from here, so a hidden button and a
  * refused request always agree. The UI use is only to avoid offering an action that
@@ -18,8 +23,12 @@ export type Permission =
   | 'view'
   /** Create a borrower, edit one, upload their photo, reissue their portal link. */
   | 'borrowers.write'
-  /** Delete a borrower outright. */
-  | 'borrowers.delete'
+  /** See the Bin and what is in it. */
+  | 'bin.view'
+  /** Move a loan or a borrower to the Bin, and restore one from it. */
+  | 'bin.write'
+  /** Destroy something in the Bin for good. */
+  | 'bin.purge'
   /** Issue a new loan. */
   | 'loans.create'
   /** Edit a loan, extend its tenure, change its status, accept it as owner. */
@@ -37,7 +46,9 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   admin: [
     'view',
     'borrowers.write',
-    'borrowers.delete',
+    'bin.view',
+    'bin.write',
+    'bin.purge',
     'loans.create',
     'loans.write',
     'payments.write',

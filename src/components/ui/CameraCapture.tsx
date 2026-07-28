@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
@@ -18,6 +18,17 @@ interface CameraCaptureProps {
   label?: string;
   /** Which lens to open with. A document wants the back one, a face either. */
   defaultFacing?: Facing;
+  /**
+   * Replaces the default full-width button with something the caller draws — a camera
+   * badge on an avatar, say. Given the opener and whether the camera is still warming up.
+   */
+  renderTrigger?: (props: { open: () => void; starting: boolean }) => ReactNode;
+  /**
+   * Whether to hold the captured shot on screen with a Retake beneath it. True suits a
+   * form, where the photo is not saved until the form is. A caller that uploads the file
+   * the moment it arrives passes false and shows the stored photo itself.
+   */
+  keepPreview?: boolean;
 }
 
 /**
@@ -31,7 +42,14 @@ interface CameraCaptureProps {
  * `contain: paint` above it — `.list-row` has it — would become the containing block for
  * a fixed element and clip the whole thing.
  */
-export function CameraCapture({ onCapture, onLocation, label, defaultFacing = 'environment' }: CameraCaptureProps) {
+export function CameraCapture({
+  onCapture,
+  onLocation,
+  label,
+  defaultFacing = 'environment',
+  renderTrigger,
+  keepPreview = true,
+}: CameraCaptureProps) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -139,11 +157,11 @@ export function CameraCapture({ onCapture, onLocation, label, defaultFacing = 'e
     canvas.toBlob((blob) => {
       if (!blob) return;
       onCapture(new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' }));
-      setPreview(URL.createObjectURL(blob));
+      if (keepPreview) setPreview(URL.createObjectURL(blob));
       // The photo now exists, so where it was taken means something.
       if (coords.current) onLocation?.(coords.current.lat, coords.current.lng);
     }, 'image/jpeg', 0.85);
-  }, [facing, onCapture, onLocation, close]);
+  }, [facing, onCapture, onLocation, close, keepPreview]);
 
   const retake = useCallback(() => {
     if (preview) URL.revokeObjectURL(preview);
@@ -164,6 +182,7 @@ export function CameraCapture({ onCapture, onLocation, label, defaultFacing = 'e
 
   return (
     <>
+      {renderTrigger ? renderTrigger({ open: () => void open(facing), starting }) : (
       <Button variant="secondary" onClick={() => open(facing)} loading={starting} className="w-full">
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
@@ -171,6 +190,7 @@ export function CameraCapture({ onCapture, onLocation, label, defaultFacing = 'e
         </svg>
         {label ?? t('borrowers.capturePhoto')}
       </Button>
+      )}
 
       {error && <p className="mt-2 text-center text-sm text-red-500">{error}</p>}
 

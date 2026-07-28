@@ -1,8 +1,4 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/reminders",
-      "schedule": "30 4 * * *"
-    }
-  ]
+  "$comment": "WhatsApp messaging is switched off, so the daily reminder run is unscheduled. The endpoint and its dispatcher are intact — restoring it means putting back: { \"path\": \"/api/cron/reminders\", \"schedule\": \"30 4 * * *\" }",
+  "crons": []
 }

@@ -3,10 +3,15 @@ import { eq, and, lte, or, desc, asc, gte, sql, count, type SQL } from 'drizzle-
 import type { PgColumn } from 'drizzle-orm/pg-core';
 import { db } from '../db';
 import { payments, loans, borrowers, capitalPoolLog } from '../db/schema';
+import { loanAndBorrowerLive, loanLive } from '../db/softDelete';
 import { markPaymentSchema, markWaivedSchema } from '../validators/payment';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole, requirePermission } from '../middleware/roleGuard';
-import { sendPaymentReceipt, sendLoanClosed } from './whatsapp';
+// WhatsApp messaging is switched off. Sending needs a verified Meta business account,
+// which this operation has no documents for, so nothing could be delivered anyway. The
+// senders in ./whatsapp.ts are left intact and only disconnected here — restoring them is
+// uncommenting three call sites, the cron entry in vercel.json and the loan-screen buttons.
+// import { sendPaymentReceipt, sendLoanClosed } from './whatsapp';
 import { DEFAULTS } from '@/lib/constants';
 
 export const listPaymentsByLoan = createServerFn({ method: 'GET' })
@@ -19,10 +24,15 @@ export const listPaymentsByLoan = createServerFn({ method: 'GET' })
     const user = await getAuthenticatedUser();
     requireRole(user, ['admin', 'manager']);
 
+    // A binned loan has no schedule to show. The detail page already refuses to open one,
+    // but this is reachable on its own.
     const result = await db
       .select()
       .from(payments)
-      .where(eq(payments.loanId, data.loanId))
+      .where(and(
+        eq(payments.loanId, data.loanId),
+        sql`EXISTS (SELECT 1 FROM loans l WHERE l.id = ${payments.loanId} AND l.deleted_at IS NULL)`,
+      ))
       .orderBy(payments.installmentNumber);
 
     return result;
@@ -133,7 +143,7 @@ async function syncLoanStatus(loanId: string): Promise<boolean> {
   const [loan] = await db
     .select({ id: loans.id, status: loans.status, totalRepayment: loans.totalRepayment })
     .from(loans)
-    .where(eq(loans.id, loanId))
+    .where(and(eq(loans.id, loanId), loanLive))
     .limit(1);
   if (!loan || loan.status === 'defaulted') return false;
 
@@ -151,7 +161,7 @@ async function syncLoanStatus(loanId: string): Promise<boolean> {
 
   await db.update(loans)
     .set({ status: target, updatedAt: new Date() })
-    .where(eq(loans.id, loanId));
+    .where(and(eq(loans.id, loanId), loanLive));
   return isRepaid;
 }
 
@@ -167,11 +177,15 @@ export const markPaymentPaid = createServerFn({ method: 'POST' })
     const user = await getAuthenticatedUser();
     requirePermission(user, 'payments.write');
 
+    // Joined to the loan so a binned one cannot have money recorded against it. It would
+    // be invisible everywhere yet still moving the capital pool.
     const [payment] = await db
       .select()
       .from(payments)
-      .where(eq(payments.id, data.paymentId))
-      .limit(1);
+      .innerJoin(loans, eq(payments.loanId, loans.id))
+      .where(and(eq(payments.id, data.paymentId), loanLive))
+      .limit(1)
+      .then((rows) => rows.map((r) => r.payments));
 
     if (!payment) throw new Error('Payment not found');
 
@@ -204,14 +218,14 @@ export const markPaymentPaid = createServerFn({ method: 'POST' })
       recordedBy: user.id,
     });
 
-    const justCompleted = await syncLoanStatus(payment.loanId);
+    // Loan status still has to be kept in step even with messaging off — the return value
+    // was only ever used to choose which message to send.
+    await syncLoanStatus(payment.loanId);
 
-    // Closure replaces the receipt rather than following it — two messages for the same
-    // event would read as spam. Both are best-effort and swallow their own errors: a
-    // WhatsApp outage must never make a recorded payment look like it failed. Awaited so
-    // the send finishes before the serverless function freezes.
-    if (justCompleted) await sendLoanClosed(payment.loanId);
-    else await sendPaymentReceipt(payment.id);
+    // Messaging disabled. Closure replaced the receipt rather than following it, since two
+    // messages for one event read as spam.
+    // if (justCompleted) await sendLoanClosed(payment.loanId);
+    // else await sendPaymentReceipt(payment.id);
 
     return updated;
   });
@@ -228,11 +242,15 @@ export const markPaymentPartial = createServerFn({ method: 'POST' })
     const user = await getAuthenticatedUser();
     requirePermission(user, 'payments.write');
 
+    // Joined to the loan so a binned one cannot have money recorded against it. It would
+    // be invisible everywhere yet still moving the capital pool.
     const [payment] = await db
       .select()
       .from(payments)
-      .where(eq(payments.id, data.paymentId))
-      .limit(1);
+      .innerJoin(loans, eq(payments.loanId, loans.id))
+      .where(and(eq(payments.id, data.paymentId), loanLive))
+      .limit(1)
+      .then((rows) => rows.map((r) => r.payments));
 
     if (!payment) throw new Error('Payment not found');
 
@@ -265,10 +283,11 @@ export const markPaymentPartial = createServerFn({ method: 'POST' })
       recordedBy: user.id,
     });
 
-    const justCompleted = await syncLoanStatus(payment.loanId);
+    await syncLoanStatus(payment.loanId);
 
-    if (justCompleted) await sendLoanClosed(payment.loanId);
-    else await sendPaymentReceipt(payment.id);
+    // Messaging disabled.
+    // if (justCompleted) await sendLoanClosed(payment.loanId);
+    // else await sendPaymentReceipt(payment.id);
 
     return updated;
   });
@@ -293,13 +312,19 @@ export const markPaymentWaived = createServerFn({ method: 'POST' })
         recordedBy: user.id,
         updatedAt: new Date(),
       })
-      .where(eq(payments.id, data.paymentId))
+      // Same guard as the other write paths: no waiving an instalment on a binned loan.
+      .where(and(
+        eq(payments.id, data.paymentId),
+        sql`EXISTS (SELECT 1 FROM loans l WHERE l.id = ${payments.loanId} AND l.deleted_at IS NULL)`,
+      ))
       .returning();
 
     if (!updated) throw new Error('Payment not found');
 
     // Waiving the last of what is owed closes the loan just as paying it would.
-    if (await syncLoanStatus(updated.loanId)) await sendLoanClosed(updated.loanId);
+    await syncLoanStatus(updated.loanId);
+    // Messaging disabled.
+    // if (await syncLoanStatus(updated.loanId)) await sendLoanClosed(updated.loanId);
 
     return updated;
   });
@@ -317,6 +342,11 @@ async function paginatedPayments(
 ) {
   const offset = (page - 1) * limit;
 
+  // Every caller's filter is narrowed here rather than at the three call sites, so the
+  // upcoming, overdue and recent lists cannot drift apart — and the count is narrowed
+  // with the rows, or the totals and the pages would disagree.
+  const liveWhere = where ? and(where, loanAndBorrowerLive) : loanAndBorrowerLive;
+
   const [rows, totalResult] = await Promise.all([
     db
       .select({
@@ -329,7 +359,7 @@ async function paginatedPayments(
       .from(payments)
       .innerJoin(loans, eq(payments.loanId, loans.id))
       .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-      .where(where)
+      .where(liveWhere)
       .orderBy(direction === 'desc' ? desc(orderColumn) : asc(orderColumn))
       .limit(limit)
       .offset(offset),
@@ -338,7 +368,7 @@ async function paginatedPayments(
       .from(payments)
       .innerJoin(loans, eq(payments.loanId, loans.id))
       .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-      .where(where),
+      .where(liveWhere),
   ]);
 
   const total = totalResult[0].count;
@@ -434,11 +464,15 @@ export const revertPayment = createServerFn({ method: 'POST' })
     const user = await getAuthenticatedUser();
     requirePermission(user, 'payments.write');
 
+    // Joined to the loan so a binned one cannot have money recorded against it. It would
+    // be invisible everywhere yet still moving the capital pool.
     const [payment] = await db
       .select()
       .from(payments)
-      .where(eq(payments.id, data.paymentId))
-      .limit(1);
+      .innerJoin(loans, eq(payments.loanId, loans.id))
+      .where(and(eq(payments.id, data.paymentId), loanLive))
+      .limit(1)
+      .then((rows) => rows.map((r) => r.payments));
 
     if (!payment) throw new Error('Payment not found');
 
@@ -508,6 +542,9 @@ export const bulkUpdateOverdueStatus = createServerFn({ method: 'POST' }).handle
 
   const today = new Date().toISOString().split('T')[0];
 
+  // No join to hang the predicate on, so it is an EXISTS. Without it a binned loan's
+  // instalments would keep flipping to overdue in the background — invisible in every
+  // list, and waiting to reappear as a pile of overdue rows if the loan were restored.
   const result = await db
     .update(payments)
     .set({ status: 'overdue', updatedAt: new Date() })
@@ -515,6 +552,7 @@ export const bulkUpdateOverdueStatus = createServerFn({ method: 'POST' }).handle
       and(
         eq(payments.status, 'pending'),
         lte(payments.dueDate, today),
+        sql`EXISTS (SELECT 1 FROM loans l WHERE l.id = ${payments.loanId} AND l.deleted_at IS NULL)`,
       ),
     )
     .returning({ id: payments.id });

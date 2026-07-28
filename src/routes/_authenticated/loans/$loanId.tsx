@@ -1,9 +1,13 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getLoanById, updateLoan, changeStatus } from '@/server/functions/loans';
-import { sendLoanWhatsAppTemplate, sendPaymentWarningWhatsApp } from '@/server/functions/whatsapp';
+import { binLoan } from '@/server/functions/bin';
+import { canBinLoan, binReasonKey, decodeRefusal } from '@/lib/binRules';
+import { invalidateListCaches } from '@/lib/requestCache';
+// Messaging disabled.
+// import { sendLoanWhatsAppTemplate, sendPaymentWarningWhatsApp } from '@/server/functions/whatsapp';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
@@ -15,7 +19,8 @@ import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
 import { PaymentTimeline } from '@/components/loans/PaymentTimeline';
 import { PaymentMarkModal } from '@/components/loans/PaymentMarkModal';
 import { ExtendTenureModal } from '@/components/loans/ExtendTenureModal';
-import { LoanAgreementCard } from '@/components/loans/LoanAgreementCard';
+// Acceptance removed.
+// import { LoanAgreementCard } from '@/components/loans/LoanAgreementCard';
 import { formatPhone } from '@/lib/formatters';
 import { useScrollLock } from '@/lib/useScrollLock';
 import { toast } from '@/components/ui/Toast';
@@ -42,6 +47,7 @@ type PaymentItem = {
 
 function LoanDetailPage() {
   const { loanId } = Route.useParams();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const user = useStore(authStore, (s) => s.user);
   const [loan, setLoan] = useState<Awaited<ReturnType<typeof getLoanById>> | null>(null);
@@ -50,13 +56,16 @@ function LoanDetailPage() {
   const [showExtendModal, setShowExtendModal] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDefaulted, setConfirmDefaulted] = useState(false);
+  const [confirmBin, setConfirmBin] = useState(false);
+  const [binning, setBinning] = useState(false);
   const [confirmActive, setConfirmActive] = useState(false);
   const [statusChanging, setStatusChanging] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
-  const [whatsAppSending, setWhatsAppSending] = useState(false);
-  const [warningSending, setWarningSending] = useState(false);
+  // Messaging disabled.
+  // const [whatsAppSending, setWhatsAppSending] = useState(false);
+  // const [warningSending, setWarningSending] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const borrowerDisplayName = useLocalizedName(loan?.borrower?.name ?? '', loan?.borrower?.nameTelugu);
 
@@ -123,7 +132,20 @@ function LoanDetailPage() {
   }
 
   if (!loan) {
-    return <p className="text-center text-slate-500 py-12">{t('errors.notFound')}</p>;
+    // A binned loan reads as missing, so a bookmarked URL would otherwise look like the
+    // loan had been lost. An admin gets told where it went; a manager cannot see the Bin
+    // and so is told nothing more than that it is not here.
+    return (
+      <div className="py-12 text-center">
+        <p className="text-slate-500">{t('errors.notFound')}</p>
+        {can(user, 'bin.view') && (
+          <p className="mt-2 text-sm text-slate-400">
+            {t('bin.loanIsInBin')}{' '}
+            <Link to="/bin" className="text-primary hover:underline">{t('bin.openBin')}</Link>
+          </p>
+        )}
+      </div>
+    );
   }
 
   const paidCount = loan.payments.filter((p) => p.status === 'paid').length;
@@ -138,12 +160,17 @@ function LoanDetailPage() {
   const progress = parseFloat(loan.totalRepayment) > 0
     ? Math.min(100, (totalPaid / parseFloat(loan.totalRepayment)) * 100)
     : 0;
-  const isValidIndianMobile = /^[6-9]\d{9}$/.test(loan.borrower.mobile);
+  // Messaging and acceptance removed — this gated the send buttons and the welcome.
+  // const isValidIndianMobile = /^[6-9]\d{9}$/.test(loan.borrower.mobile);
+  /* Messaging disabled — these only ever decided which send button to show.
   const hasOverduePayment = loan.payments.some(
     (p) => p.status === 'overdue'
       || (p.status !== 'paid' && p.status !== 'waived' && p.dueDate < new Date().toISOString().split('T')[0]),
   );
+  const hasUnpaidPayment = loan.payments.some((p) => p.status !== 'paid' && p.status !== 'waived');
+  */
 
+  /* Messaging disabled — handlers kept alongside their buttons below.
   const handleWhatsAppWarning = async () => {
     if (!isValidIndianMobile) return;
     setWarningSending(true);
@@ -169,10 +196,33 @@ function LoanDetailPage() {
       setWhatsAppSending(false);
     }
   };
+  */
 
   const canWriteLoans = can(user, 'loans.write');
+  const canBin = can(user, 'bin.write');
+  const binDecision = canBinLoan({ status: loan.status, deleted: false });
+  const binRefusal = binDecision.allowed
+    ? undefined
+    : t(binReasonKey(binDecision.reason), binDecision.detail);
+
+  const handleBin = async () => {
+    setBinning(true);
+    try {
+      await binLoan({ data: { id: loanId } });
+      invalidateListCaches();
+      toast(t('bin.loanBinned'), 'success');
+      navigate({ to: '/loans' });
+    } catch (err) {
+      const refusal = decodeRefusal(err instanceof Error ? err.message : String(err));
+      toast(refusal ? t(binReasonKey(refusal.reason), refusal.detail) : t('errors.generic'), 'error');
+      setConfirmBin(false);
+    } finally {
+      setBinning(false);
+    }
+  };
   const canMarkPayments = can(user, 'payments.write');
-  const canSendMessages = can(user, 'messages.send');
+  // Messaging disabled.
+  // const canSendMessages = can(user, 'messages.send');
   const canDefault = canWriteLoans && (loan.status === 'active' || loan.status === 'extended');
   const canRevertActive = canWriteLoans && loan.status === 'defaulted';
   const canExtend = canWriteLoans && (loan.status === 'active' || loan.status === 'extended');
@@ -239,6 +289,23 @@ function LoanDetailPage() {
                   onClick={() => { setConfirmActive(true); setMenuOpen(false); }}
                 />
               )}
+              {canBin && (
+                <>
+                  <div className="my-1 border-t border-slate-100" />
+                  <ActionMenuItem
+                    label={t('bin.moveToBin')}
+                    icon="🗑️"
+                    danger
+                    disabled={!binDecision.allowed}
+                    onClick={() => { setConfirmBin(true); setMenuOpen(false); }}
+                  />
+                  {/* Spelled out rather than left as a grey item. "You cannot remove a
+                      loan that still owes money" is the thing the user needs to know. */}
+                  {binRefusal && (
+                    <p className="px-4 pb-2 text-xs leading-snug text-slate-400">{binRefusal}</p>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>
@@ -267,6 +334,9 @@ function LoanDetailPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </Link>
+        {/* WhatsApp messaging is switched off — see the note in server/functions/payments.ts.
+            The reminder and warning buttons stood here; the handlers and the senders behind
+            them are intact, so restoring this is uncommenting the block.
         {isValidIndianMobile && canSendMessages && (
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <Button
@@ -279,22 +349,23 @@ function LoanDetailPage() {
             >
               {t('loans.sendWhatsAppReminder')}
             </Button>
-            {/* Only offered once the instalment is actually overdue — a warning sent
-                before the deadline would be both wrong and needlessly harsh. */}
-            {hasOverduePayment && (
+            {hasUnpaidPayment && (
               <Button
-                variant="danger"
+                variant={hasOverduePayment ? 'danger' : 'secondary'}
                 size="sm"
                 className="flex-1"
                 onClick={handleWhatsAppWarning}
                 loading={warningSending}
                 disabled={whatsAppSending || warningSending}
               >
-                {t('loans.sendWhatsAppWarning')}
+                {hasOverduePayment
+                  ? t('loans.sendWhatsAppWarning')
+                  : t('loans.sendWhatsAppWarningTest')}
               </Button>
             )}
           </div>
         )}
+        */}
       </Card>
 
       {/* ── Section 2: Financial Overview ── */}
@@ -351,7 +422,11 @@ function LoanDetailPage() {
         </p>
       </Card>
 
-      {/* ── Section 3b: Agreement ── */}
+      {/* ── Section 3b: Agreement ──
+          Removed: nothing is accepted any more. This card held the owner's acceptance and
+          the welcome send, and the welcome was the only thing that minted a loan's consent
+          token — so with messaging off the whole flow had no way to start. The component,
+          server/functions/consent.ts and the columns behind them are all left in place.
       <LoanAgreementCard
         loanId={loan.id}
         borrowerAcceptedAt={loan.borrowerAcceptedAt}
@@ -360,6 +435,7 @@ function LoanDetailPage() {
         canMessage={isValidIndianMobile}
         onChange={fetchLoan}
       />
+      */}
 
       {/* ── Section 4: Loan Info ── */}
       <Card>
@@ -501,6 +577,18 @@ function LoanDetailPage() {
         />
       )}
 
+      {confirmBin && (
+        <ConfirmModal
+          title={t('bin.moveToBin')}
+          message={t('bin.confirmBinLoan', { number: loan.loanNumber })}
+          confirmLabel={t('bin.moveToBin')}
+          danger
+          loading={binning}
+          onConfirm={handleBin}
+          onCancel={() => setConfirmBin(false)}
+        />
+      )}
+
       {confirmActive && (
         <ConfirmModal
           title={t('loans.revertActive')}
@@ -538,19 +626,22 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function ActionMenuItem({ label, icon, danger = false, onClick }: {
+function ActionMenuItem({ label, icon, danger = false, disabled = false, onClick }: {
   label: string;
   icon: string;
   danger?: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={clsx(
         'w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-colors',
         danger ? 'text-red-600 hover:bg-red-50' : 'text-slate-700 hover:bg-slate-50',
+        disabled && 'cursor-not-allowed opacity-40 hover:bg-transparent',
       )}
     >
       <span>{icon}</span>

@@ -6,6 +6,7 @@ import { createLoanSchema } from '../validators/loan';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole, requirePermission } from '../middleware/roleGuard';
 import { borrowerSearchCondition, borrowerSearchRelevance } from '../db/search';
+import { borrowerLive, loanLive } from '../db/softDelete';
 import { calculateLoan, calculateStartMonth, generatePaymentSchedule } from '@/lib/calculations';
 import { DEFAULTS } from '@/lib/constants';
 
@@ -55,7 +56,10 @@ export const listLoans = createServerFn({ method: 'GET' })
     // the last five and a half hours of the Indian day.
     const istToday = sql`(now() AT TIME ZONE 'Asia/Kolkata')::date`;
 
-    const conditions = [];
+    // Seeded with the live predicates, which every branch below inherits: the rows, the
+    // total, both facet queries and the urgency counts all build from these two arrays.
+    // Both tables, because a list row joins them and either being binned hides the row.
+    const conditions = [loanLive, borrowerLive];
 
     // "Overdue" is not a loan status — it is a loan whose next instalment is overdue, so
     // it cuts across active and extended rather than sitting beside them.
@@ -77,12 +81,12 @@ export const listLoans = createServerFn({ method: 'GET' })
       conditions.push(lte(loans.dateGiven, data.dateTo));
     }
 
-    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const liveWhere = and(...conditions);
 
     // Facet counts for the status chips. Deliberately ignores the status filter itself
     // so each chip shows its own total and the numbers do not shift when you switch
     // between them; every other active filter (search, dates, borrower) still applies.
-    const facetConditions = [];
+    const facetConditions = [loanLive, borrowerLive];
     if (data.borrowerId) facetConditions.push(eq(loans.borrowerId, data.borrowerId));
     if (data.dateFrom) facetConditions.push(gte(loans.dateGiven, data.dateFrom));
     if (data.dateTo) facetConditions.push(lte(loans.dateGiven, data.dateTo));
@@ -92,7 +96,7 @@ export const listLoans = createServerFn({ method: 'GET' })
     const relevance = borrowerSearchRelevance(data.search, data.searchTelugu);
     if (searchCondition) facetConditions.push(searchCondition);
 
-    const facetWhere = facetConditions.length > 0 ? and(...facetConditions) : undefined;
+    const liveFacetWhere = and(...facetConditions);
 
     // Counted over the whole filtered set, not the loaded page. Deriving these on the
     // client counted only the rows in hand, so desktop capped them at the page size while
@@ -102,7 +106,7 @@ export const listLoans = createServerFn({ method: 'GET' })
         .select({ status: loans.status, count: count() })
         .from(loans)
         .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-        .where(facetWhere)
+        .where(liveFacetWhere)
         .groupBy(loans.status),
       db
         .select({
@@ -111,7 +115,7 @@ export const listLoans = createServerFn({ method: 'GET' })
         })
         .from(loans)
         .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-        .where(facetWhere),
+        .where(liveFacetWhere),
     ]);
 
     const urgencyCounts = {
@@ -137,7 +141,7 @@ export const listLoans = createServerFn({ method: 'GET' })
 
     // Searching joins borrowers, so it needs its own branch.
     if (searchCondition) {
-      const fullWhere = where && searchCondition ? and(where, searchCondition) : (searchCondition ?? where);
+      const liveFullWhere = liveWhere && searchCondition ? and(liveWhere, searchCondition) : (searchCondition ?? liveWhere);
 
       const [items, totalResult] = await Promise.all([
         db
@@ -154,7 +158,7 @@ export const listLoans = createServerFn({ method: 'GET' })
           })
           .from(loans)
           .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-          .where(fullWhere)
+          .where(liveFullWhere)
           .orderBy(
             ...(relevance ? [desc(relevance)] : []),
             sql`(SELECT CASE WHEN p.status = 'overdue' THEN 0 ELSE 1 END FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1) ASC NULLS LAST`,
@@ -166,7 +170,7 @@ export const listLoans = createServerFn({ method: 'GET' })
           .select({ count: count() })
           .from(loans)
           .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-          .where(fullWhere),
+          .where(liveFullWhere),
       ]);
 
       return {
@@ -205,17 +209,22 @@ export const listLoans = createServerFn({ method: 'GET' })
         })
         .from(loans)
         .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-        .where(where)
+        .where(liveWhere)
         .orderBy(
           sql`(SELECT CASE WHEN p.status = 'overdue' THEN 0 ELSE 1 END FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1) ASC NULLS LAST`,
           desc(loans.createdAt),
         )
         .limit(data.limit)
         .offset(offset),
+      // Mirrors the row query's joins exactly. Counting from `loans` alone agreed with the
+      // rows only because every loan has a borrower; the moment the where clause says
+      // anything about the borrower, the count and the rows answer different questions and
+      // the last page renders empty. The search branch above already joins.
       db
         .select({ count: count() })
         .from(loans)
-        .where(where),
+        .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
+        .where(liveWhere),
     ]);
 
     return {
@@ -249,8 +258,11 @@ export const getLoanById = createServerFn({ method: 'GET' })
     const user = await getAuthenticatedUser();
     requireRole(user, ['admin', 'manager']);
 
+    // A binned loan reads as missing. The detail page turns that into "not found", and
+    // for an admin adds a line pointing at the Bin so a bookmarked URL does not look like
+    // the loan was lost.
     const loan = await db.query.loans.findFirst({
-      where: eq(loans.id, data.id),
+      where: and(eq(loans.id, data.id), loanLive),
       with: {
         borrower: {
           columns: {
@@ -285,6 +297,16 @@ export const createLoan = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
     requirePermission(user, 'loans.create');
+
+    // A loan must never be issued against a borrower who is in the Bin — it would be
+    // invisible the moment it was created, since the list hides a loan whose borrower is
+    // binned. There was no check of any kind here before.
+    const [borrower] = await db
+      .select({ id: borrowers.id })
+      .from(borrowers)
+      .where(and(eq(borrowers.id, data.borrowerId), borrowerLive))
+      .limit(1);
+    if (!borrower) throw new Error('Borrower not found');
 
     // Server-side calculation — NEVER trust client values
     const calc = calculateLoan(
@@ -386,7 +408,9 @@ export const updateLoan = createServerFn({ method: 'POST' })
     const [updated] = await db
       .update(loans)
       .set(updateData)
-      .where(eq(loans.id, data.id))
+      // Binned loans are not editable — a change here would edit one out from under
+      // the Bin, and the restored row would not be what was removed.
+      .where(and(eq(loans.id, data.id), loanLive))
       .returning();
 
     if (!updated) throw new Error('Loan not found');
@@ -408,7 +432,7 @@ export const extendTenure = createServerFn({ method: 'POST' })
     requirePermission(user, 'loans.write');
 
     const loan = await db.query.loans.findFirst({
-      where: eq(loans.id, data.id),
+      where: and(eq(loans.id, data.id), loanLive),
       with: { payments: true },
     });
 
@@ -478,7 +502,9 @@ export const extendTenure = createServerFn({ method: 'POST' })
         status: 'extended',
         updatedAt: new Date(),
       })
-      .where(eq(loans.id, data.id))
+      // Binned loans are not editable — a change here would edit one out from under
+      // the Bin, and the restored row would not be what was removed.
+      .where(and(eq(loans.id, data.id), loanLive))
       .returning();
 
     return updated;
@@ -500,7 +526,9 @@ export const changeStatus = createServerFn({ method: 'POST' })
     const [updated] = await db
       .update(loans)
       .set({ status: data.status, updatedAt: new Date() })
-      .where(eq(loans.id, data.id))
+      // Binned loans are not editable — a change here would edit one out from under
+      // the Bin, and the restored row would not be what was removed.
+      .where(and(eq(loans.id, data.id), loanLive))
       .returning();
 
     if (!updated) throw new Error('Loan not found');

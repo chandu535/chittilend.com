@@ -1,8 +1,9 @@
 import { createServerFn } from '@tanstack/react-start';
 import { randomBytes } from 'crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { loans, payments } from '../db/schema';
+import { loanLive } from '../db/softDelete';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requirePermission } from '../middleware/roleGuard';
 
@@ -58,7 +59,7 @@ export async function sendPaymentReceipt(paymentId: string): Promise<void> {
     if (!row) return;
 
     const loan = await db.query.loans.findFirst({
-      where: eq(loans.id, row.loanId),
+      where: and(eq(loans.id, row.loanId), loanLive),
       with: {
         borrower: { columns: { name: true, nameTelugu: true, mobile: true } },
         payments: { columns: { status: true, amountPaid: true } },
@@ -115,7 +116,7 @@ export async function sendLoanClosed(loanId: string): Promise<void> {
 
   try {
     const loan = await db.query.loans.findFirst({
-      where: eq(loans.id, loanId),
+      where: and(eq(loans.id, loanId), loanLive),
       with: {
         borrower: { columns: { name: true, nameTelugu: true, mobile: true } },
         payments: { columns: { status: true, amountPaid: true } },
@@ -168,7 +169,7 @@ export async function sendWarningTemplate(loanId: string): Promise<{ messageId?:
     }
 
     const loan = await db.query.loans.findFirst({
-      where: eq(loans.id, data.loanId),
+      where: and(eq(loans.id, data.loanId), loanLive),
       with: {
         borrower: { columns: { name: true, nameTelugu: true, mobile: true } },
         payments: { orderBy: (payments, { asc }) => [asc(payments.installmentNumber)] },
@@ -258,7 +259,7 @@ export const sendLoanWelcomeWhatsApp = createServerFn({ method: 'POST' })
     }
 
     const loan = await db.query.loans.findFirst({
-      where: eq(loans.id, data.loanId),
+      where: and(eq(loans.id, data.loanId), loanLive),
       with: {
         borrower: { columns: { name: true, nameTelugu: true, mobile: true } },
       },
@@ -313,7 +314,7 @@ export const sendLoanWelcomeWhatsApp = createServerFn({ method: 'POST' })
     await db
       .update(loans)
       .set({ consentToken, consentTokenExpiry, welcomeSentAt: now, updatedAt: now })
-      .where(eq(loans.id, loan.id));
+      .where(and(eq(loans.id, loan.id), loanLive));
 
     return { sent: true };
   });
@@ -330,7 +331,7 @@ export async function sendReminderTemplate(loanId: string): Promise<{ messageId?
     }
 
     const loan = await db.query.loans.findFirst({
-      where: eq(loans.id, data.loanId),
+      where: and(eq(loans.id, data.loanId), loanLive),
       with: {
         borrower: { columns: { mobile: true } },
         payments: {

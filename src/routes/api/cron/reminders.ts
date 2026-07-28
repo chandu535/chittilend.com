@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { json } from '@tanstack/react-start';
-import { dispatchDailyReminders } from '@/server/functions/notifications';
+// Messaging disabled.
+// import { dispatchDailyReminders } from '@/server/functions/notifications';
 
 /**
  * Daily reminder run, invoked by Vercel Cron.
@@ -25,6 +26,12 @@ export const Route = createFileRoute('/api/cron/reminders')({
           return json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Messaging is switched off. The schedule is already gone from vercel.json, so
+        // nothing invokes this — but the endpoint stays public behind the secret, and
+        // neither a stale schedule nor a manual call may start sending.
+        return json({ disabled: 'WhatsApp messaging is switched off' }, { status: 503 });
+
+        /* dispatchDailyReminders is untouched; restoring the run is uncommenting this.
         // ?dryRun=1 resolves who would be messaged without sending or writing anything.
         const dryRun = new URL(request.url).searchParams.get('dryRun') === '1';
 
@@ -36,6 +43,7 @@ export const Route = createFileRoute('/api/cron/reminders')({
           console.error('[cron] reminder run failed:', message);
           return json({ error: message }, { status: 500 });
         }
+        */
       },
     },
   },

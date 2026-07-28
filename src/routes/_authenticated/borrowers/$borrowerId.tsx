@@ -2,7 +2,10 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ScrollPage } from '@/components/layout/PageLayout';
 import { useState, useEffect, useCallback } from 'react';
-import { getBorrowerById, updateBorrower, deleteBorrower } from '@/server/functions/borrowers';
+import { getBorrowerById, updateBorrower } from '@/server/functions/borrowers';
+import { binBorrower } from '@/server/functions/bin';
+import { canBinBorrower, binReasonKey, decodeRefusal } from '@/lib/binRules';
+import { invalidateListCaches } from '@/lib/requestCache';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -13,7 +16,7 @@ import { MapPinIcon, LocateIcon } from '@/components/shared/icons';
 import { MagicLinkGenerator } from '@/components/borrowers/MagicLinkGenerator';
 import { DocumentUpload } from '@/components/borrowers/DocumentUpload';
 import { BorrowerForm } from '@/components/borrowers/BorrowerForm';
-import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
+import { BorrowerPhotoCapture } from '@/components/borrowers/BorrowerPhotoCapture';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { useLocalizedName } from '@/components/shared/NameDisplay';
 import { formatPhone } from '@/lib/formatters';
@@ -34,8 +37,9 @@ function BorrowerDetailPage() {
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const user = useStore(authStore, (s) => s.user);
-  const canDelete = can(user, 'borrowers.delete');
+  const canDelete = can(user, 'bin.write');
   const canWriteLoans = can(user, 'loans.create');
+  const canWriteBorrowers = can(user, 'borrowers.write');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [locationSaving, setLocationSaving] = useState(false);
@@ -87,14 +91,18 @@ function BorrowerDetailPage() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await deleteBorrower({ data: { id: borrowerId } });
-      toast(t('borrowers.deleteSuccess'), 'success');
+      await binBorrower({ data: { id: borrowerId } });
+      // The borrower leaves the list and appears in the Bin — two cached pages, neither
+      // of them the one being looked at.
+      invalidateListCaches();
+      toast(t('bin.borrowerBinned'), 'success');
       navigate({ to: '/borrowers' });
     } catch (err) {
-      const message = err instanceof Error && err.message.includes('BORROWER_HAS_ACTIVE_LOANS')
-        ? t('borrowers.hasActiveLoans')
-        : err instanceof Error ? err.message : t('errors.generic');
-      toast(message, 'error');
+      // Table-driven rather than matching one hardcoded string, so every refusal the
+      // server can give has a sentence here.
+      const raw = err instanceof Error ? err.message : String(err);
+      const refusal = decodeRefusal(raw);
+      toast(refusal ? t(binReasonKey(refusal.reason), refusal.detail) : t('errors.generic'), 'error');
       setDeleteOpen(false);
     } finally {
       setDeleting(false);
@@ -139,6 +147,18 @@ function BorrowerDetailPage() {
     return <p className="text-center text-slate-500 py-12">{t('errors.notFound')}</p>;
   }
 
+  // getBorrowerById already loads this borrower's live loans, so their length is exactly
+  // the count the rule needs — no extra query for it.
+  const binDecision = canBinBorrower({
+    deleted: false,
+    liveLoanCount: borrower.loans.length,
+    totalLoanCount: borrower.loans.length,
+    mobileHolder: null,
+  });
+  const binRefusal = binDecision.allowed
+    ? undefined
+    : t(binReasonKey(binDecision.reason), binDecision.detail);
+
   return (
     <ScrollPage>
       <div className="max-w-2xl mx-auto space-y-4">
@@ -161,7 +181,11 @@ function BorrowerDetailPage() {
         {canDelete && (
         <button
           onClick={() => setDeleteOpen(true)}
-          className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          disabled={!binDecision.allowed}
+          // The reason rides on the button rather than only appearing after a failed
+          // press — a greyed icon with no explanation reads as a broken page.
+          title={binDecision.allowed ? undefined : binRefusal}
+          className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-400"
           aria-label={t('borrowers.deleteBorrower')}
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -174,11 +198,13 @@ function BorrowerDetailPage() {
       {/* Profile Card */}
       <Card>
         <div className="flex items-start gap-4">
-          <BorrowerAvatar
+          <BorrowerPhotoCapture
+            borrowerId={borrowerId}
             name={borrower.name}
             nameTelugu={borrower.nameTelugu}
             photoUrl={borrower.profilePhotoUrl}
-            size="lg"
+            onUploaded={fetchBorrower}
+            canEdit={canWriteBorrowers}
           />
           <div className="flex-1 min-w-0 space-y-1">
             <p className="text-lg font-semibold text-slate-900">{displayName}</p>
@@ -317,8 +343,8 @@ function BorrowerDetailPage() {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={deleteOpen} onClose={() => setDeleteOpen(false)} title={t('borrowers.deleteBorrower')} size="sm">
-        <p className="text-sm text-slate-600 mb-6">{t('borrowers.confirmDelete')}</p>
+      <Modal isOpen={deleteOpen} onClose={() => setDeleteOpen(false)} title={t('bin.moveToBin')} size="sm">
+        <p className="text-sm text-slate-600 mb-6">{t('bin.confirmBinBorrower', { name: displayName })}</p>
         <div className="flex gap-3">
           <Button variant="ghost" className="flex-1" onClick={() => setDeleteOpen(false)}>
             {t('common.cancel')}

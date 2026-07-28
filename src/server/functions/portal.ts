@@ -1,7 +1,8 @@
 import { createServerFn } from '@tanstack/react-start';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { borrowers, loans, payments } from '../db/schema';
+import { borrowerLive, loanLive } from '../db/softDelete';
 
 export const getPortalData = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => {
@@ -12,11 +13,12 @@ export const getPortalData = createServerFn({ method: 'GET' })
     return { token };
   })
   .handler(async ({ data }) => {
-    // Find borrower by portal token
+    // A binned borrower's link stops working. Same message as an unknown token on
+    // purpose: whoever is holding the link should learn nothing about why.
     const [borrower] = await db
       .select()
       .from(borrowers)
-      .where(eq(borrowers.portalToken, data.token))
+      .where(and(eq(borrowers.portalToken, data.token), borrowerLive))
       .limit(1);
 
     if (!borrower) {
@@ -32,7 +34,7 @@ export const getPortalData = createServerFn({ method: 'GET' })
     const borrowerLoans = await db
       .select()
       .from(loans)
-      .where(eq(loans.borrowerId, borrower.id))
+      .where(and(eq(loans.borrowerId, borrower.id), loanLive))
       .orderBy(loans.dateGiven);
 
     // Get payment schedules for all loans

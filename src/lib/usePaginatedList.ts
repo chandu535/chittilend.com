@@ -61,7 +61,11 @@ export function usePaginatedList<T>({
   const requestId = useRef(0);
   const loadedOnce = useRef(false);
 
-  const load = useCallback(async (targetPage: number, mode: 'replace' | 'append') => {
+  const load = useCallback(async (
+    targetPage: number,
+    mode: 'replace' | 'append',
+    force = false,
+  ) => {
     const id = ++requestId.current;
     if (mode === 'append') setAppending(true);
     else setLoading(true);
@@ -72,6 +76,7 @@ export function usePaginatedList<T>({
         cacheKey(targetPage, pageSize),
         () => fetchPage(targetPage, pageSize),
         ttlMs,
+        force,
       );
       if (id !== requestId.current) return;
 
@@ -126,8 +131,12 @@ export function usePaginatedList<T>({
 
   // On mobile the list is an accumulation of pages, so reloading "the current page"
   // would discard everything above it. Start over from page 1 instead.
+  //
+  // Forced past the cache. Refresh is only ever called after a mutation or on an explicit
+  // retry, and both want the server's answer by definition — without this a payment
+  // recorded, or a row restored, appears not to have happened until the TTL lapses.
   const refresh = useCallback(
-    () => load(isDesktop ? page : 1, 'replace'),
+    () => load(isDesktop ? page : 1, 'replace', true),
     [load, page, isDesktop],
   );
 
