@@ -74,8 +74,17 @@ export function isSheetConfigured(): boolean {
   return getSheetConfig() !== null;
 }
 
-/** Where the Open in Google Sheets button points. */
+/**
+ * Where the Open in Google Sheets button points.
+ *
+ * Needs the spreadsheet id and nothing else, deliberately. Following this link opens the
+ * sheet in the reader's own browser under their own Google login; the service account is
+ * what lets the *server* write, and has no bearing on whether a person can read. Gating the
+ * link on full credentials meant a deployment missing one key hid the spreadsheet from
+ * someone perfectly able to open it — and hid it precisely when the sync was broken and
+ * looking at the sheet directly was the only thing left that worked.
+ */
 export function spreadsheetUrl(): string | null {
-  const config = getSheetConfig();
-  return config ? `https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/edit` : null;
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+  return spreadsheetId ? `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit` : null;
 }
