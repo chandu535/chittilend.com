@@ -251,6 +251,7 @@
     "teluguEdit": "తెలుగు స్పెల్లింగ్ మార్చడానికి నొక్కండి",
     "locationCaptured": "ఫోటోతో పాటు లొకేషన్ సేవ్ అయింది",
     "cameraUnavailable": "కెమెరా అందుబాటులో లేదు",
+    "cameraSwitchFailed": "కెమెరా మార్చలేకపోయాము. అదే లెన్స్‌లో ఉంది.",
     "switchCamera": "కెమెరా మార్చండి",
     "retakePhoto": "మళ్ళీ ఫోటో తీయండి",
     "captureAadhaar": "ఆధార్ ఫోటో తీయండి"
