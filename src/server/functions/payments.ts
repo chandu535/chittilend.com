@@ -6,6 +6,7 @@ import { payments, loans, borrowers, capitalPoolLog } from '../db/schema';
 import { loanAndBorrowerLive, loanLive } from '../db/softDelete';
 import { markPaymentSchema, markWaivedSchema } from '../validators/payment';
 import { getAuthenticatedUser } from '../middleware/auth';
+import { requestSheetSync } from '../sheets/sync';
 import { requireRole, requirePermission } from '../middleware/roleGuard';
 // WhatsApp messaging is switched off. Sending needs a verified Meta business account,
 // which this operation has no documents for, so nothing could be delivered anyway. The
@@ -227,6 +228,7 @@ export const markPaymentPaid = createServerFn({ method: 'POST' })
     // if (justCompleted) await sendLoanClosed(payment.loanId);
     // else await sendPaymentReceipt(payment.id);
 
+    await requestSheetSync();
     return updated;
   });
 
@@ -289,6 +291,7 @@ export const markPaymentPartial = createServerFn({ method: 'POST' })
     // if (justCompleted) await sendLoanClosed(payment.loanId);
     // else await sendPaymentReceipt(payment.id);
 
+    await requestSheetSync();
     return updated;
   });
 
@@ -326,6 +329,7 @@ export const markPaymentWaived = createServerFn({ method: 'POST' })
     // Messaging disabled.
     // if (await syncLoanStatus(updated.loanId)) await sendLoanClosed(updated.loanId);
 
+    await requestSheetSync();
     return updated;
   });
 
@@ -528,6 +532,7 @@ export const revertPayment = createServerFn({ method: 'POST' })
     // on a loan the borrower had overpaid should not drag it back to active.
     await syncLoanStatus(payment.loanId);
 
+    await requestSheetSync();
     return updated;
   });
 
@@ -557,5 +562,9 @@ export const bulkUpdateOverdueStatus = createServerFn({ method: 'POST' }).handle
     )
     .returning({ id: payments.id });
 
+  // No sheet sync. Nothing on either tab is derived from the pending/overdue distinction —
+  // the month columns follow the money and the totals follow what was settled — and this
+  // runs on every dashboard load, so mirroring it would rebuild the spreadsheet all day for
+  // a change it does not show.
   return { updated: result.length };
 });

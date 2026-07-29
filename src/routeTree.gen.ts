@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UserPaymentAcceptanceConsentTokenRouteImport } from './routes/user-payment-acceptance/$consentToken'
 import { Route as PortalTokenRouteImport } from './routes/portal/$token'
+import { Route as AuthenticatedSheetRouteImport } from './routes/_authenticated/sheet'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -22,6 +23,8 @@ import { Route as AuthenticatedBinRouteImport } from './routes/_authenticated/bi
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedLoansIndexRouteImport } from './routes/_authenticated/loans/index'
 import { Route as AuthenticatedBorrowersIndexRouteImport } from './routes/_authenticated/borrowers/index'
+import { Route as ApiSheetDownloadRouteImport } from './routes/api/sheet/download'
+import { Route as ApiCronSheetSyncRouteImport } from './routes/api/cron/sheet-sync'
 import { Route as ApiCronRemindersRouteImport } from './routes/api/cron/reminders'
 import { Route as AuthenticatedLoansNewRouteImport } from './routes/_authenticated/loans/new'
 import { Route as AuthenticatedLoansLoanIdRouteImport } from './routes/_authenticated/loans/$loanId'
@@ -52,6 +55,11 @@ const PortalTokenRoute = PortalTokenRouteImport.update({
   id: '/portal/$token',
   path: '/portal/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSheetRoute = AuthenticatedSheetRouteImport.update({
+  id: '/sheet',
+  path: '/sheet',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
@@ -94,6 +102,16 @@ const AuthenticatedBorrowersIndexRoute =
     path: '/borrowers/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const ApiSheetDownloadRoute = ApiSheetDownloadRouteImport.update({
+  id: '/api/sheet/download',
+  path: '/api/sheet/download',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCronSheetSyncRoute = ApiCronSheetSyncRouteImport.update({
+  id: '/api/cron/sheet-sync',
+  path: '/api/cron/sheet-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCronRemindersRoute = ApiCronRemindersRouteImport.update({
   id: '/api/cron/reminders',
   path: '/api/cron/reminders',
@@ -132,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/sheet': typeof AuthenticatedSheetRoute
   '/portal/$token': typeof PortalTokenRoute
   '/user-payment-acceptance/$consentToken': typeof UserPaymentAcceptanceConsentTokenRoute
   '/borrowers/$borrowerId': typeof AuthenticatedBorrowersBorrowerIdRoute
@@ -139,6 +158,8 @@ export interface FileRoutesByFullPath {
   '/loans/$loanId': typeof AuthenticatedLoansLoanIdRoute
   '/loans/new': typeof AuthenticatedLoansNewRoute
   '/api/cron/reminders': typeof ApiCronRemindersRoute
+  '/api/cron/sheet-sync': typeof ApiCronSheetSyncRoute
+  '/api/sheet/download': typeof ApiSheetDownloadRoute
   '/borrowers/': typeof AuthenticatedBorrowersIndexRoute
   '/loans/': typeof AuthenticatedLoansIndexRoute
 }
@@ -151,6 +172,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/sheet': typeof AuthenticatedSheetRoute
   '/portal/$token': typeof PortalTokenRoute
   '/user-payment-acceptance/$consentToken': typeof UserPaymentAcceptanceConsentTokenRoute
   '/borrowers/$borrowerId': typeof AuthenticatedBorrowersBorrowerIdRoute
@@ -158,6 +180,8 @@ export interface FileRoutesByTo {
   '/loans/$loanId': typeof AuthenticatedLoansLoanIdRoute
   '/loans/new': typeof AuthenticatedLoansNewRoute
   '/api/cron/reminders': typeof ApiCronRemindersRoute
+  '/api/cron/sheet-sync': typeof ApiCronSheetSyncRoute
+  '/api/sheet/download': typeof ApiSheetDownloadRoute
   '/borrowers': typeof AuthenticatedBorrowersIndexRoute
   '/loans': typeof AuthenticatedLoansIndexRoute
 }
@@ -172,6 +196,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/sheet': typeof AuthenticatedSheetRoute
   '/portal/$token': typeof PortalTokenRoute
   '/user-payment-acceptance/$consentToken': typeof UserPaymentAcceptanceConsentTokenRoute
   '/_authenticated/borrowers/$borrowerId': typeof AuthenticatedBorrowersBorrowerIdRoute
@@ -179,6 +204,8 @@ export interface FileRoutesById {
   '/_authenticated/loans/$loanId': typeof AuthenticatedLoansLoanIdRoute
   '/_authenticated/loans/new': typeof AuthenticatedLoansNewRoute
   '/api/cron/reminders': typeof ApiCronRemindersRoute
+  '/api/cron/sheet-sync': typeof ApiCronSheetSyncRoute
+  '/api/sheet/download': typeof ApiSheetDownloadRoute
   '/_authenticated/borrowers/': typeof AuthenticatedBorrowersIndexRoute
   '/_authenticated/loans/': typeof AuthenticatedLoansIndexRoute
 }
@@ -193,6 +220,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/payments'
     | '/settings'
+    | '/sheet'
     | '/portal/$token'
     | '/user-payment-acceptance/$consentToken'
     | '/borrowers/$borrowerId'
@@ -200,6 +228,8 @@ export interface FileRouteTypes {
     | '/loans/$loanId'
     | '/loans/new'
     | '/api/cron/reminders'
+    | '/api/cron/sheet-sync'
+    | '/api/sheet/download'
     | '/borrowers/'
     | '/loans/'
   fileRoutesByTo: FileRoutesByTo
@@ -212,6 +242,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/payments'
     | '/settings'
+    | '/sheet'
     | '/portal/$token'
     | '/user-payment-acceptance/$consentToken'
     | '/borrowers/$borrowerId'
@@ -219,6 +250,8 @@ export interface FileRouteTypes {
     | '/loans/$loanId'
     | '/loans/new'
     | '/api/cron/reminders'
+    | '/api/cron/sheet-sync'
+    | '/api/sheet/download'
     | '/borrowers'
     | '/loans'
   id:
@@ -232,6 +265,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/payments'
     | '/_authenticated/settings'
+    | '/_authenticated/sheet'
     | '/portal/$token'
     | '/user-payment-acceptance/$consentToken'
     | '/_authenticated/borrowers/$borrowerId'
@@ -239,6 +273,8 @@ export interface FileRouteTypes {
     | '/_authenticated/loans/$loanId'
     | '/_authenticated/loans/new'
     | '/api/cron/reminders'
+    | '/api/cron/sheet-sync'
+    | '/api/sheet/download'
     | '/_authenticated/borrowers/'
     | '/_authenticated/loans/'
   fileRoutesById: FileRoutesById
@@ -250,6 +286,8 @@ export interface RootRouteChildren {
   PortalTokenRoute: typeof PortalTokenRoute
   UserPaymentAcceptanceConsentTokenRoute: typeof UserPaymentAcceptanceConsentTokenRoute
   ApiCronRemindersRoute: typeof ApiCronRemindersRoute
+  ApiCronSheetSyncRoute: typeof ApiCronSheetSyncRoute
+  ApiSheetDownloadRoute: typeof ApiSheetDownloadRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -288,6 +326,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/portal/$token'
       preLoaderRoute: typeof PortalTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/sheet': {
+      id: '/_authenticated/sheet'
+      path: '/sheet'
+      fullPath: '/sheet'
+      preLoaderRoute: typeof AuthenticatedSheetRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
@@ -345,6 +390,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBorrowersIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/sheet/download': {
+      id: '/api/sheet/download'
+      path: '/api/sheet/download'
+      fullPath: '/api/sheet/download'
+      preLoaderRoute: typeof ApiSheetDownloadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/sheet-sync': {
+      id: '/api/cron/sheet-sync'
+      path: '/api/cron/sheet-sync'
+      fullPath: '/api/cron/sheet-sync'
+      preLoaderRoute: typeof ApiCronSheetSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cron/reminders': {
       id: '/api/cron/reminders'
       path: '/api/cron/reminders'
@@ -390,6 +449,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSheetRoute: typeof AuthenticatedSheetRoute
   AuthenticatedBorrowersBorrowerIdRoute: typeof AuthenticatedBorrowersBorrowerIdRoute
   AuthenticatedBorrowersNewRoute: typeof AuthenticatedBorrowersNewRoute
   AuthenticatedLoansLoanIdRoute: typeof AuthenticatedLoansLoanIdRoute
@@ -405,6 +465,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSheetRoute: AuthenticatedSheetRoute,
   AuthenticatedBorrowersBorrowerIdRoute: AuthenticatedBorrowersBorrowerIdRoute,
   AuthenticatedBorrowersNewRoute: AuthenticatedBorrowersNewRoute,
   AuthenticatedLoansLoanIdRoute: AuthenticatedLoansLoanIdRoute,
@@ -425,6 +486,8 @@ const rootRouteChildren: RootRouteChildren = {
   UserPaymentAcceptanceConsentTokenRoute:
     UserPaymentAcceptanceConsentTokenRoute,
   ApiCronRemindersRoute: ApiCronRemindersRoute,
+  ApiCronSheetSyncRoute: ApiCronSheetSyncRoute,
+  ApiSheetDownloadRoute: ApiSheetDownloadRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

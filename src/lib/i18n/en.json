@@ -334,6 +334,21 @@
     "noNotifications": "Nothing sent yet",
     "notificationsFailed": "{{count}} failed"
   },
+  "sheet": {
+    "title": "Sheet",
+    "downloadTitle": "Download the full book",
+    "downloadHint": "Every live loan with its month-by-month collections, and every borrower with their details and photos — as one Excel file.",
+    "download": "Download",
+    "open": "Open in Google Sheets",
+    "statusTitle": "Google Sheet",
+    "lastSynced": "Last updated {{when}}",
+    "neverSynced": "Not synced yet",
+    "notConfigured": "Google Sheets is not set up on this server yet.",
+    "syncNow": "Sync now",
+    "syncedToast": "Sheet updated",
+    "syncBusy": "A sync is already running",
+    "pending": "Recent changes are still waiting to reach the sheet."
+  },
   "bin": {
     "title": "Bin",
     "tabLoans": "Loans",

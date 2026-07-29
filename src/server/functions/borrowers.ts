@@ -8,6 +8,7 @@ import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole, requirePermission } from '../middleware/roleGuard';
 import { borrowerSearchCondition, borrowerSearchRelevance } from '../db/search';
 import { borrowerLive, loanLive, sameLiveMobile } from '../db/softDelete';
+import { requestSheetSync } from '../sheets/sync';
 import { DEFAULTS } from '@/lib/constants';
 
 export const listBorrowers = createServerFn({ method: 'GET' })
@@ -158,6 +159,7 @@ export const createBorrower = createServerFn({ method: 'POST' })
       })
       .returning();
 
+    await requestSheetSync();
     return borrower;
   });
 
@@ -207,6 +209,7 @@ export const updateBorrower = createServerFn({ method: 'POST' })
 
     if (!updated) throw new Error('Borrower not found');
 
+    await requestSheetSync();
     return updated;
   });
 
@@ -231,6 +234,9 @@ export const generateNewMagicLink = createServerFn({ method: 'POST' })
 
     if (!updated) throw new Error('Borrower not found');
 
+    // The portal link is a column on the borrowers tab, so reissuing one invalidates what
+    // the spreadsheet says just as surely as changing a name does.
+    await requestSheetSync();
     return { portalToken: updated.portalToken };
   });
 

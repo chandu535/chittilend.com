@@ -11,6 +11,7 @@ import {
   totalLoanCountSql,
 } from '../db/softDelete';
 import { getAuthenticatedUser } from '../middleware/auth';
+import { requestSheetSync } from '../sheets/sync';
 import { requirePermission } from '../middleware/roleGuard';
 import { deleteBorrowerObjects } from '@/lib/r2';
 import { DEFAULTS } from '@/lib/constants';
@@ -145,7 +146,13 @@ export const binLoan = createServerFn({ method: 'POST' })
       ))
       .returning({ id: loans.id });
 
-    if (binned) return { success: true };
+    if (binned) {
+      // A binned loan has no row on either tab, so the spreadsheet is wrong until this
+      // runs — and it is wrong in the direction that matters, still naming someone who has
+      // been removed from the book.
+      await requestSheetSync();
+      return { success: true };
+    }
 
     const facts = await loanFacts(data.id);
     if (!facts) throw new Error(BIN_REASONS.LOAN_NOT_FOUND);
@@ -172,7 +179,10 @@ export const binBorrower = createServerFn({ method: 'POST' })
       ))
       .returning({ id: borrowers.id });
 
-    if (binned) return { success: true };
+    if (binned) {
+      await requestSheetSync();
+      return { success: true };
+    }
 
     const facts = await borrowerFacts(data.id);
     if (!facts) throw new Error(BIN_REASONS.BORROWER_NOT_FOUND);
@@ -198,7 +208,10 @@ export const restoreBorrower = createServerFn({ method: 'POST' })
       .where(and(eq(borrowers.id, data.id), isNotNull(borrowers.deletedAt), mobileFree))
       .returning({ id: borrowers.id });
 
-    if (restored) return { success: true };
+    if (restored) {
+      await requestSheetSync();
+      return { success: true };
+    }
 
     const facts = await borrowerFacts(data.id);
     if (!facts) throw new Error(BIN_REASONS.BORROWER_NOT_FOUND);
@@ -243,6 +256,7 @@ export const restoreLoan = createServerFn({ method: 'POST' })
 
     const [restoredBorrower, restoredLoan] = results;
     if (restoredLoan.length > 0) {
+      await requestSheetSync();
       return { success: true, alsoRestoredBorrower: restoredBorrower.length > 0 };
     }
 
@@ -321,6 +335,7 @@ export const purgeLoan = createServerFn({ method: 'POST' })
     ]);
 
     if (results[2].length === 0) throw new Error(BIN_REASONS.LOAN_NOT_BINNED);
+    await requestSheetSync();
     return { success: true };
   });
 
@@ -371,6 +386,7 @@ export const purgeBorrower = createServerFn({ method: 'POST' })
       console.warn('[bin] R2 cleanup failed for', data.id, error instanceof Error ? error.message : error);
     }
 
+    await requestSheetSync();
     return { success: true, photosDeleted };
   });
 

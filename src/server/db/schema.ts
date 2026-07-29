@@ -206,6 +206,36 @@ export const notificationLog = pgTable('notification_log', {
   index('notification_log_created_idx').on(table.createdAt),
 ]);
 
+// ----- SHEET SYNC (state of the mirror kept in Google Sheets) -----
+/**
+ * One row, ever. `id` is fixed to `SHEET_SYNC_ID` so an upsert on the primary key is the
+ * only way to touch it and two lambdas cannot race a second row into existence.
+ *
+ * The design is a dirty flag rather than a queue of changes, because the sync is a full
+ * rebuild: what needs recording is only *that* something changed, never *what*. That is
+ * what makes it self-healing — a failed run leaves `dirty_at` set, and the next mutation,
+ * the next cron tick or the Sync now button rebuilds from the database and is correct
+ * again regardless of how many writes were missed in between.
+ *
+ * `sync_started_at` is a lease, not a lock: it is compared against a timeout so a lambda
+ * killed mid-rebuild cannot wedge the sync permanently.
+ */
+export const sheetSyncState = pgTable('sheet_sync_state', {
+  id: varchar('id', { length: 32 }).primaryKey(),
+  /** Set by any mutation; cleared by a run that succeeded. Null means the sheet is current. */
+  dirtyAt: timestamp('dirty_at', { withTimezone: true }),
+  /** Held for the duration of a rebuild, so concurrent triggers collapse into one write. */
+  syncStartedAt: timestamp('sync_started_at', { withTimezone: true }),
+  /** Last rebuild that reached Google and was accepted. */
+  syncedAt: timestamp('synced_at', { withTimezone: true }),
+  /** Why the last attempt failed, shown on the Sheet screen. Cleared on success. */
+  lastError: text('last_error'),
+  lastDurationMs: integer('last_duration_ms'),
+  lastLoanRows: integer('last_loan_rows'),
+  lastBorrowerRows: integer('last_borrower_rows'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ===================== RELATIONS =====================
 
 export const usersRelations = relations(users, ({ many }) => ({

@@ -7,6 +7,7 @@ import { borrowers } from '../db/schema';
 import { borrowerLive } from '../db/softDelete';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requirePermission } from '../middleware/roleGuard';
+import { requestSheetSync } from '../sheets/sync';
 
 export const uploadBorrowerPhoto = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => {
@@ -53,5 +54,8 @@ export const uploadBorrowerPhoto = createServerFn({ method: 'POST' })
       .returning({ id: borrowers.id });
     if (!updated) throw new Error('Borrower not found');
 
+    // The borrowers tab renders the profile photo from this URL, so a new one has to reach
+    // the sheet or the thumbnail there keeps showing the picture that was replaced.
+    await requestSheetSync();
     return { url: publicUrl };
   });

@@ -32,6 +32,11 @@ const GUARDED = [
   'server/functions/auth.ts',
   'server/functions/upload.ts',
   'server/functions/whatsapp.ts',
+  // The Google Sheets mirror. The most important entry on this list: everywhere else a
+  // missed filter shows binned data on a screen, where it can be noticed and fixed. Here it
+  // writes that data into a spreadsheet that gets downloaded, mailed and kept, and no later
+  // fix reaches the copies.
+  'server/sheets/data.ts',
 ];
 
 /** How many statements in each file may be exempt, and why. Pinned deliberately. */

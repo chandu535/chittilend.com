@@ -4,6 +4,7 @@ import { db } from '../db';
 import { loans, payments, borrowers, capitalPoolLog } from '../db/schema';
 import { createLoanSchema } from '../validators/loan';
 import { getAuthenticatedUser } from '../middleware/auth';
+import { requestSheetSync } from '../sheets/sync';
 import { requireRole, requirePermission } from '../middleware/roleGuard';
 import { borrowerSearchCondition, borrowerSearchRelevance } from '../db/search';
 import { borrowerLive, loanLive } from '../db/softDelete';
@@ -385,6 +386,7 @@ export const createLoan = createServerFn({ method: 'POST' })
       recordedBy: user.id,
     });
 
+    await requestSheetSync();
     return loan;
   });
 
@@ -415,6 +417,7 @@ export const updateLoan = createServerFn({ method: 'POST' })
 
     if (!updated) throw new Error('Loan not found');
 
+    await requestSheetSync();
     return updated;
   });
 
@@ -507,6 +510,7 @@ export const extendTenure = createServerFn({ method: 'POST' })
       .where(and(eq(loans.id, data.id), loanLive))
       .returning();
 
+    await requestSheetSync();
     return updated;
   });
 
@@ -532,5 +536,7 @@ export const changeStatus = createServerFn({ method: 'POST' })
       .returning();
 
     if (!updated) throw new Error('Loan not found');
+
+    await requestSheetSync();
     return updated;
   });
