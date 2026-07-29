@@ -17,7 +17,7 @@ interface ActivityItem {
 const eventIcons: Record<string, { icon: string; color: string }> = {
   collection: { icon: '\u2193', color: 'bg-emerald-100 text-emerald-700' },
   disbursement: { icon: '\u2191', color: 'bg-red-100 text-red-700' },
-  investment: { icon: '+', color: 'bg-blue-100 text-blue-700' },
+  investment: { icon: '+', color: 'bg-primary/15 text-brand' },
 };
 
 export function RecentActivity({ items }: { items: ActivityItem[] }) {
@@ -26,7 +26,7 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-slate-100 bg-white shadow-sm">
+    <div className="rounded-xl border border-slate-100 bg-card shadow-sm">
       <div className="px-4 py-3 border-b border-slate-100">
         <h3 className="text-sm font-semibold text-slate-900">{t('dashboard.recentActivity')}</h3>
       </div>
@@ -62,7 +62,7 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
                   <Link
                     to="/loans/$loanId"
                     params={{ loanId: item.loanId }}
-                    className="text-xs text-primary hover:underline block"
+                    className="text-xs text-brand hover:underline block"
                   >
                     {t('loans.loanDetails')}
                   </Link>

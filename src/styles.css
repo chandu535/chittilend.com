@@ -1,16 +1,258 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-@theme {
+/* ========================================
+   Palette
+   ========================================
+
+  Two colours carry the whole app: #2c0047, a near-black aubergine, and #f8d75b, a warm
+  gold. Their relationship is lopsided and the design is built on the lopsidedness.
+
+  Aubergine on white is about 15:1, so it can be anything — body text, a solid button, a
+  hairline. Gold on white is about 1.4:1, so it can never be text on a light ground. In
+  light mode gold is therefore a *surface* carrying aubergine text (about 11:1), and it is
+  spent sparingly: the one action per screen worth looking at first.
+
+  Dark mode turns that around. On a dark aubergine ground gold is one of the most legible
+  inks available, so the accents that were aubergine become gold and the palette reads as
+  the same two colours seen at night rather than a second, unrelated theme.
+
+  Every value below is a raw ingredient. Nothing here is referenced by a component — the
+  @theme block maps these onto utility names, which is what components use.
+*/
+
+:root {
+  color-scheme: light;
+
+  /* Solid brand fill. Whatever sits on it is --brand-ink. */
+  --brand: #2c0047;
+  --brand-hover: #3d0063;
+  --brand-ink: #ffffff;
+
+  /*
+    The brand as *ink* — text, borders, focus rings on an ordinary surface. Separate from
+    --brand on purpose. In dark mode a fill light enough to carry white text is too dark to
+    read as text itself, so one variable cannot do both jobs and pretending otherwise is
+    how themes end up with unreadable links.
+  */
+  --brand-on-surface: #2c0047;
+
+  --gold: #f8d75b;
+  --gold-hover: #f0c93c;
+  --gold-ink: #2c0047;
+  --gold-soft: #fdf6d9;
+
+  /* Surfaces. --canvas is the page, --card is anything raised off it. */
+  --canvas: #f7f4f9;
+  --card: #ffffff;
+
+  /*
+    Neutrals, tinted toward the brand rather than the blue-grey Tailwind ships. A pure grey
+    beside this much purple reads as slightly dirty; carrying a little of the hue through
+    the greys is what makes the screen look like one palette instead of two.
+
+    The ramp is ordered by *lightness*, and the app uses it that way throughout: 50–300 are
+    surfaces and hairlines, 400–500 are muted text, 600–900 are body and headings. That
+    discipline is what lets dark mode work by re-pointing these variables rather than
+    annotating six hundred class names.
+  */
+  --n-50:  #faf8fb;
+  --n-100: #f3eff6;
+  --n-200: #e8e1ed;
+  --n-300: #d5cadc;
+  --n-400: #a08fac;
+  --n-500: #786785;
+  --n-600: #5c4b69;
+  --n-700: #463756;
+  --n-800: #2f2340;
+  --n-900: #1c1029;
+
+  /* Status. Warmed very slightly toward the palette so they sit beside it rather than on
+     top of it, but never so far that green stops reading as green. */
+  --ok-50:  #ecfdf3;
+  --ok-100: #d3f8e2;
+  --ok-200: #a8f0c6;
+  --ok-500: #10b981;
+  --ok-600: #059669;
+  --ok-700: #047857;
+  --ok-800: #065f46;
+
+  --warn-50:  #fffbeb;
+  --warn-100: #fef3c7;
+  --warn-200: #fde68a;
+  --warn-500: #f59e0b;
+  --warn-600: #b45309;
+  --warn-700: #92400e;
+  --warn-800: #78350f;
+
+  --bad-50:  #fef2f2;
+  --bad-100: #fee2e2;
+  --bad-200: #fecaca;
+  --bad-500: #ef4444;
+  --bad-600: #dc2626;
+  --bad-700: #b91c1c;
+  --bad-800: #991b1b;
+
+  /*
+    Solid status fills, which are a different job from the ramp above and so are separate
+    variables rather than a shade of it.
+
+    The ramp inverts between themes: `text-emerald-700` has to go light at night to stay
+    readable on a dark card. A *fill* carrying white text cannot follow it — a chip that
+    turned pale pink in dark mode would put white text on a light ground. These three are
+    therefore held dark in both themes, and white always sits on them.
+  */
+  --solid-ok:   #067a55;
+  --solid-warn: #a15c07;
+  --solid-bad:  #c81e1e;
+  --on-solid:   #ffffff;
+
+  /* Shadows. Tinted with the brand rather than neutral black — a purple-cast shadow under
+     a white card on a purple-cast page is the difference between "floating" and "cut out". */
+  --shadow-card: 0 1px 2px rgba(44, 0, 71, 0.04), 0 8px 24px -12px rgba(44, 0, 71, 0.14);
+  --shadow-raised: 0 2px 4px rgba(44, 0, 71, 0.06), 0 16px 32px -16px rgba(44, 0, 71, 0.22);
+}
+
+.dark {
+  color-scheme: dark;
+
+  /*
+    Lifted well off #2c0047. The brand at full strength is nearly black, so on a dark page
+    a button painted with it would be a hole rather than a control. This is the same hue
+    carried up until white sits on it at about 6:1.
+  */
+  --brand: #7d4aa8;
+  --brand-hover: #9260bb;
+  --brand-ink: #ffffff;
+
+  /* Accents go gold at night. This is the whole idea of the dark theme, not a fallback. */
+  --brand-on-surface: #f8d75b;
+
+  --gold: #f8d75b;
+  --gold-hover: #ffe680;
+  --gold-ink: #2c0047;
+  --gold-soft: #3a2c12;
+
+  --canvas: #100418;
+  --card: #1b0a27;
+
+  /* The same ramp read from the other end. 400 and 500 stay mid — muted text has to remain
+     muted in both themes, so those two are re-chosen rather than mirrored. */
+  --n-50:  #1e0c2b;
+  --n-100: #261234;
+  --n-200: #341e44;
+  --n-300: #452c56;
+  --n-400: #8b7a97;
+  --n-500: #a595b0;
+  --n-600: #bdb0c6;
+  --n-700: #d2c8d9;
+  --n-800: #e6dfea;
+  --n-900: #f7f3f9;
+
+  /* Status tints invert too: the 50–200 end becomes a deep wash to sit under light text,
+     and the text end is brightened enough to hold up against it. */
+  --ok-50:  #06251a;
+  --ok-100: #073728;
+  --ok-200: #0b5138;
+  --ok-500: #34d399;
+  --ok-600: #4ade9f;
+  --ok-700: #6ee7b7;
+  --ok-800: #a7f3d0;
+
+  --warn-50:  #2a1a05;
+  --warn-100: #3d2708;
+  --warn-200: #573810;
+  --warn-500: #fbbf24;
+  --warn-600: #fcd34d;
+  --warn-700: #fde68a;
+  --warn-800: #fef3c7;
+
+  --bad-50:  #2c0d10;
+  --bad-100: #431316;
+  --bad-200: #601d21;
+  --bad-500: #f87171;
+  --bad-600: #fb8f8f;
+  --bad-700: #fca5a5;
+  --bad-800: #fecaca;
+
+  /* Lifted just enough to separate from the dark ground while keeping white above 4.5:1. */
+  --solid-ok:   #0b8f64;
+  --solid-warn: #b96c0a;
+  --solid-bad:  #d92d2d;
+  --on-solid:   #ffffff;
+
+  /* Black shadows are invisible on a dark ground; depth there comes from a lit top edge,
+     which the card border supplies, plus a deeper spread. */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -12px rgba(0, 0, 0, 0.7);
+  --shadow-raised: 0 2px 4px rgba(0, 0, 0, 0.6), 0 16px 32px -16px rgba(0, 0, 0, 0.8);
+}
+
+/*
+  `inline` matters here. Without it a utility compiles to var(--color-slate-500) whose value
+  was frozen at build time; with it the utility points straight at var(--n-500), so
+  re-pointing that one variable under .dark restyles everything that uses the ramp.
+*/
+@theme inline {
   --font-sans: 'Inter', 'Noto Sans Telugu', 'Mandali', system-ui, sans-serif;
 
-  --color-primary: #7C3AED;
-  --color-primary-light: #EDE9FE;
-  --color-accent: #EC4899;
-  --color-secondary: #2563EB;
-  --color-success: #059669;
-  --color-warning: #D97706;
-  --color-danger: #DC2626;
+  --color-primary: var(--brand);
+  --color-primary-hover: var(--brand-hover);
+  --color-on-primary: var(--brand-ink);
+  --color-brand: var(--brand-on-surface);
+
+  --color-gold: var(--gold);
+  --color-gold-hover: var(--gold-hover);
+  --color-on-gold: var(--gold-ink);
+  --color-gold-soft: var(--gold-soft);
+
+  --color-canvas: var(--canvas);
+  --color-card: var(--card);
+
+  /* Tailwind's own slate is replaced rather than sitting beside these. Two neutral ramps in
+     one app is how half the screens end up a different temperature from the other half. */
+  --color-slate-50:  var(--n-50);
+  --color-slate-100: var(--n-100);
+  --color-slate-200: var(--n-200);
+  --color-slate-300: var(--n-300);
+  --color-slate-400: var(--n-400);
+  --color-slate-500: var(--n-500);
+  --color-slate-600: var(--n-600);
+  --color-slate-700: var(--n-700);
+  --color-slate-800: var(--n-800);
+  --color-slate-900: var(--n-900);
+
+  --color-emerald-50:  var(--ok-50);
+  --color-emerald-100: var(--ok-100);
+  --color-emerald-200: var(--ok-200);
+  --color-emerald-500: var(--ok-500);
+  --color-emerald-600: var(--ok-600);
+  --color-emerald-700: var(--ok-700);
+  --color-emerald-800: var(--ok-800);
+
+  --color-amber-50:  var(--warn-50);
+  --color-amber-100: var(--warn-100);
+  --color-amber-200: var(--warn-200);
+  --color-amber-500: var(--warn-500);
+  --color-amber-600: var(--warn-600);
+  --color-amber-700: var(--warn-700);
+  --color-amber-800: var(--warn-800);
+
+  --color-red-50:  var(--bad-50);
+  --color-red-100: var(--bad-100);
+  --color-red-200: var(--bad-200);
+  --color-red-500: var(--bad-500);
+  --color-red-600: var(--bad-600);
+  --color-red-700: var(--bad-700);
+  --color-red-800: var(--bad-800);
+
+  /* Solid fills only. For status *text* use the ramps above — text-emerald-700 and so on. */
+  --color-success: var(--solid-ok);
+  --color-warning: var(--solid-warn);
+  --color-danger:  var(--solid-bad);
+  --color-on-status: var(--on-solid);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
 }
 
 * {
@@ -24,13 +266,31 @@ html, body, #app {
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background-color: #F5F4FF;
-  color: #0f172a;
+  background-color: var(--canvas);
+  color: var(--n-900);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "liga" 1, "calt" 1;
   font-optical-sizing: auto;
+}
+
+/*
+  Theme changes are repainted, not animated. A cross-fade on every surface at once costs a
+  frame on the phones this runs on, and the flash of a half-transitioned screen reads worse
+  than an instant switch.
+*/
+
+/*
+  Money lines up. Every figure in the app is a quantity in a column beside other quantities,
+  and proportional digits make those columns ragged — the one place a ledger must not be.
+  Applied to the numerals only, so Telugu and English prose are untouched.
+*/
+.tabular,
+table td,
+table th {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "liga" 1, "calt" 1;
 }
 
 /* ========================================

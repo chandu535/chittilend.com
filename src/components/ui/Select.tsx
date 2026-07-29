@@ -31,10 +31,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={selectId}
           className={clsx(
-            'w-full rounded-lg border bg-white px-3 py-2.5',
+            'w-full rounded-lg border bg-card px-3 py-2.5',
             'text-base text-slate-900',
             'min-h-[48px]',
-            'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary',
+            'focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand',
             'transition-colors appearance-none',
             'bg-[url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 12 12%27%3E%3Cpath d=%27M6 8L1 3h10L6 8z%27 fill=%27%2364748b%27/%3E%3C/svg%3E")] bg-no-repeat bg-[right_12px_center]',
             error

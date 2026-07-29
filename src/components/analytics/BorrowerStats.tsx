@@ -48,7 +48,7 @@ export function BorrowerStats({ data }: { data: BorrowerData[] }) {
 
   if (data.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-100 bg-white shadow-sm p-4">
+      <div className="rounded-xl border border-slate-100 bg-card shadow-sm p-4">
         <h3 className="text-sm font-semibold text-slate-900 mb-3">{t('analytics.borrowerStats')}</h3>
         <p className="text-sm text-slate-400 py-4 text-center">{t('analytics.noData')}</p>
       </div>
@@ -56,7 +56,7 @@ export function BorrowerStats({ data }: { data: BorrowerData[] }) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-100 bg-white shadow-sm p-4">
+    <div className="rounded-xl border border-slate-100 bg-card shadow-sm p-4">
       <h3 className="text-sm font-semibold text-slate-900 mb-3">{t('analytics.borrowerStats')}</h3>
 
       {/* Mobile: card view */}

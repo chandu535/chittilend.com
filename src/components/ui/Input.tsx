@@ -35,10 +35,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={clsx(
-              'w-full rounded-xl border bg-white px-3.5 py-2.5',
+              'w-full rounded-xl border bg-card px-3.5 py-2.5',
               'text-[15px] text-slate-900 placeholder:text-slate-400',
               'min-h-[48px]',
-              'focus:outline-none focus:ring-2 focus:ring-violet-300/60 focus:border-violet-400',
+              'focus:outline-none focus:ring-2 focus-visible:ring-brand/40 focus-visible:border-brand',
               'transition-all duration-150',
               'shadow-[0_1px_4px_rgba(0,0,0,0.06)]',
               error

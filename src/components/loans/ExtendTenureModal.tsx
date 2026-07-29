@@ -64,10 +64,10 @@ export function ExtendTenureModal({ loan, onClose, onSuccess }: ExtendTenureModa
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div className="sheet-backdrop absolute inset-0 bg-black/40" data-closing={closing} onClick={requestClose} />
       <div
-        className="sheet-panel sheet-panel--responsive relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl"
+        className="sheet-panel sheet-panel--responsive relative bg-card rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl"
         data-closing={closing}
       >
-        <div className="sticky top-0 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
+        <div className="sticky top-0 bg-card border-b border-slate-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
           <h3 className="text-lg font-semibold text-slate-900">{t('loans.extendTenure')}</h3>
           <button
             type="button"
@@ -107,8 +107,8 @@ export function ExtendTenureModal({ loan, onClose, onSuccess }: ExtendTenureModa
 
           {/* Preview */}
           {newTenureNum > loan.tenureMonths && newRemainingInstallments > 0 && (
-            <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 space-y-1.5 text-sm">
-              <p className="text-xs font-semibold text-primary uppercase tracking-wide">New schedule preview</p>
+            <div className="rounded-lg bg-primary/5 border border-brand/20 p-3 space-y-1.5 text-sm">
+              <p className="text-xs font-semibold text-brand uppercase tracking-wide">New schedule preview</p>
               <div className="flex justify-between">
                 <span className="text-slate-500">New installment amount</span>
                 <CurrencyDisplay amount={newInstallmentAmount} className="font-bold text-slate-900" />

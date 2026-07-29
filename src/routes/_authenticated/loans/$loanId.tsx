@@ -141,7 +141,7 @@ function LoanDetailPage() {
         {can(user, 'bin.view') && (
           <p className="mt-2 text-sm text-slate-400">
             {t('bin.loanIsInBin')}{' '}
-            <Link to="/bin" className="text-primary hover:underline">{t('bin.openBin')}</Link>
+            <Link to="/bin" className="text-brand hover:underline">{t('bin.openBin')}</Link>
           </p>
         )}
       </div>
@@ -261,7 +261,7 @@ function LoanDetailPage() {
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-12 z-20 w-52 bg-white rounded-xl shadow-lg border border-slate-100 py-1.5">
+            <div className="absolute right-0 top-12 z-20 w-52 bg-card rounded-xl shadow-lg border border-slate-100 py-1.5">
               <ActionMenuItem
                 label={t('loans.editNotes')}
                 icon="✏️"
@@ -330,7 +330,7 @@ function LoanDetailPage() {
             <p className="text-sm text-slate-500">{formatPhone(loan.borrower.mobile)}</p>
             {loan.borrower.area && <p className="text-xs text-slate-400">{loan.borrower.area}</p>}
           </div>
-          <svg className="h-4 w-4 text-slate-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="h-4 w-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </Link>
@@ -499,7 +499,7 @@ function LoanDetailPage() {
             <button
               type="button"
               onClick={() => setEditingNotes(true)}
-              className="text-xs text-primary font-medium hover:underline"
+              className="text-xs text-brand font-medium hover:underline"
             >
               {t('loans.editNotes')}
             </button>
@@ -512,7 +512,7 @@ function LoanDetailPage() {
               value={notesValue}
               onChange={(e) => setNotesValue(e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+              className="w-full rounded-lg border border-slate-300 bg-card px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-colors"
               placeholder={t('loans.notesPlaceholder')}
               autoFocus
             />
@@ -664,7 +664,7 @@ function ConfirmModal({ title, message, confirmLabel, danger = false, loading, o
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
-      <div className="relative bg-white rounded-2xl w-full max-w-sm shadow-xl p-5 space-y-4">
+      <div className="relative bg-card rounded-2xl w-full max-w-sm shadow-xl p-5 space-y-4">
         <h3 className="text-lg font-bold text-slate-900">{title}</h3>
         <p className="text-sm text-slate-600">{message}</p>
         <div className="flex gap-3">

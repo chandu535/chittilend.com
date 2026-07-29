@@ -53,7 +53,7 @@ export function MonthlySnapshot({ current, previous }: MonthlySnapshotProps) {
   const prevDate = previous ? new Date(previous.year, previous.month - 1, 1) : null;
 
   return (
-    <div className="rounded-xl border border-slate-100 bg-white shadow-sm p-4">
+    <div className="rounded-xl border border-slate-100 bg-card shadow-sm p-4">
       <h3 className="text-sm font-semibold text-slate-900 mb-3">{t('analytics.monthlyComparison')}</h3>
       <table className="w-full text-sm">
         <thead>

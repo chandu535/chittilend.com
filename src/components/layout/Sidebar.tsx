@@ -17,7 +17,7 @@ export function Sidebar() {
   return (
     // Tablet portrait gets a narrow rail with labels under the icons; only lg has
     // room for the full labelled panel.
-    <aside className="hidden md:flex md:flex-col md:w-[76px] lg:w-60 shrink-0 bg-white border-r border-slate-200 min-h-0">
+    <aside className="hidden md:flex md:flex-col md:w-[76px] lg:w-60 shrink-0 bg-card border-r border-slate-200 min-h-0">
       <nav aria-label="Main navigation" className="flex-1 p-2 lg:p-3 space-y-1 overflow-y-auto overscroll-contain">
         {visibleItems.map((item) => {
           const isActive = !!matchRoute({ to: item.to, fuzzy: true });
@@ -32,7 +32,7 @@ export function Sidebar() {
                 'flex-col items-center gap-1 px-1 py-2 text-[10px] text-center',
                 'lg:flex-row lg:items-center lg:gap-3 lg:px-3 lg:py-2.5 lg:text-sm lg:text-left',
                 isActive
-                  ? 'bg-primary/10 text-primary'
+                  ? 'bg-primary/10 text-brand'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
               )}
             >

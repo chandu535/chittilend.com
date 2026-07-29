@@ -70,7 +70,7 @@ export function Pagination({
   return (
     <nav
       aria-label={t('common.pagination')}
-      className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-2xl border border-slate-100 bg-white px-4 py-3"
+      className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-2xl border border-slate-100 bg-card px-4 py-3"
     >
       {/* Left: total + rows per page */}
       <div className="flex items-center gap-3">
@@ -86,9 +86,9 @@ export function Pagination({
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
               aria-label={t('common.rowsPerPage')}
               className={clsx(
-                'appearance-none rounded-lg border border-slate-200 bg-white',
+                'appearance-none rounded-lg border border-slate-200 bg-card',
                 'py-1.5 pl-3 pr-8 text-sm text-slate-700 tabular-nums',
-                'hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                'hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
                 disabled && 'opacity-50 cursor-not-allowed',
               )}
             >
@@ -124,7 +124,7 @@ export function Pagination({
               className={clsx(
                 'h-9 w-14 rounded-lg border border-slate-200 bg-slate-50 text-center',
                 'text-sm text-slate-700 tabular-nums',
-                'focus:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                'focus:bg-card focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
                 disabled && 'opacity-50',
               )}
             />
@@ -150,9 +150,9 @@ export function Pagination({
                   aria-current={entry === page ? 'page' : undefined}
                   className={clsx(
                     'h-9 min-w-9 rounded-lg border px-2 text-sm font-medium tabular-nums transition-colors',
-                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
                     entry === page
-                      ? 'border-primary bg-primary text-white'
+                      ? 'border-brand bg-primary text-white'
                       : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50',
                     disabled && 'opacity-50 cursor-not-allowed',
                   )}
@@ -204,8 +204,8 @@ function Step({
       className={clsx(
         'flex h-9 items-center gap-1 rounded-lg px-2 text-sm font-medium transition-colors',
         'text-slate-600 hover:bg-slate-100',
-        'disabled:text-slate-300 disabled:hover:bg-transparent disabled:cursor-not-allowed',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+        'disabled:text-slate-400 disabled:hover:bg-transparent disabled:cursor-not-allowed',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
       )}
     >
       {direction === 'prev' && chevron}

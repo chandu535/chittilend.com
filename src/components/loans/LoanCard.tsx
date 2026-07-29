@@ -70,18 +70,25 @@ function getChipLabel(nextPayment: NextPayment, chipRemaining: number | null): s
   return due.toLocaleDateString('en-IN', { month: 'short' });
 }
 
+/**
+ * The 3px strip along the top of the card, and the pill inside it.
+ *
+ * Flat colour rather than the two-stop gradients these were. At 3px a gradient is not
+ * legible as a gradient — it reads as one slightly muddy colour — so it was paying a
+ * rendering cost to look like a mistake.
+ */
 const STATUS_STRIP: Record<string, string> = {
-  active: 'from-violet-500 to-violet-400',
-  completed: 'from-emerald-500 to-teal-400',
-  defaulted: 'from-red-500 to-rose-400',
-  extended: 'from-amber-500 to-yellow-400',
+  active: 'bg-primary',
+  completed: 'bg-success',
+  defaulted: 'bg-danger',
+  extended: 'bg-warning',
 };
 
 const STATUS_LABEL: Record<string, { bg: string; text: string; label: string }> = {
-  active:    { bg: 'bg-violet-50',  text: 'text-violet-700',  label: 'Active' },
-  completed: { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Completed' },
-  defaulted: { bg: 'bg-red-50',     text: 'text-red-600',     label: 'Defaulted' },
-  extended:  { bg: 'bg-amber-50',   text: 'text-amber-700',   label: 'Extended' },
+  active:    { bg: 'bg-primary/10', text: 'text-brand',        label: 'Active' },
+  completed: { bg: 'bg-emerald-50', text: 'text-emerald-700',  label: 'Completed' },
+  defaulted: { bg: 'bg-red-50',     text: 'text-red-600',      label: 'Defaulted' },
+  extended:  { bg: 'bg-amber-50',   text: 'text-amber-700',    label: 'Extended' },
 };
 
 function LoanCardImpl({
@@ -201,7 +208,7 @@ function LoanCardImpl({
     <>
       <div
         className={clsx(
-          'bg-white rounded-3xl overflow-hidden border transition-all duration-300',
+          'bg-card rounded-3xl overflow-hidden border transition-all duration-300',
           status === 'completed' ? 'border-emerald-300' : 'border-slate-200',
           open
             ? 'shadow-[0_8px_32px_rgba(109,40,217,0.15)]'
@@ -209,7 +216,7 @@ function LoanCardImpl({
         )}
       >
         {/* Thin status gradient strip at top */}
-        <div className={clsx('h-[3px] bg-gradient-to-r', STATUS_STRIP[status])} />
+        <div className={clsx('h-[3px]', STATUS_STRIP[status])} />
 
         {/* ── Collapsed header ── */}
         {/* A div rather than a button: the header contains its own buttons (quick-pay,
@@ -226,7 +233,7 @@ function LoanCardImpl({
               handleToggle();
             }
           }}
-          className="w-full text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset"
+          className="w-full text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-inset"
         >
           <div className="flex items-center gap-3.5 px-4 pt-4 pb-3">
             {/* Avatar */}
@@ -265,7 +272,7 @@ function LoanCardImpl({
 
               {/* Quick-pay chip. Only offered to a role that may actually mark a payment. */}
               {status === 'completed' ? null : paidForCurrentMonth ? (
-                <div className="h-10 w-10 flex items-center justify-center rounded-2xl border border-slate-200 bg-white">
+                <div className="h-10 w-10 flex items-center justify-center rounded-2xl border border-slate-200 bg-card">
                   <svg className="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
@@ -281,8 +288,8 @@ function LoanCardImpl({
                     chipPartial && !hasPreviousMonthBalance
                       ? 'border border-red-200 bg-red-100 text-red-700'
                       : chipOverdue
-                        ? 'bg-gradient-to-b from-red-500 to-red-600 text-white shadow-[0_2px_8px_rgba(239,68,68,0.4)]'
-                        : 'bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-[0_2px_8px_rgba(16,185,129,0.35)]',
+                        ? 'bg-danger text-on-status shadow-sm'
+                        : 'bg-success text-on-status shadow-sm',
                   )}
                   aria-label={`Mark installment ${nextPayment.installmentNumber} paid`}
                 >
@@ -297,7 +304,7 @@ function LoanCardImpl({
 
               {/* Chevron */}
               <svg
-                className={clsx('h-4 w-4 text-slate-300 transition-transform duration-200', open && 'rotate-180')}
+                className={clsx('h-4 w-4 text-slate-400 transition-transform duration-200', open && 'rotate-180')}
                 fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -315,9 +322,9 @@ function LoanCardImpl({
               <div
                 className={clsx(
                   'h-full rounded-full transition-all duration-500',
-                  status === 'completed' ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
-                    : status === 'defaulted' ? 'bg-gradient-to-r from-red-400 to-rose-400'
-                      : 'bg-gradient-to-r from-violet-500 to-violet-400',
+                  status === 'completed' ? 'bg-success'
+                    : status === 'defaulted' ? 'bg-danger'
+                      : 'bg-primary',
                 )}
                 style={{ width: `${progress}%` }}
               />
@@ -433,7 +440,7 @@ function LoanCardImpl({
                   <Link
                     to="/borrowers/$borrowerId"
                     params={{ borrowerId: details.borrower.id }}
-                    className="flex items-center gap-1.5 text-[12px] font-semibold text-violet-600"
+                    className="flex items-center gap-1.5 text-[12px] font-semibold text-brand"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -467,7 +474,7 @@ function LoanCardImpl({
               </div>
             ) : (
               <div className="flex justify-center py-6">
-                <button onClick={loadDetails} className="text-sm text-violet-600 font-medium">Retry</button>
+                <button onClick={loadDetails} className="text-sm text-brand font-medium">Retry</button>
               </div>
             )}
           </div>

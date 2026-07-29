@@ -55,7 +55,7 @@ export function PaymentTimeline({ payments, onPaymentTap }: PaymentTimelineProps
                   payment.status === 'paid' && 'bg-emerald-100 text-emerald-700',
                   payment.status === 'overdue' && 'bg-red-100 text-red-700',
                   payment.status === 'partial' && 'bg-amber-100 text-amber-700',
-                  payment.status === 'waived' && 'bg-purple-100 text-purple-700',
+                  payment.status === 'waived' && 'bg-primary/15 text-brand',
                   payment.status === 'pending' && 'bg-slate-100 text-slate-400',
                 )}
               >
@@ -83,11 +83,11 @@ export function PaymentTimeline({ payments, onPaymentTap }: PaymentTimelineProps
               onClick={() => onPaymentTap?.(payment)}
               className={clsx(
                 'flex-1 rounded-lg border p-3 mb-2 text-left transition-colors active:opacity-75',
-                'border-slate-200 hover:border-primary hover:bg-primary/5 cursor-pointer',
+                'border-slate-200 hover:border-brand hover:bg-primary/5 cursor-pointer',
                 payment.status === 'overdue' && 'border-red-200 bg-red-50/60',
                 payment.status === 'partial' && 'border-amber-200 bg-amber-50/40',
                 payment.status === 'paid' && 'border-emerald-100',
-                payment.status === 'waived' && 'border-purple-100 bg-purple-50/40',
+                payment.status === 'waived' && 'border-brand/20 bg-primary/5',
               )}
             >
               {/* Top row: installment label + badge */}
@@ -145,7 +145,7 @@ export function PaymentTimeline({ payments, onPaymentTap }: PaymentTimelineProps
 
               {/* Waived: reason from notes */}
               {payment.status === 'waived' && (
-                <div className="mt-1 text-xs text-purple-600">
+                <div className="mt-1 text-xs text-brand">
                   {payment.notes ? `Reason: ${payment.notes}` : 'Waived'}
                 </div>
               )}

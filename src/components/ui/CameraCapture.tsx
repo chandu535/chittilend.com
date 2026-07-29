@@ -244,7 +244,7 @@ export function CameraCapture({
               aria-label={t('borrowers.capturePhoto')}
               className="h-[72px] w-[72px] rounded-full border-4 border-white/80 bg-white/20 transition-transform active:scale-95"
             >
-              <span className="mx-auto block h-14 w-14 rounded-full bg-white" />
+              <span className="mx-auto block h-14 w-14 rounded-full bg-card" />
             </button>
 
             {hasSeveralCameras ? (

@@ -33,7 +33,7 @@ export function PortalLoanCard({
   const progress = totalInstallments > 0 ? (paidCount / totalInstallments) * 100 : 0;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+    <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm space-y-3">
       {/* Amount summary */}
       <div className="flex items-center justify-between">
         <div>

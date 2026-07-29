@@ -83,14 +83,14 @@ export function TeluguNamePreview({ name, value, onChange }: TeluguNamePreviewPr
               onBlur={() => setEditing(false)}
               autoFocus
               lang="te"
-              className="flex-1 min-w-[8rem] rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="flex-1 min-w-[8rem] rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
             />
           ) : (
             <button
               type="button"
               onClick={() => setEditing(true)}
               lang="te"
-              className="text-sm font-medium text-slate-600 hover:text-primary underline decoration-dotted underline-offset-4"
+              className="text-sm font-medium text-slate-600 hover:text-brand underline decoration-dotted underline-offset-4"
               title={t('borrowers.teluguEdit')}
             >
               {value}
@@ -107,7 +107,7 @@ export function TeluguNamePreview({ name, value, onChange }: TeluguNamePreviewPr
                   onClick={() => onChange(option)}
                   className={clsx(
                     'rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs',
-                    'text-slate-500 hover:border-primary/30 hover:text-primary transition-colors',
+                    'text-slate-500 hover:border-brand/30 hover:text-brand transition-colors',
                   )}
                 >
                   {option}

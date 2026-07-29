@@ -11,7 +11,7 @@ export function BusyOverlay({ busy, children }: { busy: boolean; children: React
   return (
     <div className="relative h-full">
       {busy && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 backdrop-blur-[1px]">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-card/70 backdrop-blur-[1px]">
           <Spinner size="md" />
         </div>
       )}

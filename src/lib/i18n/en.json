@@ -457,5 +457,11 @@
     "noSpeech": "Nothing was heard. Tap the microphone and try again.",
     "network": "Speech needs an internet connection.",
     "failed": "Could not recognise that. Please try again."
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "auto": "Auto",
+    "dark": "Dark"
   }
 }

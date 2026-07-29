@@ -175,7 +175,7 @@ function AnalyticsPage() {
           labelled as such — an outstanding balance describes a moment, not a window, so
           scoping it to "this week" would be meaningless. */}
       {summary && (
-        <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+        <div className="rounded-xl border border-slate-100 bg-card p-3 shadow-sm">
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
             {t('analytics.asOfToday')}
           </p>
@@ -232,7 +232,7 @@ function StatTile({
   tone?: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+    <div className="rounded-xl border border-slate-100 bg-card p-3 shadow-sm">
       <p className="text-xs text-slate-500">{label}</p>
       <CurrencyDisplay amount={value} className={`mt-0.5 block text-lg font-bold ${tone}`} />
       {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}

@@ -40,7 +40,7 @@ export function PortalPaymentList({ payments }: { payments: Payment[] }) {
                   payment.status === 'paid' && 'bg-emerald-100 text-emerald-700',
                   payment.status === 'overdue' && 'bg-red-100 text-red-700',
                   payment.status === 'partial' && 'bg-amber-100 text-amber-700',
-                  payment.status === 'waived' && 'bg-purple-100 text-purple-700',
+                  payment.status === 'waived' && 'bg-primary/15 text-brand',
                   payment.status === 'pending' && 'bg-slate-100 text-slate-400',
                 )}
               >

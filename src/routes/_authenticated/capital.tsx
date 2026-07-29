@@ -38,7 +38,7 @@ type LogEntry = {
 
 const eventColors: Record<string, string> = {
   investment: 'bg-emerald-100 text-emerald-700',
-  collection: 'bg-blue-100 text-blue-700',
+  collection: 'bg-primary/15 text-brand',
   disbursement: 'bg-red-100 text-red-700',
 };
 
@@ -234,8 +234,8 @@ function InvestmentModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl">
-        <div className="sticky top-0 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
+      <div className="relative bg-card rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl">
+        <div className="sticky top-0 bg-card border-b border-slate-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
           <h3 className="text-lg font-semibold text-slate-900">{t('capital.addInvestment')}</h3>
           <button
             type="button"
@@ -269,7 +269,7 @@ function InvestmentModal({ onClose, onSuccess }: { onClose: () => void; onSucces
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+              className="w-full rounded-lg border border-slate-300 bg-card px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-colors"
               placeholder={t('common.notes')}
             />
           </div>

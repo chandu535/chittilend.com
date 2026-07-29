@@ -14,7 +14,7 @@ const sizeStyles = {
 export function Spinner({ size = 'md', className }: SpinnerProps) {
   return (
     <svg
-      className={clsx('animate-spin text-primary', sizeStyles[size], className)}
+      className={clsx('animate-spin text-brand', sizeStyles[size], className)}
       viewBox="0 0 24 24"
       fill="none"
     >

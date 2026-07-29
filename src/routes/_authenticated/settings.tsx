@@ -197,8 +197,8 @@ function AddManagerModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl">
-        <div className="sticky top-0 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
+      <div className="relative bg-card rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl">
+        <div className="sticky top-0 bg-card border-b border-slate-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
           <h3 className="text-lg font-semibold text-slate-900">{t('settings.addManager')}</h3>
           <button
             type="button"

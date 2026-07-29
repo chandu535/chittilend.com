@@ -107,7 +107,7 @@ function PaymentsPage() {
                 'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors min-h-10',
                 'lg:flex-none lg:px-4',
                 tab === tabItem.key
-                  ? 'bg-white text-slate-900 shadow-sm'
+                  ? 'bg-card text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700',
               )}
             >
@@ -142,8 +142,8 @@ function PaymentsPage() {
       ) : (
         <div className="relative">
           {refreshing && (
-            <div className="absolute inset-0 z-10 flex items-start justify-center rounded-2xl bg-white/60 backdrop-blur-[1px] pt-10">
-              <span className="flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-md">
+            <div className="absolute inset-0 z-10 flex items-start justify-center rounded-2xl bg-card/70 backdrop-blur-[1px] pt-10">
+              <span className="flex items-center gap-2 rounded-full bg-card px-3.5 py-2 text-sm font-medium text-slate-600 shadow-md">
                 <Spinner size="sm" />
                 {t('common.loading')}
               </span>
@@ -159,7 +159,7 @@ function PaymentsPage() {
                   <Link
                     to="/loans/$loanId"
                     params={{ loanId: p.loanId }}
-                    className="font-medium text-slate-900 hover:text-primary"
+                    className="font-medium text-slate-900 hover:text-brand"
                   >
                     <NameDisplay name={p.borrowerName} nameTelugu={p.borrowerNameTelugu} />
                   </Link>
@@ -213,7 +213,7 @@ function PaymentsPage() {
                       <Link
                         to="/loans/$loanId"
                         params={{ loanId: p.loanId }}
-                        className="font-medium text-slate-900 hover:text-primary"
+                        className="font-medium text-slate-900 hover:text-brand"
                       >
                         <NameDisplay name={p.borrowerName} nameTelugu={p.borrowerNameTelugu} />
                       </Link>

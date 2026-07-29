@@ -74,7 +74,7 @@ export function VoiceInput({ onResult, prompt, className, size = 'md' }: VoiceIn
         aria-label={prompt ?? t('voice.speak')}
         className={clsx(
           'flex shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors',
-          'hover:bg-slate-100 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+          'hover:bg-slate-100 hover:text-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
           size === 'sm' ? 'h-8 w-8' : 'h-11 w-11',
           className,
         )}
@@ -90,7 +90,7 @@ export function VoiceInput({ onResult, prompt, className, size = 'md' }: VoiceIn
             role="dialog"
             aria-modal="true"
             aria-label={prompt ?? t('voice.speak')}
-            className="sheet-panel sheet-panel--responsive relative w-full rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl sm:max-w-sm sm:rounded-3xl sm:pb-0"
+            className="sheet-panel sheet-panel--responsive relative w-full rounded-t-3xl bg-card pb-[env(safe-area-inset-bottom)] shadow-2xl sm:max-w-sm sm:rounded-3xl sm:pb-0"
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <h2 className="text-base font-semibold text-slate-900">{prompt ?? t('voice.speak')}</h2>
@@ -141,13 +141,13 @@ export function VoiceInput({ onResult, prompt, className, size = 'md' }: VoiceIn
                         className={clsx(
                           'flex w-full items-center justify-between gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors',
                           i === 0
-                            ? 'border-primary/40 bg-primary/5 hover:bg-primary/10'
+                            ? 'border-brand/40 bg-primary/5 hover:bg-primary/10'
                             : 'border-slate-200 hover:bg-slate-50',
                         )}
                       >
                         <span className="text-[15px] font-medium text-slate-900">{text}</span>
                         {i === 0 && (
-                          <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                          <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-brand">
                             {t('voice.best')}
                           </span>
                         )}

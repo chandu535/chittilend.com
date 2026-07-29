@@ -32,10 +32,13 @@ const icons = {
 };
 
 const cardConfig = [
-  { key: 'deployed', labelKey: 'dashboard.totalDeployed', icon: icons.deployed, colorClass: 'bg-blue-50 text-blue-600' },
+  // Money out is the house's own colour; money earned is the gold. The two middle tiles
+  // stay on the status hues because that is what they are — cash on hand is healthy, cash
+  // owed is a thing to watch — and reading them as status is the point.
+  { key: 'deployed', labelKey: 'dashboard.totalDeployed', icon: icons.deployed, colorClass: 'bg-primary/10 text-brand' },
   { key: 'available', labelKey: 'dashboard.availableCapital', icon: icons.available, colorClass: 'bg-emerald-50 text-emerald-600' },
   { key: 'collect', labelKey: 'dashboard.toCollect', icon: icons.collect, colorClass: 'bg-amber-50 text-amber-600' },
-  { key: 'profit', labelKey: 'dashboard.profitEarned', icon: icons.profit, colorClass: 'bg-purple-50 text-purple-600' },
+  { key: 'profit', labelKey: 'dashboard.profitEarned', icon: icons.profit, colorClass: 'bg-gold-soft text-brand' },
 ] as const;
 
 const valueMap: Record<string, keyof SummaryData> = {
@@ -53,7 +56,7 @@ export function SummaryCards({ data }: { data: SummaryData }) {
       {cardConfig.map((card) => (
         <div
           key={card.key}
-          className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
+          className="rounded-xl border border-slate-100 bg-card p-4 shadow-sm"
         >
           <div className="flex items-center gap-2 mb-2">
             <div className={`rounded-lg p-1.5 ${card.colorClass}`}>

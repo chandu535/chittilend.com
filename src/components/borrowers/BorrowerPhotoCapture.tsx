@@ -98,7 +98,7 @@ export function BorrowerPhotoCapture({
               onClick={open}
               disabled={starting || uploading}
               aria-label={t('borrowers.capturePhoto')}
-              className="absolute inset-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="absolute inset-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
             />
           )}
 
@@ -110,7 +110,7 @@ export function BorrowerPhotoCapture({
             className={clsx(
               'absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full',
               'bg-primary text-white shadow-md ring-2 ring-white transition-colors',
-              'hover:bg-primary/90 focus:outline-none focus-visible:ring-primary/50',
+              'hover:bg-primary/90 focus:outline-none focus-visible:ring-brand/50',
               'disabled:opacity-60',
             )}
           >
@@ -118,7 +118,7 @@ export function BorrowerPhotoCapture({
           </button>
 
           {(starting || uploading) && (
-            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-white/70">
+            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-card/70">
               <Spinner size="sm" />
             </div>
           )}
