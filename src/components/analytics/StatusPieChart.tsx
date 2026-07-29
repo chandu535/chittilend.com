@@ -8,11 +8,17 @@ interface StatusData {
   count: number;
 }
 
+/**
+ * SVG strokes, so these are colour strings rather than classes — but they point at the same
+ * variables the utilities do, which keeps the donut on the palette and lets it follow the
+ * theme. A literal here would be the same bug as the hardcoded tile in LoanCard: correct in
+ * light, stranded in dark.
+ */
 const statusColors: Record<string, string> = {
-  active: '#3b82f6',
-  completed: '#10b981',
-  defaulted: '#ef4444',
-  extended: '#f59e0b',
+  active: 'var(--brand)',
+  completed: 'var(--solid-ok)',
+  defaulted: 'var(--solid-bad)',
+  extended: 'var(--solid-warn)',
 };
 
 export function StatusPieChart({ data }: { data: StatusData[] }) {
@@ -48,7 +54,7 @@ export function StatusPieChart({ data }: { data: StatusData[] }) {
         pct,
         dashLength,
         dashOffset,
-        color: statusColors[d.status] || '#94a3b8',
+        color: statusColors[d.status] || 'var(--n-400)',
       };
     });
 

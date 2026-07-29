@@ -210,9 +210,10 @@ function LoanCardImpl({
         className={clsx(
           'bg-card rounded-3xl overflow-hidden border transition-all duration-300',
           status === 'completed' ? 'border-emerald-300' : 'border-slate-200',
-          open
-            ? 'shadow-[0_8px_32px_rgba(109,40,217,0.15)]'
-            : 'shadow-[0_2px_16px_rgba(109,40,217,0.08)] hover:shadow-[0_4px_24px_rgba(109,40,217,0.13)]',
+          // Tokens rather than literal rgba. These were tinted with the old violet, which
+          // is both the wrong hue now and the wrong value at night — a purple glow under a
+          // card on a near-black page reads as a smudge.
+          open ? 'shadow-raised' : 'shadow-card',
         )}
       >
         {/* Thin status gradient strip at top */}
@@ -525,9 +526,12 @@ function MiniStat({
   accent?: boolean;
 }) {
   return (
+    // slate-50 rather than a literal. This tile was a hardcoded #F7F6FE, which is the one
+    // shape of colour the theme cannot reach: it stayed white at night while the text on it
+    // followed the theme and turned near-white, so five of the six tiles went blank.
     <div className={clsx(
       'rounded-2xl px-3 py-2.5',
-      accent ? 'bg-emerald-50' : 'bg-[#F7F6FE]',
+      accent ? 'bg-emerald-50' : 'bg-slate-50',
     )}>
       <p className="text-[10px] font-medium text-slate-400 mb-0.5 uppercase tracking-wide">{label}</p>
       <div>{children}</div>
