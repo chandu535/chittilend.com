@@ -50,7 +50,8 @@
     "settings": "Settings",
     "capital": "Capital Pool",
     "logout": "Logout",
-    "bin": "Bin"
+    "bin": "Bin",
+    "sheet": "Sheet"
   },
   "auth": {
     "login": "Login",
