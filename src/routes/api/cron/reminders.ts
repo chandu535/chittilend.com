@@ -13,6 +13,12 @@ import { json } from '@tanstack/react-start';
  * Hobby-plan cron precision is ±59 minutes, so a 10:00 IST schedule can fire as late as
  * 10:59. That is why the contact-window guard lives in the dispatcher rather than being
  * assumed from the schedule.
+ *
+ * Nothing currently invokes this. Messaging is switched off, so the entry is out of
+ * vercel.json while the endpoint and its dispatcher stay intact; restoring the run means
+ * putting back `{ "path": "/api/cron/reminders", "schedule": "30 4 * * *" }` (04:30 UTC,
+ * which is 10:00 IST). Recorded here rather than beside the crons array because vercel.json
+ * rejects any key it does not recognise, comment-shaped or not.
  */
 export const Route = createFileRoute('/api/cron/reminders')({
   server: {

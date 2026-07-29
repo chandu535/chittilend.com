@@ -1,5 +1,4 @@
 {
-  "$comment": "WhatsApp messaging is switched off, so the daily reminder run is unscheduled. The endpoint and its dispatcher are intact — restoring it means putting back: { \"path\": \"/api/cron/reminders\", \"schedule\": \"30 4 * * *\" }. The sheet-sync entry is a safety net rather than the mechanism: every mutation mirrors itself as it happens, and this only picks up a rebuild that failed because Google was briefly unreachable. Hobby plans allow one run a day, which is why it is daily; on Pro, */15 * * * * makes the worst case fifteen minutes instead of a day.",
   "crons": [
     { "path": "/api/cron/sheet-sync", "schedule": "0 20 * * *" }
   ]

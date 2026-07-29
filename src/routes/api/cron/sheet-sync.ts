@@ -14,6 +14,10 @@ import { syncSheet } from '@/server/sheets/sync';
  * Guarded by CRON_SECRET like the reminder run — the endpoint is public, and while a
  * rebuild leaks nothing, an unauthenticated way to make the server call Google in a loop is
  * a way to burn the API quota.
+ *
+ * Scheduled daily in vercel.json because Hobby plans allow one run a day; on Pro, a
+ * quarter-hourly schedule makes the worst case fifteen minutes stale instead of a day.
+ * That is the only thing the schedule controls — how long a sync that failed stays failed.
  */
 export const Route = createFileRoute('/api/cron/sheet-sync')({
   server: {
