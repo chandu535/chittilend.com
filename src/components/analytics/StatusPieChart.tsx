@@ -8,11 +8,17 @@ interface StatusData {
   count: number;
 }
 
+/**
+ * SVG strokes, so these are colour strings rather than classes — but they point at the same
+ * variables the utilities do, which keeps the donut on the palette and lets it follow the
+ * theme. A literal here would be the same bug as the hardcoded tile in LoanCard: correct in
+ * light, stranded in dark.
+ */
 const statusColors: Record<string, string> = {
-  active: '#3b82f6',
-  completed: '#10b981',
-  defaulted: '#ef4444',
-  extended: '#f59e0b',
+  active: 'var(--brand)',
+  completed: 'var(--solid-ok)',
+  defaulted: 'var(--solid-bad)',
+  extended: 'var(--solid-warn)',
 };
 
 export function StatusPieChart({ data }: { data: StatusData[] }) {
@@ -22,7 +28,7 @@ export function StatusPieChart({ data }: { data: StatusData[] }) {
   const total = data.reduce((sum, d) => sum + d.count, 0);
   if (total === 0) {
     return (
-      <div className="rounded-xl border border-slate-100 bg-white shadow-sm p-4">
+      <div className="rounded-xl border border-slate-100 bg-card shadow-sm p-4">
         <h3 className="text-sm font-semibold text-slate-900 mb-3">{t('analytics.loanStatus')}</h3>
         <p className="text-sm text-slate-400 py-4 text-center">{t('analytics.noData')}</p>
       </div>
@@ -48,12 +54,12 @@ export function StatusPieChart({ data }: { data: StatusData[] }) {
         pct,
         dashLength,
         dashOffset,
-        color: statusColors[d.status] || '#94a3b8',
+        color: statusColors[d.status] || 'var(--n-400)',
       };
     });
 
   return (
-    <div className="rounded-xl border border-slate-100 bg-white shadow-sm p-4">
+    <div className="rounded-xl border border-slate-100 bg-card shadow-sm p-4">
       <h3 className="text-sm font-semibold text-slate-900 mb-3">{t('analytics.loanStatus')}</h3>
 
       <div className="flex items-center gap-6">

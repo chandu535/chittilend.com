@@ -234,7 +234,7 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
             placeholder={t('common.search')}
           />
           {suretyResults.length > 0 && (
-            <ul className="mt-1 rounded-lg border border-slate-200 bg-white divide-y divide-slate-100 max-h-40 overflow-y-auto">
+            <ul className="mt-1 rounded-lg border border-slate-200 bg-card divide-y divide-slate-100 max-h-40 overflow-y-auto">
               {suretyResults.map((b) => (
                 <li key={b.id}>
                   <button

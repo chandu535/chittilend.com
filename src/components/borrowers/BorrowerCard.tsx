@@ -22,7 +22,7 @@ export function BorrowerCard({ id, name, nameTelugu, mobile, area, photoUrl, loa
   return (
     // The card is a container rather than a link: an anchor may not contain the call and
     // WhatsApp anchors, so only the part that navigates is wrapped.
-    <div className="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md">
+    <div className="rounded-xl border border-slate-200 bg-card p-4 transition-shadow hover:shadow-md">
       <Link
         to="/borrowers/$borrowerId"
         params={{ borrowerId: id }}

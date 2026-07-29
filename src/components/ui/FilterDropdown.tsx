@@ -97,11 +97,11 @@ export function FilterDropdown({
           aria-expanded={open}
           className={clsx(
             'inline-flex min-h-10 min-w-0 flex-1 items-center gap-2 border px-3 py-2 text-sm font-medium transition-colors',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
             selected && onClear ? 'rounded-l-xl border-r-0' : 'rounded-xl',
             selected
-              ? 'border-primary bg-primary text-white'
-              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900',
+              ? 'border-brand bg-primary text-on-primary'
+              : 'border-slate-200 bg-card text-slate-600 hover:border-slate-300 hover:text-slate-900',
           )}
         >
           {icon && <span className="shrink-0">{icon}</span>}
@@ -126,7 +126,7 @@ export function FilterDropdown({
             type="button"
             onClick={() => { onClear(); close(); }}
             aria-label={clearLabel ?? 'Clear'}
-            className="inline-flex min-h-10 shrink-0 items-center rounded-r-xl border border-primary bg-primary pl-1 pr-2.5 text-white/80 transition-colors hover:text-white"
+            className="inline-flex min-h-10 shrink-0 items-center rounded-r-xl border border-brand bg-primary pl-1 pr-2.5 text-white/80 transition-colors hover:text-white"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -138,7 +138,7 @@ export function FilterDropdown({
       {open && isDesktop && rect && createPortal(
         <div
           ref={panelRef}
-          className="fixed z-50 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+          className="fixed z-50 overflow-hidden rounded-2xl border border-slate-200 bg-card shadow-xl"
           style={{
             top: Math.min(rect.bottom + 8, window.innerHeight - 260),
             left: Math.max(12, Math.min(rect.left, window.innerWidth - panelWidth - 12)),
@@ -158,7 +158,7 @@ export function FilterDropdown({
             role="dialog"
             aria-modal="true"
             aria-label={label}
-            className="sheet-panel relative max-h-[80dvh] overflow-hidden rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl"
+            className="sheet-panel relative max-h-[80dvh] overflow-hidden rounded-t-3xl bg-card pb-[env(safe-area-inset-bottom)] shadow-2xl"
             data-closing={closing}
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
@@ -209,7 +209,7 @@ export function FilterOption({ label, count, selected, onSelect, children }: {
         </span>
       )}
       <svg
-        className={clsx('h-4 w-4 shrink-0 text-primary', selected ? 'opacity-100' : 'opacity-0')}
+        className={clsx('h-4 w-4 shrink-0 text-brand', selected ? 'opacity-100' : 'opacity-0')}
         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
       >
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />

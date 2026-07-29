@@ -109,7 +109,7 @@ function DashboardPage() {
       {/* This Month Stats */}
       {summary && (
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-100 bg-card p-4 shadow-sm">
             <p className="text-xs text-slate-500">{t('dashboard.thisMonthCollected')}</p>
             <p className="text-lg font-bold text-emerald-600 mt-1">
               <span className="inline">
@@ -120,7 +120,7 @@ function DashboardPage() {
               </span>
             </p>
           </div>
-          <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-100 bg-card p-4 shadow-sm">
             <p className="text-xs text-slate-500">{t('dashboard.thisMonthGiven')}</p>
             <p className="text-lg font-bold text-red-600 mt-1">
               <span>
@@ -140,11 +140,11 @@ function DashboardPage() {
       {/* Active Loans count */}
       {summary && (
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm text-center">
-            <p className="text-3xl font-bold text-primary">{summary.activeLoans}</p>
+          <div className="rounded-xl border border-slate-100 bg-card p-4 shadow-sm text-center">
+            <p className="text-3xl font-bold text-brand">{summary.activeLoans}</p>
             <p className="text-xs text-slate-500 mt-1">{t('dashboard.activeLoans')}</p>
           </div>
-          <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm text-center">
+          <div className="rounded-xl border border-slate-100 bg-card p-4 shadow-sm text-center">
             <p className="text-3xl font-bold text-red-600">{summary.overduePayments}</p>
             <p className="text-xs text-slate-500 mt-1">{t('dashboard.overduePayments')}</p>
           </div>

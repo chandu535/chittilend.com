@@ -16,7 +16,9 @@ export function Card({ children, padding = 'md', className, ...props }: CardProp
   return (
     <div
       className={clsx(
-        'rounded-2xl bg-white shadow-[0_2px_16px_rgba(109,40,217,0.06)] border-0',
+        // A hairline as well as a shadow. Shadows do almost nothing on a dark ground, so
+        // without the border every card would dissolve into the page at night.
+        'rounded-2xl bg-card border border-slate-200/70 shadow-card',
         paddingStyles[padding],
         className,
       )}

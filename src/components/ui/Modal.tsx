@@ -51,7 +51,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       <div
         ref={contentRef}
         className={clsx(
-          'sheet-panel sheet-panel--responsive relative w-full rounded-xl bg-white shadow-xl',
+          'sheet-panel sheet-panel--responsive relative w-full rounded-xl bg-card shadow-xl',
           'max-h-[90dvh] overflow-y-auto overscroll-contain',
           sizeStyles[size],
         )}

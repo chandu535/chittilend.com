@@ -202,13 +202,13 @@ function StepPill({ number, label, active, completed, onClick }: {
       onClick={clickable ? onClick : undefined}
       aria-current={active ? 'step' : undefined}
       className={`flex flex-1 items-center gap-2.5 rounded-xl px-4 py-3 transition-colors ${
-        active ? 'border-2 border-primary bg-primary/10'
+        active ? 'border-2 border-brand bg-primary/10'
           : completed ? 'cursor-pointer border-2 border-emerald-200 bg-emerald-50'
             : 'cursor-default border-2 border-slate-200 bg-slate-50'
       }`}
     >
       <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-        active ? 'bg-primary text-white' : completed ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-white'
+        active ? 'bg-primary text-on-primary' : completed ? 'bg-success text-on-status' : 'bg-slate-200 text-slate-500'
       }`}>
         {completed ? (
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -216,7 +216,7 @@ function StepPill({ number, label, active, completed, onClick }: {
           </svg>
         ) : number}
       </span>
-      <span className={`text-sm font-medium ${active ? 'text-primary' : completed ? 'text-emerald-700' : 'text-slate-400'}`}>
+      <span className={`text-sm font-medium ${active ? 'text-brand' : completed ? 'text-emerald-700' : 'text-slate-400'}`}>
         {label}
       </span>
     </button>

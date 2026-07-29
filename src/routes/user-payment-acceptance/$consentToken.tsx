@@ -108,7 +108,7 @@ function LoanAcceptancePage() {
           <p className="mt-1 text-sm text-slate-500">{t('portal.consentIntro')}</p>
         </div>
 
-        <div className="rounded-2xl border-2 border-primary/30 bg-white p-4 space-y-3">
+        <div className="rounded-2xl border-2 border-brand/30 bg-card p-4 space-y-3">
           <h2 className="font-semibold text-slate-900">{t('portal.consentTitle')}</h2>
 
           <dl className="rounded-lg bg-slate-50 p-3 space-y-1.5 text-sm">

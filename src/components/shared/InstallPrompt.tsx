@@ -55,12 +55,13 @@ export function InstallPrompt() {
 
   return (
     <div
-      className="fixed inset-x-3 z-40 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-lg md:left-auto md:right-4 md:w-80"
+      className="fixed inset-x-3 z-40 flex items-center gap-3 rounded-2xl border border-slate-200 bg-card p-3 shadow-lg md:left-auto md:right-4 md:w-80"
       style={{ bottom: 'calc(env(safe-area-inset-bottom) + 4.5rem)' }}
       role="dialog"
       aria-label={t('install.title')}
     >
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-lg font-bold text-white">
+      {/* The app mark: gold on aubergine, the one pairing the palette is built on. */}
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-lg font-bold text-gold">
         S
       </div>
       <div className="min-w-0 flex-1">

@@ -44,7 +44,7 @@ export function ListPage({ header, footer, children }: ListPageProps) {
       </div>
 
       {footer && (
-        <div className={clsx('shrink-0 border-t border-slate-100 bg-white', GUTTER)}>
+        <div className={clsx('shrink-0 border-t border-slate-100 bg-card', GUTTER)}>
           <div className={clsx(WIDTH, 'py-2.5')}>{footer}</div>
         </div>
       )}

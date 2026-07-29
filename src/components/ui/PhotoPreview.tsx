@@ -149,7 +149,7 @@ export function PhotoPreview({ src, alt, originRect, onClose }: PhotoPreviewProp
         <div ref={chromeRef} className="shrink-0 flex justify-center pb-10 pt-4" style={{ opacity: 0 }}>
           <button
             onClick={(e) => { e.stopPropagation(); close(); }}
-            className="h-16 w-16 rounded-full bg-white shadow-2xl flex items-center justify-center active:scale-95 transition-transform"
+            className="h-16 w-16 rounded-full bg-card shadow-2xl flex items-center justify-center active:scale-95 transition-transform"
             aria-label="Close"
           >
             <svg className="h-7 w-7 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

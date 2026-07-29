@@ -121,7 +121,7 @@ function SheetPage() {
                 href={status.url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-6 text-[15px] font-semibold text-violet-700 transition-colors hover:bg-violet-50"
+                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-card px-6 text-[15px] font-semibold text-brand transition-colors hover:bg-primary/10"
               >
                 {t('sheet.open')}
               </a>

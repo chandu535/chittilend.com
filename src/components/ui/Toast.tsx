@@ -12,7 +12,7 @@ interface Toast {
 const typeStyles: Record<ToastType, string> = {
   success: 'bg-emerald-50 border-emerald-200 text-emerald-800',
   error: 'bg-red-50 border-red-200 text-red-800',
-  info: 'bg-blue-50 border-blue-200 text-blue-800',
+  info: 'bg-primary/10 border-brand/20 text-brand',
 };
 
 const icons: Record<ToastType, string> = {

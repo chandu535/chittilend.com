@@ -254,6 +254,7 @@
     "teluguEdit": "Tap to edit the Telugu spelling",
     "locationCaptured": "Location captured with the photo",
     "cameraUnavailable": "Camera not available",
+    "cameraSwitchFailed": "Could not switch camera. Still on the same lens.",
     "switchCamera": "Switch camera",
     "retakePhoto": "Retake photo",
     "captureAadhaar": "Photograph Aadhaar"
@@ -457,5 +458,11 @@
     "noSpeech": "Nothing was heard. Tap the microphone and try again.",
     "network": "Speech needs an internet connection.",
     "failed": "Could not recognise that. Please try again."
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "auto": "Auto",
+    "dark": "Dark"
   }
 }

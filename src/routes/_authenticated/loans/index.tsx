@@ -175,7 +175,7 @@ function LoansPage() {
               <>
                 {teluguTerm && (
                   <span
-                    className="pointer-events-none max-w-[6rem] truncate rounded-md bg-violet-50 px-1.5 py-0.5 text-xs font-medium text-violet-700"
+                    className="pointer-events-none max-w-[6rem] truncate rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-brand"
                     title={teluguTerm}
                   >
                     {teluguTerm}
@@ -269,8 +269,8 @@ function LoansPage() {
            changing a filter never collapses the page back to a skeleton. */
         <div className="relative">
           {refreshing && (
-            <div className="absolute inset-0 z-10 flex items-start justify-center rounded-2xl bg-white/60 backdrop-blur-[1px] pt-10">
-              <span className="flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-md">
+            <div className="absolute inset-0 z-10 flex items-start justify-center rounded-2xl bg-card/70 backdrop-blur-[1px] pt-10">
+              <span className="flex items-center gap-2 rounded-full bg-card px-3.5 py-2 text-sm font-medium text-slate-600 shadow-md">
                 <Spinner size="sm" />
                 {t('common.loading')}
               </span>
@@ -302,7 +302,7 @@ function LoansPage() {
           </div>
 
           {/* Desktop: table view */}
-          <div className="hidden lg:block overflow-x-auto overscroll-x-contain rounded-2xl border border-slate-100 bg-white">
+          <div className="hidden lg:block overflow-x-auto overscroll-x-contain rounded-2xl border border-slate-100 bg-card">
             <table className="w-full min-w-[880px] text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-left text-xs text-slate-500 uppercase tracking-wide">
@@ -397,7 +397,7 @@ function LoansPage() {
                         <Link
                           to="/loans/$loanId"
                           params={{ loanId: loan.id }}
-                          className="text-primary hover:underline text-sm font-medium"
+                          className="text-brand hover:underline text-sm font-medium"
                         >
                           {t('loans.loanDetails')} →
                         </Link>

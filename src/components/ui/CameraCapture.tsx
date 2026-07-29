@@ -42,6 +42,48 @@ interface CameraCaptureProps {
  * `contain: paint` above it — `.list-row` has it — would become the containing block for
  * a fixed element and clip the whole thing.
  */
+const SIZE = { width: { ideal: 1280 }, height: { ideal: 960 } };
+
+/** Labels are the only way to tell the lenses apart when the constraints are refused. */
+const LENS_LABEL: Record<Facing, RegExp> = {
+  user: /front|user|self|face/i,
+  environment: /back|rear|environment|world|main/i,
+};
+
+/**
+ * Opens one lens, trying three ways before giving up.
+ *
+ * `facingMode` as a bare string is a preference the browser may ignore, so `exact` is asked
+ * for first. But several Android builds reject `exact` for a lens they demonstrably have,
+ * and on those the device list still names it — so a labelled `deviceId` is the second
+ * attempt, and the loose preference the third. A refusal is final and returns immediately:
+ * asking a second time only fails a second time.
+ */
+async function requestCamera(which: Facing): Promise<MediaStream> {
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { exact: which }, ...SIZE },
+    });
+  } catch (err) {
+    const name = (err as { name?: string })?.name;
+    if (name === 'NotAllowedError' || name === 'SecurityError') throw err;
+  }
+
+  const devices = await navigator.mediaDevices.enumerateDevices().catch(() => [] as MediaDeviceInfo[]);
+  const match = devices.find((d) => d.kind === 'videoinput' && LENS_LABEL[which].test(d.label));
+  if (match) {
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: match.deviceId }, ...SIZE },
+      });
+    } catch {
+      // Fall through to the loose request below.
+    }
+  }
+
+  return navigator.mediaDevices.getUserMedia({ video: { facingMode: which, ...SIZE } });
+}
+
 export function CameraCapture({
   onCapture,
   onLocation,
@@ -66,41 +108,63 @@ export function CameraCapture({
   // shutter is pressed. A refusal simply leaves it null: location is never required.
   const coords = useRef<{ lat: number; lng: number } | null>(null);
 
+  /*
+    The live stream and the lens it came from, mirrored outside React state.
+
+    Switching has to release the old lens synchronously, before the next request goes out,
+    and state read from a closure is a render behind by then. These two are the truth for
+    the teardown; the state versions exist to drive the rendering.
+  */
+  const streamRef = useRef<MediaStream | null>(null);
+  const facingRef = useRef<Facing>(defaultFacing);
+
   useScrollLock(Boolean(stream));
 
   useEffect(() => {
-    if (stream && videoRef.current) videoRef.current.srcObject = stream;
+    const video = videoRef.current;
+    if (!stream || !video) return;
+    video.srcObject = stream;
+    // Swapping srcObject on an already-playing element leaves it paused on iOS, where the
+    // autoplay attribute only applies to the first source it was given.
+    void video.play().catch(() => {});
   }, [stream]);
 
-  // A live camera left running holds the lens and drains the battery, so it is stopped
-  // whenever this unmounts — navigating away mid-capture included.
-  useEffect(() => () => { stream?.getTracks().forEach((track) => track.stop()); }, [stream]);
+  // A live camera left running holds the lens and drains the battery, so whatever is open
+  // is stopped on unmount — navigating away mid-capture included.
+  useEffect(() => () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  }, []);
 
   const open = useCallback(async (which: Facing) => {
     setStarting(true);
     setError(null);
+
+    /*
+      Release the lens that is open before asking for the other one.
+
+      A phone serves one camera at a time. Requesting the front while the back is still
+      streaming throws NotReadableError on most Android browsers — and because the previous
+      code only retried on OverconstrainedError, that landed in the outer catch, left the
+      back camera running, and wrote an error into the trigger, which is underneath the
+      fullscreen overlay. Nothing appeared to happen, which is exactly what was reported.
+    */
+    const previous = streamRef.current;
+    const previousFacing = facingRef.current;
+    if (previous) {
+      previous.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    const adopt = (media: MediaStream, lens: Facing) => {
+      streamRef.current = media;
+      facingRef.current = lens;
+      setStream(media);
+      setFacing(lens);
+    };
+
     try {
-      // `facingMode: 'user'` on its own is a preference the browser is free to ignore,
-      // which is why the switch appeared to do nothing. `exact` makes it a requirement —
-      // and throws where there is no such camera, so a device with one falls back to it
-      // rather than failing to open at all.
-      const size = { width: { ideal: 1280 }, height: { ideal: 960 } };
-      const media = await navigator.mediaDevices
-        .getUserMedia({ video: { facingMode: { exact: which }, ...size } })
-        .catch((err: unknown) => {
-          // Only retry loosely when the device has no such lens. Retrying after a refused
-          // permission would just ask a second time and fail again.
-          const name = (err as { name?: string })?.name;
-          if (name !== 'OverconstrainedError' && name !== 'NotFoundError') throw err;
-          return navigator.mediaDevices.getUserMedia({ video: { facingMode: which, ...size } });
-        });
-      setStream((current) => {
-        // Switching lenses: release the old one only once the new one has opened, so a
-        // failure leaves the working camera running rather than a black screen.
-        current?.getTracks().forEach((track) => track.stop());
-        return media;
-      });
-      setFacing(which);
+      adopt(await requestCamera(which), which);
 
       // Labels and the full device list only appear once permission has been granted,
       // so this is asked after the stream opens rather than before.
@@ -120,16 +184,34 @@ export function CameraCapture({
         );
       }
     } catch {
-      setError(t('borrowers.cameraUnavailable'));
+      /*
+        The lens we were on has already been given up, so put it back rather than leaving a
+        black screen. This is what the old ordering was protecting against — it is just done
+        by reopening afterwards instead of holding the hardware during the request, which is
+        the thing that made switching fail in the first place.
+      */
+      if (previous) {
+        try {
+          adopt(await requestCamera(previousFacing), previousFacing);
+          setError(t('borrowers.cameraSwitchFailed'));
+        } catch {
+          streamRef.current = null;
+          setStream(null);
+          setError(t('borrowers.cameraUnavailable'));
+        }
+      } else {
+        setError(t('borrowers.cameraUnavailable'));
+      }
     } finally {
       setStarting(false);
     }
   }, [onLocation, t]);
 
   const close = useCallback(() => {
-    stream?.getTracks().forEach((track) => track.stop());
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
     setStream(null);
-  }, [stream]);
+  }, []);
 
   const capture = useCallback(() => {
     const video = videoRef.current;
@@ -192,7 +274,9 @@ export function CameraCapture({
       </Button>
       )}
 
-      {error && <p className="mt-2 text-center text-sm text-red-500">{error}</p>}
+      {/* Only when the camera is closed. While it is open the overlay covers this, so the
+          message has to be shown inside the overlay instead — see below. */}
+      {error && !stream && <p className="mt-2 text-center text-sm text-red-600">{error}</p>}
 
       {stream && createPortal(
         <div className="fixed inset-0 z-[60] flex flex-col bg-black">
@@ -232,6 +316,19 @@ export function CameraCapture({
             </svg>
           </button>
 
+          {/* A switch that could not be honoured has to say so here. Reported into the
+              trigger underneath, it was invisible, and the lens simply appeared not to
+              change. Sits above the controls so it cannot cover the shutter. */}
+          {error && (
+            <p
+              role="status"
+              className="pointer-events-none absolute inset-x-4 rounded-lg bg-black/70 px-3 py-2 text-center text-sm text-white backdrop-blur"
+              style={{ bottom: 'calc(env(safe-area-inset-bottom) + 7.5rem)' }}
+            >
+              {error}
+            </p>
+          )}
+
           <div
             className="flex shrink-0 items-center justify-between px-8 py-6"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)' }}
@@ -244,7 +341,7 @@ export function CameraCapture({
               aria-label={t('borrowers.capturePhoto')}
               className="h-[72px] w-[72px] rounded-full border-4 border-white/80 bg-white/20 transition-transform active:scale-95"
             >
-              <span className="mx-auto block h-14 w-14 rounded-full bg-white" />
+              <span className="mx-auto block h-14 w-14 rounded-full bg-card" />
             </button>
 
             {hasSeveralCameras ? (

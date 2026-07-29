@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+type ButtonVariant = 'primary' | 'gold' | 'secondary' | 'danger' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -11,11 +11,41 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
+/**
+ * Flat fills, no gradients.
+ *
+ * The old primary was a pink-to-rose gradient with a coloured glow under it. A gradient
+ * says "look at me" without saying what for, and once every primary button on every screen
+ * has one, the emphasis is spent everywhere and lands nowhere. A single solid aubergine
+ * reads as the same control each time — which is what lets `gold` mean something on the
+ * rare screen that uses it.
+ */
 const variantStyles: Record<ButtonVariant, string> = {
-  primary:   'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-[0_2px_12px_rgba(236,72,153,0.35)] hover:shadow-[0_4px_16px_rgba(236,72,153,0.45)] hover:opacity-95 focus:ring-pink-300 active:scale-[0.98]',
-  secondary: 'bg-white text-violet-700 border border-violet-200 hover:bg-violet-50 focus:ring-violet-200 shadow-sm',
-  danger:    'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-[0_2px_8px_rgba(220,38,38,0.3)] hover:opacity-95 focus:ring-red-300 active:scale-[0.98]',
-  ghost:     'bg-transparent text-slate-600 hover:bg-slate-100 focus:ring-slate-200',
+  primary:
+    'bg-primary text-on-primary hover:bg-primary-hover shadow-sm active:scale-[0.98] '
+    + 'focus-visible:ring-brand/40',
+
+  /*
+    At most one per screen. Gold is the only thing in this palette that stops the eye, so it
+    belongs on the action someone opened the screen to take. It is also the pairing that
+    carries the brand — gold can only ever appear beneath aubergine text, never as text
+    itself — so spending it twice on one screen turns the signature into furniture.
+  */
+  gold:
+    'bg-gold text-on-gold hover:bg-gold-hover shadow-sm active:scale-[0.98] '
+    + 'focus-visible:ring-brand/40',
+
+  secondary:
+    'bg-card text-brand border border-slate-200 hover:bg-slate-50 hover:border-slate-300 '
+    + 'focus-visible:ring-brand/30',
+
+  danger:
+    'bg-danger text-on-status hover:opacity-90 shadow-sm active:scale-[0.98] '
+    + 'focus-visible:ring-danger/40',
+
+  ghost:
+    'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-800 '
+    + 'focus-visible:ring-slate-300',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -37,7 +67,7 @@ export function Button({
     <button
       className={clsx(
         'inline-flex items-center justify-center gap-2 rounded-xl font-semibold',
-        'transition-all duration-150 focus:outline-none focus:ring-2',
+        'transition-colors duration-150 focus:outline-none focus-visible:ring-2',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         variantStyles[variant],
         sizeStyles[size],

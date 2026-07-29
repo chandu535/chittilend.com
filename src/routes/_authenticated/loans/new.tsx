@@ -134,7 +134,7 @@ function NewLoanPage() {
               }}
               className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all ${
                 borrowerMode === 'search'
-                  ? 'bg-white text-violet-700 shadow-sm'
+                  ? 'bg-card text-brand shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -148,7 +148,7 @@ function NewLoanPage() {
               }}
               className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all ${
                 borrowerMode === 'create'
-                  ? 'bg-white text-violet-700 shadow-sm'
+                  ? 'bg-card text-brand shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -159,7 +159,7 @@ function NewLoanPage() {
           <div className="mt-3 space-y-3">
             {borrowerMode === 'search' ? (
               selectedBorrower ? (
-                <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-3">
+                <div className="flex items-center justify-between rounded-lg border border-brand/30 bg-primary/5 p-3">
                   <div>
                     <p className="font-medium text-slate-900"><NameDisplay name={selectedBorrower.name} nameTelugu={selectedBorrower.nameTelugu} /></p>
                     <p className="text-sm text-slate-500">{selectedBorrower.mobile}</p>

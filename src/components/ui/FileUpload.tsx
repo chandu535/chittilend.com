@@ -131,7 +131,7 @@ export function FileUpload({
             'w-full rounded-lg border-2 border-dashed px-4 py-6',
             'flex flex-col items-center gap-2',
             'text-sm text-slate-500',
-            'hover:border-primary hover:text-primary transition-colors',
+            'hover:border-brand hover:text-brand transition-colors',
             'min-h-[48px]',
             displayError ? 'border-danger' : 'border-slate-300',
           )}

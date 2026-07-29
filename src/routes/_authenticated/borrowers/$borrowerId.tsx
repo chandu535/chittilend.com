@@ -220,7 +220,7 @@ function BorrowerDetailPage() {
                 href={`https://www.google.com/maps?q=${borrower.locationLat},${borrower.locationLng}`}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-sm text-brand hover:underline"
               >
                 <MapPinIcon className="h-4 w-4" />{t('borrowers.openLocation')}
               </a>
@@ -229,7 +229,7 @@ function BorrowerDetailPage() {
               type="button"
               onClick={captureLocation}
               disabled={locationSaving}
-              className="ml-3 inline-flex items-center gap-1 text-sm text-primary hover:underline disabled:opacity-50"
+              className="ml-3 inline-flex items-center gap-1 text-sm text-brand hover:underline disabled:opacity-50"
             >
               <LocateIcon className="h-4 w-4" />{t('borrowers.captureLocation')}
             </button>

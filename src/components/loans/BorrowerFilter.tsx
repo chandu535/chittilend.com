@@ -85,7 +85,7 @@ export function BorrowerFilter({ value, onChange, className }: BorrowerFilterPro
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('loans.filterBorrowerSearch')}
-              className="min-h-11 w-full min-w-0 flex-1 rounded-xl bg-slate-50 px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="min-h-11 w-full min-w-0 flex-1 rounded-xl bg-slate-50 px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/30"
             />
             <VoiceInput size="sm" onResult={setQuery} />
           </div>
@@ -152,7 +152,7 @@ function BorrowerRow({ borrower, selected, onSelect }: {
         </span>
       )}
       <svg
-        className={clsx('h-4 w-4 shrink-0 text-primary', selected ? 'opacity-100' : 'opacity-0')}
+        className={clsx('h-4 w-4 shrink-0 text-brand', selected ? 'opacity-100' : 'opacity-0')}
         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
       >
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />

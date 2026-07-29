@@ -18,9 +18,9 @@ export function LanguageToggle() {
       className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors min-h-[44px]"
       aria-label={language === 'en' ? 'Switch to Telugu' : 'Switch to English'}
     >
-      <span className={language === 'en' ? 'font-bold text-primary' : 'text-slate-400'}>EN</span>
-      <span className="text-slate-300">/</span>
-      <span className={language === 'te' ? 'font-bold text-primary' : 'text-slate-400'}>తె</span>
+      <span className={language === 'en' ? 'font-bold text-brand' : 'text-slate-400'}>EN</span>
+      <span className="text-slate-400">/</span>
+      <span className={language === 'te' ? 'font-bold text-brand' : 'text-slate-400'}>తె</span>
     </button>
   );
 }

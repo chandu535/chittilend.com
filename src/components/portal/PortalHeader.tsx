@@ -5,9 +5,9 @@ export function PortalHeader() {
   const { t } = useTranslation();
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3">
+    <header className="sticky top-0 z-30 bg-card border-b border-slate-200 px-4 py-3">
       <div className="max-w-lg mx-auto flex items-center justify-between">
-        <h1 className="text-lg font-bold text-primary">{t('common.appName')}</h1>
+        <h1 className="text-lg font-bold text-brand">{t('common.appName')}</h1>
         <LanguageToggle />
       </div>
     </header>

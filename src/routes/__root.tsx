@@ -3,6 +3,7 @@ import { useStore } from '@tanstack/react-store';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { uiStore, setLanguage, LANG_COOKIE } from '@/lib/stores';
+import { THEME_INIT_SCRIPT, initTheme } from '@/lib/theme';
 import { ToastContainer } from '@/components/ui/Toast';
 import { InstallPrompt } from '@/components/shared/InstallPrompt';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
@@ -14,7 +15,8 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-      { name: 'theme-color', content: '#7C3AED' },
+      // Overwritten before first paint by THEME_INIT_SCRIPT on a device that wants dark.
+      { name: 'theme-color', content: '#2c0047' },
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
       { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
       { name: 'description', content: 'SriPay — Manage chitti lending operations' },
@@ -42,6 +44,10 @@ function RootComponent() {
     }
   }, [i18n]);
 
+  // Catches the store up with the class the inline script already set, and keeps following
+  // the device while the choice is `system`.
+  useEffect(() => initTheme(), []);
+
   return (
     <RootDocument>
       <ErrorBoundary>
@@ -63,6 +69,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang={language} suppressHydrationWarning>
       <head suppressHydrationWarning>
         <HeadContent />
+        {/* Last in the head and deliberately blocking: it has to run before the first
+            pixel, or a phone set to dark gets a white flash on every cold load. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
         {children}

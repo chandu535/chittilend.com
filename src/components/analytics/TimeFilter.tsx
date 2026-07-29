@@ -112,9 +112,9 @@ export function TimeFilter({ onRangeChange, yearsBack = 5 }: TimeFilterProps) {
             onClick={() => handlePreset(preset.key)}
             className={clsx(
               'min-h-9 flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
               active === preset.key
-                ? 'bg-white text-slate-900 shadow-sm'
+                ? 'bg-card text-slate-900 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700',
             )}
           >

@@ -140,11 +140,11 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
           on a phone and scales up when centred from `sm`, so the motion always starts
           where the panel actually sits. */}
       <div
-        className="sheet-panel sheet-panel--responsive relative flex max-h-[88dvh] w-full flex-col overflow-y-auto overscroll-contain rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] shadow-xl sm:max-w-md sm:rounded-2xl sm:pb-0"
+        className="sheet-panel sheet-panel--responsive relative flex max-h-[88dvh] w-full flex-col overflow-y-auto overscroll-contain rounded-t-2xl bg-card pb-[env(safe-area-inset-bottom)] shadow-xl sm:max-w-md sm:rounded-2xl sm:pb-0"
         data-closing={closing}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
+        <div className="sticky top-0 bg-card border-b border-slate-100 px-4 py-3 flex items-center justify-between rounded-t-2xl">
           <h3 className="text-lg font-semibold text-slate-900">
             {t('payments.installmentNo', { number: payment.installmentNumber })}
           </h3>
@@ -201,7 +201,7 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
                   value={revertReason}
                   onChange={(e) => setRevertReason(e.target.value)}
                   rows={2}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  className="w-full rounded-lg border border-slate-300 bg-card px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-colors"
                   placeholder={t('payments.revertReason')}
                 />
               </div>
@@ -239,7 +239,7 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
                 <button
                   type="button"
                   onClick={togglePartialMode}
-                  className="mt-1.5 text-xs text-primary font-medium hover:underline"
+                  className="mt-1.5 text-xs text-brand font-medium hover:underline"
                 >
                   {partialMode ? t('payments.payFullAmount') : t('payments.payDifferentAmount')}
                 </button>
@@ -283,7 +283,7 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={2}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  className="w-full rounded-lg border border-slate-300 bg-card px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-colors"
                   placeholder={t('common.notes')}
                 />
               </div>
@@ -300,7 +300,7 @@ export function PaymentMarkModal({ payment, onClose, onSuccess }: PaymentMarkMod
                 </Button>
                 <Button
                   variant="ghost"
-                  className="w-full text-purple-700 hover:bg-purple-50"
+                  className="w-full text-brand hover:bg-primary/10"
                   onClick={handleWaive}
                   loading={loading === 'waived'}
                   disabled={loading !== null}

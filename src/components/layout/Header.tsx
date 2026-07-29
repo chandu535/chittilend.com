@@ -5,6 +5,7 @@ import { authStore, setAuthUser } from '@/lib/stores';
 import { OVERFLOW_ITEMS, visibleTo } from './navItems';
 import { useLocalizedName } from '@/components/shared/NameDisplay';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { logout } from '@/server/functions/auth';
 import { useState, useRef, useEffect } from 'react';
 
@@ -39,9 +40,9 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 shrink-0 bg-white border-b border-slate-200">
+    <header className="sticky top-0 z-40 shrink-0 bg-card border-b border-slate-200">
       <div className="flex h-14 items-center justify-between gap-3 px-4">
-        <h1 className="truncate text-lg font-bold text-primary">
+        <h1 className="truncate text-lg font-bold text-brand">
           {t('common.appName')}
         </h1>
 
@@ -54,14 +55,14 @@ export function Header() {
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors min-h-[44px]"
               >
-                <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+                <div className="h-8 w-8 rounded-full bg-primary/10 text-brand flex items-center justify-center text-sm font-semibold">
                   {displayName.charAt(0).toUpperCase()}
                 </div>
                 <span className="hidden max-w-32 truncate sm:inline">{displayName}</span>
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 mt-1 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                <div className="absolute right-0 mt-1 w-48 rounded-lg border border-slate-200 bg-card py-1 shadow-lg">
                   <div className="px-3 py-2 border-b border-slate-100">
                     <p className="text-sm font-medium text-slate-900">{displayName}</p>
                     <p className="text-xs text-slate-500 capitalize">{user.role}</p>
@@ -83,9 +84,17 @@ export function Header() {
                     </div>
                   )}
 
+                  {/* Above Logout, and inside the menu rather than in the header bar: it is
+                      set once and then left alone, so it does not deserve permanent space
+                      next to the actions people use all day. */}
+                  <div className="border-b border-slate-100 px-3 py-2">
+                    <p className="mb-1.5 text-xs font-medium text-slate-400">{t('theme.label')}</p>
+                    <ThemeToggle />
+                  </div>
+
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 text-sm text-danger hover:bg-slate-50 transition-colors min-h-[44px] flex items-center"
+                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-slate-50 transition-colors min-h-[44px] flex items-center"
                   >
                     {t('nav.logout')}
                   </button>

@@ -168,7 +168,7 @@ function BinPage() {
                   'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors min-h-10',
                   'lg:flex-none lg:px-4',
                   tab === item.key
-                    ? 'bg-white text-slate-900 shadow-sm'
+                    ? 'bg-card text-slate-900 shadow-sm'
                     : 'text-slate-500 hover:text-slate-700',
                 )}
               >
@@ -201,8 +201,8 @@ function BinPage() {
       ) : (
         <div className="relative">
           {refreshing && (
-            <div className="absolute inset-0 z-10 flex items-start justify-center rounded-2xl bg-white/60 backdrop-blur-[1px] pt-10">
-              <span className="flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-md">
+            <div className="absolute inset-0 z-10 flex items-start justify-center rounded-2xl bg-card/70 backdrop-blur-[1px] pt-10">
+              <span className="flex items-center gap-2 rounded-full bg-card px-3.5 py-2 text-sm font-medium text-slate-600 shadow-md">
                 <Spinner size="sm" />{t('common.loading')}
               </span>
             </div>
@@ -267,7 +267,7 @@ function BinPage() {
             </div>
 
             {/* Desktop */}
-            <div className="hidden lg:block overflow-x-auto overscroll-x-contain rounded-2xl border border-slate-100 bg-white">
+            <div className="hidden lg:block overflow-x-auto overscroll-x-contain rounded-2xl border border-slate-100 bg-card">
               <table className="w-full min-w-[720px] text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">

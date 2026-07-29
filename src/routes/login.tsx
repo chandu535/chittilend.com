@@ -46,7 +46,7 @@ function LoginPage() {
 
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary">
+          <h1 className="text-3xl font-bold text-brand">
             {t('common.appName')}
           </h1>
           <p className="mt-2 text-sm text-slate-500">
@@ -54,7 +54,7 @@ function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900">
             {t('auth.loginTitle')}
           </h2>

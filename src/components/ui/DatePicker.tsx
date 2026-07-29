@@ -25,10 +25,10 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
           id={inputId}
           type="date"
           className={clsx(
-            'w-full rounded-lg border bg-white px-3 py-2.5',
+            'w-full rounded-lg border bg-card px-3 py-2.5',
             'text-base text-slate-900',
             'min-h-[48px]',
-            'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary',
+            'focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand',
             'transition-colors',
             error
               ? 'border-danger focus:ring-danger/30 focus:border-danger'

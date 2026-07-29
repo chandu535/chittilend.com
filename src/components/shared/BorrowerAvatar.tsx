@@ -36,8 +36,8 @@ export function BorrowerAvatar({ name, nameTelugu, photoUrl, size = 'md', classN
           sizeClass,
           'rounded-full shrink-0 overflow-hidden flex items-center justify-center font-semibold select-none',
           photoUrl
-            ? 'cursor-pointer ring-2 ring-white hover:ring-primary/40 transition-shadow'
-            : 'bg-primary/10 text-primary',
+            ? 'cursor-pointer ring-2 ring-white hover:ring-brand/40 transition-shadow'
+            : 'bg-primary/10 text-brand',
           className,
         )}
       >

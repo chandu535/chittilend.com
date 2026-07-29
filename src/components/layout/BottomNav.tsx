@@ -51,7 +51,7 @@ export function BottomNav() {
   const matchRoute = useMatchRoute();
 
   return (
-    <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 md:hidden safe-area-bottom">
+    <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-slate-200 md:hidden safe-area-bottom">
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
           const isActive = !!matchRoute({ to: item.to, fuzzy: true });
@@ -65,14 +65,17 @@ export function BottomNav() {
                 'flex flex-col items-center justify-center gap-0.5 flex-1 h-full',
                 'text-xs transition-colors min-w-0',
                 isNew
-                  ? 'text-white'
+                  ? 'text-brand'
                   : isActive
-                    ? 'text-primary'
+                    ? 'text-brand'
                     : 'text-slate-400 hover:text-slate-600',
               )}
             >
               {isNew ? (
-                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary text-white -mt-4 shadow-lg">
+                /* The one gold object on most screens. New Loan is the thing this app
+                   exists to do, it sits dead centre, and gold is the only colour here
+                   that pulls the eye without shouting — so it is spent once, here. */
+                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-gold text-on-gold -mt-4 shadow-md ring-4 ring-card">
                   {item.icon}
                 </div>
               ) : (
@@ -80,7 +83,7 @@ export function BottomNav() {
               )}
               <span className={clsx(
                 'truncate max-w-full px-1 nav-label',
-                isNew && 'text-primary',
+                isNew && 'text-brand',
               )}>
                 {t(item.labelKey)}
               </span>
