@@ -45,9 +45,14 @@ export function DocumentUpload({ borrowerId, onProfilePhoto, onAadhaarPhoto, onL
         <label className="block text-sm font-medium text-slate-700 mb-2">
           {t('borrowers.profilePhoto')}
         </label>
+        {/* With a borrowerId the shot is uploaded here and the page refetches, so the
+            stored photo is what should appear — holding a local preview with a Retake
+            under it would show the same picture twice. Without one the parent is still
+            holding the file unsaved, and the preview is the only proof it took. */}
         <CameraCapture
           onCapture={(file) => handleUpload(file, 'profile')}
           onLocation={onLocation}
+          keepPreview={!borrowerId}
         />
         <div className="mt-2">
           <FileUpload
@@ -61,15 +66,31 @@ export function DocumentUpload({ borrowerId, onProfilePhoto, onAadhaarPhoto, onL
         </div>
       </div>
 
-      {/* Aadhaar Photo */}
-      <FileUpload
-        label={t('borrowers.aadhaarPhoto')}
-        onFileSelect={(file) => {
-          if (file) handleUpload(file, 'aadhaar');
-          else onAadhaarPhoto(null);
-        }}
-        loading={uploading === 'aadhaar'}
-      />
+      {/* Aadhaar — the same camera-then-gallery pair as the photo above. The card is in
+          hand at the doorstep, so photographing it is the usual way in; picking a file
+          only matters for one that was shot earlier. */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          {t('borrowers.aadhaarPhoto')}
+        </label>
+        {/* No location here. Where a card was photographed says nothing about where its
+            holder lives, and the profile photo has already answered that. */}
+        <CameraCapture
+          label={t('borrowers.captureAadhaar')}
+          onCapture={(file) => handleUpload(file, 'aadhaar')}
+          keepPreview={!borrowerId}
+        />
+        <div className="mt-2">
+          <FileUpload
+            label={t('borrowers.uploadPhoto')}
+            onFileSelect={(file) => {
+              if (file) handleUpload(file, 'aadhaar');
+              else onAadhaarPhoto(null);
+            }}
+            loading={uploading === 'aadhaar'}
+          />
+        </div>
+      </div>
     </div>
   );
 }
