@@ -41,17 +41,29 @@ const description = isProduction
   : `Development build of SriPay, from the ${current} branch.`;
 
 /**
- * One icon set for both branches.
+ * One icon set for both branches, in two frames.
  *
- * These used to differ: production shipped the coin alone on transparency because a
- * maskable icon must fill its canvas and the launcher cropped that to a circle, which is
- * where the violet ring around the coin came from. The SP mark is drawn as an app icon
- * rather than adapted into one, so it has its own field and its own maskable variant with
- * the artwork inset into the safe zone — the ring problem cannot recur, and there is no
- * reason left for the two builds to look different.
+ * These used to differ per branch: production shipped the coin alone on transparency
+ * because a maskable icon must fill its canvas and the launcher cropped that to a circle,
+ * which is where the violet ring around the coin came from. That is solved properly now,
+ * so both builds can look the same and telling the installs apart goes back to being the
+ * name's job — `main` installs as SriPay, `dev` as ChittiLend.
  *
- * Telling the installed apps apart is the name's job, which is what it was always for:
- * `main` installs as SriPay, `dev` as ChittiLend.
+ * The two purposes carry different artwork on purpose, because the shape of the hole they
+ * are poured into is not the same:
+ *
+ *   any       the square mark, gold border and all. Used where nothing crops it — the
+ *             browser tab, a desktop install, iOS via apple-touch-icon.
+ *
+ *   maskable  the round mark on a solid brand field. Android hands the shape to the
+ *             launcher, and many phones cut every icon to a circle, which turned the
+ *             square version into an icon inside an icon. The disc is drawn at exactly
+ *             72/108 of the canvas — the fraction an adaptive icon's circle mask leaves
+ *             visible — so the gold ring lands on the crop edge with no dark margin
+ *             inside it and no ring sliced off.
+ *
+ * A launcher using a squircle instead shows the same disc with a little brand field
+ * around it, which is what that shape is for.
  */
 const icons = [
   { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
