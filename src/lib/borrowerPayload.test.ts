@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toBorrowerPayload, sanitiseSpokenName, type BorrowerFormData } from './borrowerPayload';
+import { toBorrowerPayload, sanitiseSpokenName, sanitiseSpokenPlace, type BorrowerFormData } from './borrowerPayload';
 
 const form = (over: Partial<BorrowerFormData> = {}): BorrowerFormData => ({
   name: 'Venkata Rao',
@@ -126,5 +126,44 @@ describe('sanitiseSpokenName', () => {
     // The caller ignores an empty result rather than writing a blank name.
     expect(sanitiseSpokenName('...')).toBe('');
     expect(sanitiseSpokenName('!!!')).toBe('');
+  });
+});
+
+/**
+ * An address is not a name. sanitiseSpokenName strips digits, commas and slashes, which
+ * are exactly what a house number is made of — so the two rules have to stay apart.
+ */
+describe('sanitiseSpokenPlace', () => {
+  it('keeps a real door number intact', () => {
+    expect(sanitiseSpokenPlace('12-3/A, Balaji Nagar')).toBe('12-3/A, Balaji Nagar');
+  });
+
+  it('keeps what the name rule would have thrown away', () => {
+    const spoken = '5/2, Main Road';
+    expect(sanitiseSpokenName(spoken)).not.toContain('5');
+    expect(sanitiseSpokenPlace(spoken)).toBe('5/2, Main Road');
+  });
+
+  it('drops the full stop dictation adds at the end', () => {
+    expect(sanitiseSpokenPlace('Balaji Nagar.')).toBe('Balaji Nagar');
+    expect(sanitiseSpokenPlace('Balaji Nagar,')).toBe('Balaji Nagar');
+  });
+
+  it('keeps Telugu', () => {
+    expect(sanitiseSpokenPlace('బాలాజీ నగర్')).toBe('బాలాజీ నగర్');
+  });
+
+  it('tidies spacing around commas rather than trusting the engine', () => {
+    expect(sanitiseSpokenPlace('12-3 ,  Main  Road ,Kadapa')).toBe('12-3, Main Road, Kadapa');
+  });
+
+  it('removes marks a place never contains', () => {
+    expect(sanitiseSpokenPlace('Main Road!! #4 ?')).toBe('Main Road 4');
+  });
+
+  it('survives an empty or punctuation-only reading', () => {
+    expect(sanitiseSpokenPlace('')).toBe('');
+    expect(sanitiseSpokenPlace('...')).toBe('');
+    expect(sanitiseSpokenPlace('  ,  ')).toBe('');
   });
 });

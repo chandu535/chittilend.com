@@ -460,9 +460,11 @@
   },
   "voice": {
     "speak": "Speak the name",
+    "speakArea": "Speak the area",
+    "speakAddress": "Speak the address",
     "stop": "Stop",
     "listening": "Listening…",
-    "tapToSpeak": "Tap the microphone and say the name",
+    "tapToSpeak": "Tap the microphone and speak",
     "pickOne": "Choose the right spelling",
     "best": "best",
     "again": "Speak again",

@@ -84,3 +84,28 @@ export function sanitiseSpokenName(spoken: string): string {
     .replace(/\.{2,}/g, '.')
     .replace(/^[\s.\-']+|[\s.\-']+$/g, '');
 }
+
+/**
+ * Makes a dictated area or address usable, which is a looser job than a name.
+ *
+ * A name is letters. An address is not: "12-3/A, Balaji Nagar, near the water tank" is an
+ * ordinary one here, and sanitiseSpokenName would take the digits, the comma and the slash
+ * out and leave something that is no longer an address. So the two cannot share a rule, and
+ * this keeps the marks a place needs — digits, comma, dot, hyphen, slash, ampersand and
+ * brackets — while still dropping what dictation invents around them.
+ *
+ * The end punctuation still goes. A spoken address comes back with a full stop on it, and
+ * "Balaji Nagar." is not how anyone writes it down.
+ *
+ * Neither field is validated at save, unlike the name, so nothing here is protecting the
+ * schema. It is protecting the ledger from tidy-looking rubbish: an address is read by a
+ * person standing in a street trying to find a house.
+ */
+export function sanitiseSpokenPlace(spoken: string): string {
+  return spoken
+    .replace(/[^ఀ-౿a-zA-Z0-9\s.,\-/&()']/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*,\s*/g, ', ')
+    .replace(/,{2,}/g, ',')
+    .replace(/^[\s.,\-/&]+|[\s.,\-/&]+$/g, '');
+}

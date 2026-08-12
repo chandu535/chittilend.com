@@ -10,7 +10,7 @@ import { MapPinIcon, LocateIcon } from '@/components/shared/icons';
 import { toast } from '@/components/ui/Toast';
 import { hasTeluguScript } from '@/lib/transliterate';
 import { VoiceInput } from '@/components/ui/VoiceInput';
-import { sanitiseSpokenName } from '@/lib/borrowerPayload';
+import { sanitiseSpokenName, sanitiseSpokenPlace } from '@/lib/borrowerPayload';
 
 interface BorrowerFormData {
   name: string;
@@ -167,16 +167,40 @@ export function BorrowerForm({ initialData, onSubmit, loading, submitLabel }: Bo
         required
       />
 
+      {/* Dictation here for the same reason as the name: these are Telugu place names on a
+          phone keyboard, and an address is longer to type than anything else on the form.
+          Spoken text replaces the field rather than appending to it, matching the name
+          above — an address is said in one go, not built up a word at a time. */}
       <Input
         label={t('borrowers.area')}
         value={data.area}
         onChange={(e) => setData((d) => ({ ...d, area: e.target.value }))}
+        rightSlot={
+          <VoiceInput
+            size="sm"
+            prompt={t('voice.speakArea')}
+            onResult={(spoken) => {
+              const area = sanitiseSpokenPlace(spoken);
+              if (area) setData((d) => ({ ...d, area }));
+            }}
+          />
+        }
       />
 
       <Input
         label={t('borrowers.address')}
         value={data.address}
         onChange={(e) => setData((d) => ({ ...d, address: e.target.value }))}
+        rightSlot={
+          <VoiceInput
+            size="sm"
+            prompt={t('voice.speakAddress')}
+            onResult={(spoken) => {
+              const address = sanitiseSpokenPlace(spoken);
+              if (address) setData((d) => ({ ...d, address }));
+            }}
+          />
+        }
       />
 
       <div className="flex items-end gap-2">
