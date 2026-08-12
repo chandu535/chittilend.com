@@ -132,6 +132,8 @@
     "repaymentProgress": "Repayment Progress",
     "paidSummary": "{{paid}} paid · {{pending}} pending · {{overdue}} overdue",
     "changeStatusSuccess": "Loan status updated",
+    "findLoan": "Find a loan",
+    "findLoanHint": "Loan number, name or mobile",
     "editNotes": "Edit Notes",
     "addInstallments": "Add Instalments",
     "addInstallmentsHint": "Give this loan more instalments to be paid across. The total owed does not change — it is divided into smaller amounts.",

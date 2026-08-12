@@ -19,6 +19,7 @@ import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
 import { PaymentTimeline } from '@/components/loans/PaymentTimeline';
 import { PaymentMarkModal } from '@/components/loans/PaymentMarkModal';
 import { AddInstallmentsModal } from '@/components/loans/AddInstallmentsModal';
+import { LoanSwitcher } from '@/components/loans/LoanSwitcher';
 // Acceptance removed.
 // import { LoanAgreementCard } from '@/components/loans/LoanAgreementCard';
 import { formatPhone } from '@/lib/formatters';
@@ -244,6 +245,10 @@ function LoanDetailPage() {
             {t(`loans.status${loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}`)}
           </Badge>
         </div>
+
+        {/* Beside the actions menu, so moving to another loan is one tap from the screen
+            you are on rather than a trip back to the list. */}
+        <LoanSwitcher currentLoanId={loan.id} />
 
         {/* Actions menu. Hidden outright when the role can use none of it. */}
         {canWriteLoans && (

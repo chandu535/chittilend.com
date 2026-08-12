@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { borrowerSearchCondition, borrowerSearchRelevance } from './search';
+import {
+  borrowerSearchCondition,
+  borrowerSearchRelevance,
+  loanNumberFrom,
+  loanSearchCondition,
+  loanSearchRelevance,
+} from './search';
 
 /**
  * The loans list once matched only `name` while the borrowers list also matched the
@@ -110,6 +116,69 @@ describe('borrowerSearchCondition', () => {
 
     it('has no relevance to report without a term', () => {
       expect(borrowerSearchRelevance('', [])).toBeUndefined();
+    });
+  });
+});
+
+/**
+ * Loans are quoted by number and that number was the one thing search could not find:
+ * typing 16 looked for "16" inside borrower names and returned nothing.
+ */
+describe('searching by loan number', () => {
+  describe('loanNumberFrom', () => {
+    it('reads a plain number', () => {
+      expect(loanNumberFrom('16')).toBe(16);
+      expect(loanNumberFrom('142')).toBe(142);
+    });
+
+    it('reads it with the hash people write but rarely type', () => {
+      expect(loanNumberFrom('#16')).toBe(16);
+      expect(loanNumberFrom('  #142  ')).toBe(142);
+    });
+
+    it('leaves a mobile number alone', () => {
+      // Ten digits is a phone, not loan nine billion. It still reaches the borrower rule,
+      // which matches mobiles as text.
+      expect(loanNumberFrom('9876543210')).toBeNull();
+    });
+
+    it('refuses anything that is not only a number', () => {
+      for (const term of ['venkata', '16a', 'a16', '1 6', '', '#', '-4', '1.5', '0']) {
+        expect(loanNumberFrom(term), term).toBeNull();
+      }
+    });
+  });
+
+  describe('loanSearchCondition', () => {
+    it('matches the loan number as well as the borrower', () => {
+      const q = dialect.sqlToQuery(loanSearchCondition('16')!);
+      expect(q.sql).toContain('loan_number');
+      // Still a borrower search too: 16 could be inside a mobile number.
+      expect(q.sql).toContain('mobile');
+      expect(q.params).toContain(16);
+    });
+
+    it('is only the borrower rule when the term is not a number', () => {
+      const q = dialect.sqlToQuery(loanSearchCondition('venkata')!);
+      expect(q.sql).not.toContain('loan_number');
+    });
+
+    it('matches nothing without a term, exactly as the borrower rule does', () => {
+      expect(loanSearchCondition('', [])).toBeUndefined();
+    });
+  });
+
+  describe('loanSearchRelevance', () => {
+    it('puts an exact loan number above every borrower match', () => {
+      const q = dialect.sqlToQuery(loanSearchRelevance('16')!);
+      // The borrower scale tops out at 2, so 3 wins without special-casing the sort.
+      expect(q.sql).toContain('THEN 3');
+      expect(q.sql).toContain('GREATEST');
+    });
+
+    it('falls back to borrower relevance for a name', () => {
+      const q = dialect.sqlToQuery(loanSearchRelevance('venkata')!);
+      expect(q.sql).not.toContain('THEN 3');
     });
   });
 });

@@ -6,7 +6,7 @@ import { createLoanSchema } from '../validators/loan';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requestSheetSync } from '../sheets/sync';
 import { requireRole, requirePermission } from '../middleware/roleGuard';
-import { borrowerSearchCondition, borrowerSearchRelevance } from '../db/search';
+import { loanSearchCondition, loanSearchRelevance } from '../db/search';
 import { borrowerLive, loanLive } from '../db/softDelete';
 import { calculateLoan, calculateStartMonth, generatePaymentSchedule } from '@/lib/calculations';
 import { respreadSchedule, shiftDueDate, type ScheduleStatus } from '@/lib/schedule';
@@ -92,10 +92,10 @@ export const listLoans = createServerFn({ method: 'GET' })
     if (data.borrowerId) facetConditions.push(eq(loans.borrowerId, data.borrowerId));
     if (data.dateFrom) facetConditions.push(gte(loans.dateGiven, data.dateFrom));
     if (data.dateTo) facetConditions.push(lte(loans.dateGiven, data.dateTo));
-    const searchCondition = borrowerSearchCondition(data.search, data.searchTelugu);
+    const searchCondition = loanSearchCondition(data.search, data.searchTelugu);
     // While searching, the closest name comes first; the overdue-first ordering resumes
     // below it, and takes over entirely once the search box is empty.
-    const relevance = borrowerSearchRelevance(data.search, data.searchTelugu);
+    const relevance = loanSearchRelevance(data.search, data.searchTelugu);
     if (searchCondition) facetConditions.push(searchCondition);
 
     const liveFacetWhere = and(...facetConditions);
@@ -566,4 +566,56 @@ export const changeStatus = createServerFn({ method: 'POST' })
 
     await requestSheetSync();
     return updated;
+  });
+
+/**
+ * Loans matching a term, for jumping straight to one.
+ *
+ * Deliberately not listLoans. That builds facet counts, urgency counts, a total and the
+ * next instalment for every row — all of which a switcher throws away. This is the same
+ * search rule against a handful of columns, so opening the box on a phone is one small
+ * query rather than the whole list screen's worth of work.
+ *
+ * An empty query is valid and returns the most recent loans, so the box is useful before
+ * anything is typed.
+ */
+export const searchLoans = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => {
+    const d = data as { query?: string; queryTelugu?: string[]; limit?: number };
+    return {
+      query: (d.query ?? '').trim(),
+      queryTelugu: (d.queryTelugu ?? []).filter((t) => typeof t === 'string' && t.trim()).slice(0, 3),
+      limit: Math.min(d.limit ?? 20, 50),
+    };
+  })
+  .handler(async ({ data }) => {
+    const user = await getAuthenticatedUser();
+    requireRole(user, ['admin', 'manager']);
+
+    const where = loanSearchCondition(data.query, data.queryTelugu);
+    const relevance = loanSearchRelevance(data.query, data.queryTelugu);
+
+    return db
+      .select({
+        id: loans.id,
+        loanNumber: loans.loanNumber,
+        status: loans.status,
+        totalRepayment: loans.totalRepayment,
+        dateGiven: loans.dateGiven,
+        borrowerName: borrowers.name,
+        borrowerNameTelugu: borrowers.nameTelugu,
+        borrowerPhotoUrl: borrowers.profilePhotoUrl,
+        borrowerArea: borrowers.area,
+        paidAmount: sql<string>`COALESCE((SELECT SUM(p.amount_paid) FROM payments p WHERE p.loan_id = ${loans.id}), 0)`,
+      })
+      .from(loans)
+      .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
+      // Both live predicates spelled out here rather than hoisted into a variable: the
+      // soft-delete guard reads the statement text, and a name it cannot see is a filter
+      // it cannot vouch for. AND-ed outside the search condition, which is an OR.
+      .where(and(loanLive, borrowerLive, ...(where ? [where] : [])))
+      // Closest match first while searching — which puts an exact loan number at the top —
+      // and the newest loans first when the box is still empty.
+      .orderBy(...(relevance ? [desc(relevance)] : []), desc(loans.loanNumber))
+      .limit(data.limit);
   });

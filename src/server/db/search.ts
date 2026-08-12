@@ -1,5 +1,5 @@
-import { ilike, or, sql, type SQL } from 'drizzle-orm';
-import { borrowers } from './schema';
+import { eq, ilike, or, sql, type SQL } from 'drizzle-orm';
+import { borrowers, loans } from './schema';
 
 /**
  * How close a near-miss has to be before it counts as a match.
@@ -111,4 +111,62 @@ export function borrowerSearchRelevance(
   });
 
   return sql`GREATEST(${sql.join(scores, sql`, `)})`;
+}
+
+/**
+ * The loan number a term is asking for, or null if it is not asking for one.
+ *
+ * Loans are spoken about by number — "loan 16", "#142" — and that number is the only
+ * identifier a person ever quotes, so it has to be typeable into the same box as a name.
+ * The hash is optional because nobody reaches for it on a phone keypad.
+ *
+ * Deliberately strict: only a whole number, optionally hashed, and nothing else. A term
+ * like "9876543210" is a mobile number rather than loan nine billion, so the bound keeps
+ * this from claiming one. Numbers that fall through are still matched as text against the
+ * mobile, which is what they almost certainly are.
+ */
+export function loanNumberFrom(term: string): number | null {
+  const match = term.trim().match(/^#?(\d{1,7})$/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
+/**
+ * What "search" means on the loans list, which is the borrower rule plus the loan's own
+ * number.
+ *
+ * Kept beside borrowerSearchCondition rather than folded into it, because the two are
+ * asked on different tables: the borrowers list has no loan number to match and would
+ * fail to compile against one.
+ */
+export function loanSearchCondition(
+  term: string,
+  alsoTelugu: string | string[] = [],
+): SQL | undefined {
+  const byBorrower = borrowerSearchCondition(term, alsoTelugu);
+  const loanNumber = loanNumberFrom(term);
+  if (loanNumber === null) return byBorrower;
+
+  const byNumber = eq(loans.loanNumber, loanNumber);
+  return byBorrower ? or(byNumber, byBorrower) : byNumber;
+}
+
+/**
+ * How well a loan matches, for ordering results.
+ *
+ * An exact loan number outranks everything. Someone who types 16 wants loan 16, not the
+ * borrower whose mobile happens to contain those digits — and with the borrower scale
+ * topping out at 2, scoring it 3 puts it first without having to special-case the sort.
+ */
+export function loanSearchRelevance(
+  term: string,
+  alsoTelugu: string | string[] = [],
+): SQL | undefined {
+  const byBorrower = borrowerSearchRelevance(term, alsoTelugu);
+  const loanNumber = loanNumberFrom(term);
+  if (loanNumber === null) return byBorrower;
+
+  const exact = sql`(CASE WHEN ${loans.loanNumber} = ${loanNumber} THEN 3 ELSE 0 END)`;
+  return byBorrower ? sql`GREATEST(${exact}, ${byBorrower})` : exact;
 }
