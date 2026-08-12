@@ -10,6 +10,7 @@ import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
 import { ContactActions } from '@/components/shared/ContactActions';
 import { PaymentTimeline } from './PaymentTimeline';
 import { PaymentMarkModal } from './PaymentMarkModal';
+import { AddInstallmentsModal } from './AddInstallmentsModal';
 import { getLoanById } from '@/server/functions/loans';
 import { useStore } from '@tanstack/react-store';
 import { authStore } from '@/lib/stores';
@@ -111,8 +112,13 @@ function LoanCardImpl({
   const [details, setDetails] = useState<LoanDetail | null>(null);
   const [fetching, setFetching] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(null);
+  const [showAddInstallments, setShowAddInstallments] = useState(false);
   const user = useStore(authStore, (s) => s.user);
   const canMarkPayments = can(user, 'payments.write');
+  // Same gate as the loan screen: a repaid loan has nothing left to schedule, and a
+  // defaulted or binned one is not being collected on.
+  const canAddInstallments = can(user, 'loans.write')
+    && (status === 'active' || status === 'extended');
   const [nextPayment, setNextPayment] = useState<NextPayment | null>(nextPaymentProp ?? null);
 
   useEffect(() => { setNextPayment(nextPaymentProp ?? null); }, [nextPaymentProp]);
@@ -471,6 +477,24 @@ function LoanCardImpl({
                     payments={details.payments}
                     onPaymentTap={canMarkPayments ? (p) => setSelectedPayment(p as PaymentItem) : undefined}
                   />
+
+                  {/* Under the timeline, because that is where the need becomes obvious:
+                      the reason to add instalments is that you have just scrolled to the
+                      end of them and the loan is not paid off. Reaching it from the list
+                      matters on a phone — the same action on the detail screen is two taps
+                      and a menu away, and this is the screen collections are done from. */}
+                  {canAddInstallments && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setShowAddInstallments(true); }}
+                      className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 text-[13px] font-semibold text-brand transition-colors hover:bg-slate-50"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      </svg>
+                      {t('loans.addInstallments')}
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -488,6 +512,31 @@ function LoanCardImpl({
           onClose={() => setSelectedPayment(null)}
           onSuccess={async () => {
             setSelectedPayment(null);
+            await loadDetails();
+          }}
+        />
+      )}
+
+      {/* `details` is what the modal reads, so this only mounts once the card is expanded
+          and loaded — which is also the only way the button can have been pressed. */}
+      {showAddInstallments && details && (
+        <AddInstallmentsModal
+          loan={{
+            id,
+            totalInstallments: details.totalInstallments,
+            totalRepayment: details.totalRepayment,
+            paymentFrequency: details.paymentFrequency,
+            payments: details.payments.map((p) => ({
+              id: p.id,
+              installmentNumber: p.installmentNumber,
+              amountDue: p.amountDue,
+              amountPaid: p.amountPaid,
+              status: p.status,
+            })),
+          }}
+          onClose={() => setShowAddInstallments(false)}
+          onSuccess={async () => {
+            setShowAddInstallments(false);
             await loadDetails();
           }}
         />

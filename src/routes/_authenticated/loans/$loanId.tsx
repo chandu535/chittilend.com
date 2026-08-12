@@ -18,7 +18,8 @@ import { useLocalizedName } from '@/components/shared/NameDisplay';
 import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
 import { PaymentTimeline } from '@/components/loans/PaymentTimeline';
 import { PaymentMarkModal } from '@/components/loans/PaymentMarkModal';
-import { ExtendTenureModal } from '@/components/loans/ExtendTenureModal';
+import { AddInstallmentsModal } from '@/components/loans/AddInstallmentsModal';
+import { LoanSwitcher } from '@/components/loans/LoanSwitcher';
 // Acceptance removed.
 // import { LoanAgreementCard } from '@/components/loans/LoanAgreementCard';
 import { formatPhone } from '@/lib/formatters';
@@ -226,7 +227,6 @@ function LoanDetailPage() {
   const canDefault = canWriteLoans && (loan.status === 'active' || loan.status === 'extended');
   const canRevertActive = canWriteLoans && loan.status === 'defaulted';
   const canExtend = canWriteLoans && (loan.status === 'active' || loan.status === 'extended');
-  const paidInstallmentsForModal = loan.payments.filter((p) => p.status === 'paid').length;
 
   return (
     <ScrollPage>
@@ -245,6 +245,10 @@ function LoanDetailPage() {
             {t(`loans.status${loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}`)}
           </Badge>
         </div>
+
+        {/* Beside the actions menu, so moving to another loan is one tap from the screen
+            you are on rather than a trip back to the list. */}
+        <LoanSwitcher currentLoanId={loan.id} />
 
         {/* Actions menu. Hidden outright when the role can use none of it. */}
         {canWriteLoans && (
@@ -269,7 +273,7 @@ function LoanDetailPage() {
               />
               {canExtend && (
                 <ActionMenuItem
-                  label={t('loans.extendTenure')}
+                  label={t('loans.addInstallments')}
                   icon="📅"
                   onClick={() => { setShowExtendModal(true); setMenuOpen(false); }}
                 />
@@ -549,16 +553,19 @@ function LoanDetailPage() {
       )}
 
       {showExtendModal && (
-        <ExtendTenureModal
+        <AddInstallmentsModal
           loan={{
             id: loan.id,
-            tenureMonths: loan.tenureMonths,
             totalInstallments: loan.totalInstallments,
-            paidInstallments: paidInstallmentsForModal,
-            installmentAmount: loan.installmentAmount,
             totalRepayment: loan.totalRepayment,
             paymentFrequency: loan.paymentFrequency,
-            payments: loan.payments.map((p) => ({ status: p.status, amountPaid: p.amountPaid })),
+            payments: loan.payments.map((p) => ({
+              id: p.id,
+              installmentNumber: p.installmentNumber,
+              amountDue: p.amountDue,
+              amountPaid: p.amountPaid,
+              status: p.status,
+            })),
           }}
           onClose={() => setShowExtendModal(false)}
           onSuccess={() => { setShowExtendModal(false); fetchLoan(); }}
