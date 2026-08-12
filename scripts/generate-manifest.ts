@@ -41,24 +41,24 @@ const description = isProduction
   : `Development build of SriPay, from the ${current} branch.`;
 
 /**
- * Production shows the coin alone. A maskable icon must fill its canvas, and the launcher
- * crops that to a circle — which is where the violet ring around the coin came from. So
- * SriPay declares only `any` icons on transparency and the coin stands on its own.
+ * One icon set for both branches.
  *
- * The dev build keeps the violet, which is now the quickest way to tell the two installed
- * apps apart on the same home screen.
+ * These used to differ: production shipped the coin alone on transparency because a
+ * maskable icon must fill its canvas and the launcher cropped that to a circle, which is
+ * where the violet ring around the coin came from. The SP mark is drawn as an app icon
+ * rather than adapted into one, so it has its own field and its own maskable variant with
+ * the artwork inset into the safe zone — the ring problem cannot recur, and there is no
+ * reason left for the two builds to look different.
+ *
+ * Telling the installed apps apart is the name's job, which is what it was always for:
+ * `main` installs as SriPay, `dev` as ChittiLend.
  */
-const icons = isProduction
-  ? [
-    { src: '/icon-coin-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-    { src: '/icon-coin-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-  ]
-  : [
-    { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-    { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-    { src: '/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-    { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-  ];
+const icons = [
+  { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+  { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+  { src: '/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+  { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+];
 
 const manifest = {
   id: '/',
@@ -72,8 +72,8 @@ const manifest = {
   display: 'standalone',
   display_override: ['standalone', 'minimal-ui'],
   orientation: 'portrait',
-  theme_color: '#7C3AED',
-  background_color: '#F5F4FF',
+  theme_color: '#2c0047',
+  background_color: '#f7f4f9',
   categories: ['finance', 'business', 'productivity'],
   icons,
 };
@@ -81,5 +81,5 @@ const manifest = {
 writeFileSync('public/manifest.json', `${JSON.stringify(manifest, null, 2)}\n`);
 console.log(
   `manifest.json -> "${manifest.short_name}" (branch ${current}${isProduction ? ', production' : ''})`
-  + `, icons: ${isProduction ? 'coin on transparency' : 'coin on violet, maskable'}`,
+  + ', icons: SP mark, any + maskable',
 );

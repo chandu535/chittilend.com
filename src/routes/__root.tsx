@@ -25,8 +25,12 @@ export const Route = createRootRoute({
     links: [
       { rel: 'stylesheet', href: appCss },
       { rel: 'manifest', href: '/manifest.json' },
-      { rel: 'icon', href: '/icon-coin-192.png', type: 'image/png', sizes: '192x192' },
-      { rel: 'apple-touch-icon', href: '/apple-touch-icon-coin.png' },
+      // The .ico first and unqualified, because it is the one carrying hand-tuned 16 and
+      // 32 pixel frames — left to scale the 192 down itself, a browser makes a smudge of
+      // the mark at tab size.
+      { rel: 'icon', href: '/favicon.ico', sizes: '16x16 32x32 48x48 64x64' },
+      { rel: 'icon', href: '/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
     ],
   }),
   component: RootComponent,
