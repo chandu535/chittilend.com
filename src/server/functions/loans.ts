@@ -9,6 +9,7 @@ import { requireRole, requirePermission } from '../middleware/roleGuard';
 import { borrowerSearchCondition, borrowerSearchRelevance } from '../db/search';
 import { borrowerLive, loanLive } from '../db/softDelete';
 import { calculateLoan, calculateStartMonth, generatePaymentSchedule } from '@/lib/calculations';
+import { respreadSchedule, shiftDueDate, type ScheduleStatus } from '@/lib/schedule';
 import { DEFAULTS } from '@/lib/constants';
 
 type NextPayment = {
@@ -421,14 +422,31 @@ export const updateLoan = createServerFn({ method: 'POST' })
     return updated;
   });
 
-export const extendTenure = createServerFn({ method: 'POST' })
+/**
+ * Gives a loan more instalments to be paid across, without giving it more debt.
+ *
+ * The schedule is a plan for collecting a fixed sum, so when five months run out with money
+ * still owed, what has to grow is the number of slots — not the total. `respreadSchedule`
+ * holds that line (sum(amountDue) === totalRepayment) and this function's only job is to
+ * write down what it decided.
+ *
+ * Counted in instalments rather than months, which is what replaced `extendTenure`. Months
+ * could not express "three more weeks" on a weekly loan at all: it multiplied by four, so
+ * the smallest possible extension was a month of them.
+ */
+export const addInstallments = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => {
-    const d = data as { id: string; newTenureMonths: number };
+    const d = data as { id: string; totalInstallments: number };
     if (!d.id) throw new Error('Loan ID is required');
-    if (!d.newTenureMonths || d.newTenureMonths < 1) {
-      throw new Error('New tenure must be at least 1 month');
+    if (!Number.isInteger(d.totalInstallments) || d.totalInstallments < 2) {
+      throw new Error('Instalment count must be a whole number');
     }
-    return d;
+    // A ceiling, because the only thing standing between a typo and 9,999 rows on a loan is
+    // this line. Well above any real chitti and far below anything that would hurt.
+    if (d.totalInstallments > 120) {
+      throw new Error('A loan cannot have more than 120 instalments');
+    }
+    return d as { id: string; totalInstallments: number };
   })
   .handler(async ({ data }) => {
     const user = await getAuthenticatedUser();
@@ -436,81 +454,90 @@ export const extendTenure = createServerFn({ method: 'POST' })
 
     const loan = await db.query.loans.findFirst({
       where: and(eq(loans.id, data.id), loanLive),
-      with: { payments: true },
+      with: {
+        // Ordered explicitly. The previous code read the last element of an unordered
+        // relation to find the final due date, which is whatever Postgres felt like
+        // returning — so appended instalments could be dated from the middle of the
+        // schedule.
+        payments: { orderBy: (p, { asc }) => [asc(p.installmentNumber)] },
+      },
     });
 
     if (!loan) throw new Error('Loan not found');
+    if (loan.status === 'completed') throw new Error('This loan is already repaid');
 
-    const oldTotalInstallments = loan.totalInstallments;
-    const totalRepayment = parseFloat(loan.totalRepayment);
+    const plan = respreadSchedule(
+      loan.payments.map((p) => ({
+        id: p.id,
+        installmentNumber: p.installmentNumber,
+        amountDue: parseFloat(p.amountDue),
+        amountPaid: parseFloat(p.amountPaid),
+        status: p.status as ScheduleStatus,
+      })),
+      data.totalInstallments,
+      parseFloat(loan.totalRepayment),
+    );
 
-    // Calculate new installment count
-    const newTotalInstallments = loan.paymentFrequency === 'monthly'
-      ? data.newTenureMonths
-      : data.newTenureMonths * 4;
+    const frequency = loan.paymentFrequency as 'monthly' | 'weekly';
+    const lastDueDate = loan.payments[loan.payments.length - 1].dueDate as string;
 
-    if (newTotalInstallments <= oldTotalInstallments) {
-      throw new Error('New tenure must be longer than current tenure');
-    }
+    const writes = [
+      ...plan.rows
+        .filter((r) => !r.isNew && r.changed)
+        .map((r) => db
+          .update(payments)
+          .set({ amountDue: r.amountDue.toFixed(2), status: r.status, updatedAt: new Date() })
+          .where(eq(payments.id, r.id))),
 
-    // Recalculate installment amount for remaining balance
-    const paidAmount = loan.payments
-      .filter((p) => p.status === 'paid')
-      .reduce((sum, p) => sum + parseFloat(p.amountPaid), 0);
+      ...plan.rows
+        .filter((r) => r.isNew)
+        .map((r, i) => db.insert(payments).values({
+          loanId: loan.id,
+          installmentNumber: r.installmentNumber,
+          dueDate: shiftDueDate(lastDueDate, i + 1, frequency),
+          amountDue: r.amountDue.toFixed(2),
+          amountPaid: '0.00',
+          status: 'pending' as const,
+        })),
 
-    const remainingAmount = totalRepayment - paidAmount;
-    const paidInstallments = loan.payments.filter((p) => p.status === 'paid').length;
-    const newRemainingInstallments = newTotalInstallments - paidInstallments;
-    const newInstallmentAmount = remainingAmount / newRemainingInstallments;
+      db
+        .update(loans)
+        .set({
+          totalInstallments: data.totalInstallments,
+          installmentAmount: plan.installmentAmount.toFixed(2),
+          // Tenure follows the instalments so the two never disagree. On a weekly loan the
+          // months are derived back, rounded up: six weekly instalments is two months of
+          // them, and calling it one would understate the term.
+          tenureMonths: frequency === 'monthly'
+            ? data.totalInstallments
+            : Math.ceil(data.totalInstallments / 4),
+          // Re-spreading can settle the loan outright, by dropping a partially paid
+          // instalment to what it already holds. Rare, but leaving it 'extended' would show
+          // a repaid loan as still running.
+          status: plan.outstanding <= 0.01 ? 'completed' as const : 'extended' as const,
+          updatedAt: new Date(),
+        })
+        // Binned loans are not editable — a change here would edit one out from under
+        // the Bin, and the restored row would not be what was removed.
+        .where(and(eq(loans.id, data.id), loanLive)),
+    ] as const;
 
-    // Update unpaid payments with new amount
-    const unpaidPayments = loan.payments.filter((p) => p.status !== 'paid');
-    for (const payment of unpaidPayments) {
-      await db
-        .update(payments)
-        .set({ amountDue: newInstallmentAmount.toFixed(2) })
-        .where(eq(payments.id, payment.id));
-    }
-
-    // Add new payment rows
-    const lastPayment = loan.payments[loan.payments.length - 1];
-    const lastDueDate = new Date(lastPayment.dueDate);
-
-    for (let i = oldTotalInstallments + 1; i <= newTotalInstallments; i++) {
-      const dueDate = new Date(lastDueDate);
-      const offset = i - oldTotalInstallments;
-      if (loan.paymentFrequency === 'monthly') {
-        dueDate.setMonth(dueDate.getMonth() + offset);
-      } else {
-        dueDate.setDate(dueDate.getDate() + offset * 7);
-      }
-
-      await db.insert(payments).values({
-        loanId: loan.id,
-        installmentNumber: i,
-        dueDate: dueDate.toISOString().split('T')[0],
-        amountDue: newInstallmentAmount.toFixed(2),
-        amountPaid: '0.00',
-        status: 'pending',
-      });
-    }
-
-    // Update loan record
-    const [updated] = await db
-      .update(loans)
-      .set({
-        tenureMonths: data.newTenureMonths,
-        totalInstallments: newTotalInstallments,
-        installmentAmount: newInstallmentAmount.toFixed(2),
-        status: 'extended',
-        updatedAt: new Date(),
-      })
-      // Binned loans are not editable — a change here would edit one out from under
-      // the Bin, and the restored row would not be what was removed.
-      .where(and(eq(loans.id, data.id), loanLive))
-      .returning();
+    /*
+      One batch, which Neon runs as a single transaction. This is the only place in the app
+      that needs it: the writes are individually valid and collectively meaningless, since
+      lowering the existing instalments without inserting the new ones would leave the loan
+      owing less than it does. Sent separately, a connection dropped in the middle would
+      quietly forgive the difference.
+    */
+    await db.batch(writes as unknown as [typeof writes[number], ...typeof writes[number][]]);
 
     await requestSheetSync();
+
+    const [updated] = await db
+      .select()
+      .from(loans)
+      .where(and(eq(loans.id, data.id), loanLive))
+      .limit(1);
     return updated;
   });
 

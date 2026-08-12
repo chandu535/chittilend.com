@@ -8,7 +8,7 @@ const mk = (role: 'admin' | 'manager') =>
 // Exactly the permission each write endpoint now guards on, taken from the source.
 const ENDPOINTS: Array<[string, Parameters<typeof requirePermission>[1]]> = [
   ['updateLoan', 'loans.write'],
-  ['extendTenure', 'loans.write'], ['changeStatus', 'loans.write'],
+  ['addInstallments', 'loans.write'], ['changeStatus', 'loans.write'],
   ['acceptLoanAsOwner', 'loans.write'],
   ['markPaymentPaid', 'payments.write'], ['markPaymentPartial', 'payments.write'],
   ['markPaymentWaived', 'payments.write'], ['revertPayment', 'payments.write'],
