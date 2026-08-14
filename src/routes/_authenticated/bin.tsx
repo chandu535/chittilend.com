@@ -16,6 +16,7 @@ import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { NameDisplay } from '@/components/shared/NameDisplay';
 import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
+import { ContactActions } from '@/components/shared/ContactActions';
 import { BinActions } from '@/components/bin/BinActions';
 import { usePaginatedList, type PageResult } from '@/lib/usePaginatedList';
 import { formatPhone } from '@/lib/formatters';
@@ -239,10 +240,16 @@ function BinPage() {
                           {' · '}{formatPhone(row.borrowerMobile)}
                         </p>
                       ) : (
-                        <p className="text-sm text-slate-500">
-                          {formatPhone(row.mobile)}{row.area ? ` · ${row.area}` : ''}
-                          {row.totalLoanCount > 0 ? ` · ${t('bin.inBinCount', { count: row.totalLoanCount })}` : ''}
-                        </p>
+                        <div className="flex items-center gap-1">
+                          <p className="text-sm text-slate-500">
+                            {formatPhone(row.mobile)}{row.area ? ` · ${row.area}` : ''}
+                            {row.totalLoanCount > 0 ? ` · ${t('bin.inBinCount', { count: row.totalLoanCount })}` : ''}
+                          </p>
+                          {/* Worth reaching someone before their record is destroyed for
+                              good, which is the one thing this screen can do that no other
+                              can undo. */}
+                          <ContactActions mobile={row.mobile} name={row.name} variant="icons" className="-my-2" />
+                        </div>
                       )}
 
                       {/* The cue that Restore will bring two things back. */}

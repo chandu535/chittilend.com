@@ -12,6 +12,7 @@ import { toast } from '@/components/ui/Toast';
 import { userFacingError } from '@/lib/userError';
 import { NameDisplay } from '@/components/shared/NameDisplay';
 import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
+import { ContactActions } from '@/components/shared/ContactActions';
 import { AddEntrySheet } from '@/components/collections/AddEntrySheet';
 import {
   applyAllCollectionEntries,
@@ -225,7 +226,17 @@ function EntryRow({
               className="truncate text-[16px] font-semibold text-slate-900"
             />
           </div>
-          <p className="truncate text-sm text-slate-400">{formatPhone(entry.borrowerMobile)}</p>
+          <div className="flex items-center gap-1">
+            <p className="truncate text-sm text-slate-400">{formatPhone(entry.borrowerMobile)}</p>
+            {/* The collector is standing at the door, or trying to find it. Reaching the
+                person is the action most likely to follow reading their name here. */}
+            <ContactActions
+              mobile={entry.borrowerMobile}
+              name={entry.borrowerName}
+              variant="icons"
+              className="-my-2"
+            />
+          </div>
         </div>
 
         <div className="shrink-0 text-right">

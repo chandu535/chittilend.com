@@ -20,6 +20,7 @@ import { useDebouncedValue } from '@/lib/useDebouncedValue';
 import { clsx } from 'clsx';
 import { ListPage } from '@/components/layout/PageLayout';
 import { ListError } from '@/components/shared/ListError';
+import { ContactActions } from '@/components/shared/ContactActions';
 import { useStore } from '@tanstack/react-store';
 import { can } from '@/lib/permissions';
 import { authStore } from '@/lib/stores';
@@ -338,6 +339,11 @@ function LoansPage() {
                               <p className="text-xs text-slate-400">{loan.borrowerArea}</p>
                             )}
                           </div>
+                          <ContactActions
+                            mobile={loan.borrowerMobile}
+                            name={loan.borrowerName}
+                            variant="icons"
+                          />
                         </div>
                       </td>
                       {/* What the borrower owes in total, not what was handed over — the

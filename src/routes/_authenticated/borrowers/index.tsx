@@ -19,6 +19,7 @@ import { useDebouncedValue } from '@/lib/useDebouncedValue';
 import { clsx } from 'clsx';
 import { ListPage } from '@/components/layout/PageLayout';
 import { ListError } from '@/components/shared/ListError';
+import { ContactActions } from '@/components/shared/ContactActions';
 import { formatPhone } from '@/lib/formatters';
 import { useTeluguSearchTerm } from '@/lib/useTeluguSearchTerm';
 import { VoiceInput } from '@/components/ui/VoiceInput';
@@ -218,7 +219,12 @@ function BorrowersPage() {
                         <NameDisplay name={b.name} nameTelugu={b.nameTelugu} />
                       </div>
                     </td>
-                    <td className="py-3 text-slate-600">{formatPhone(b.mobile)}</td>
+                    <td className="py-3 text-slate-600">
+                      <div className="flex items-center gap-1">
+                        <span className="tabular">{formatPhone(b.mobile)}</span>
+                        <ContactActions mobile={b.mobile} name={b.name} variant="icons" />
+                      </div>
+                    </td>
                     <td className="py-3 text-slate-600">{b.area || '—'}</td>
                     <td className="py-3">
                       <Link

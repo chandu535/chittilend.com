@@ -16,6 +16,7 @@ import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { useLocalizedName } from '@/components/shared/NameDisplay';
 import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
+import { ContactActions } from '@/components/shared/ContactActions';
 import { PaymentTimeline } from '@/components/loans/PaymentTimeline';
 import { PaymentMarkModal } from '@/components/loans/PaymentMarkModal';
 import { AddInstallmentsModal } from '@/components/loans/AddInstallmentsModal';
@@ -331,7 +332,18 @@ function LoanDetailPage() {
           />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-slate-900">{borrowerDisplayName}</p>
-            <p className="text-sm text-slate-500">{formatPhone(loan.borrower.mobile)}</p>
+            <div className="flex items-center gap-1">
+              <p className="text-sm text-slate-500">{formatPhone(loan.borrower.mobile)}</p>
+              {/* ContactActions stops the click itself, which matters here: the whole row
+                  is a Link to the borrower, so without that a tap on Call would navigate
+                  instead of dialling. */}
+              <ContactActions
+                mobile={loan.borrower.mobile}
+                name={loan.borrower.name}
+                variant="icons"
+                className="-my-2"
+              />
+            </div>
             {loan.borrower.area && <p className="text-xs text-slate-400">{loan.borrower.area}</p>}
           </div>
           <svg className="h-4 w-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

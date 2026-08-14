@@ -17,6 +17,7 @@ import { ListError } from '@/components/shared/ListError';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { NameDisplay } from '@/components/shared/NameDisplay';
+import { ContactActions } from '@/components/shared/ContactActions';
 import { PaymentMarkModal } from '@/components/loans/PaymentMarkModal';
 import { useStore } from '@tanstack/react-store';
 import { can } from '@/lib/permissions';
@@ -163,7 +164,10 @@ function PaymentsPage() {
                   >
                     <NameDisplay name={p.borrowerName} nameTelugu={p.borrowerNameTelugu} />
                   </Link>
-                  <Badge status={p.status}>{t(`payments.${p.status}`)}</Badge>
+                  <div className="flex items-center gap-1">
+                    <ContactActions mobile={p.borrowerMobile} name={p.borrowerName} variant="icons" />
+                    <Badge status={p.status}>{t(`payments.${p.status}`)}</Badge>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-500">
@@ -217,6 +221,12 @@ function PaymentsPage() {
                       >
                         <NameDisplay name={p.borrowerName} nameTelugu={p.borrowerNameTelugu} />
                       </Link>
+                      <ContactActions
+                        mobile={p.borrowerMobile}
+                        name={p.borrowerName}
+                        variant="icons"
+                        className="-my-2 ml-1 inline-flex align-middle"
+                      />
                     </td>
                     <td className="py-3 text-slate-600">
                       #{p.installmentNumber}

@@ -19,6 +19,7 @@ import { BorrowerForm } from '@/components/borrowers/BorrowerForm';
 import { BorrowerPhotoCapture } from '@/components/borrowers/BorrowerPhotoCapture';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { useLocalizedName } from '@/components/shared/NameDisplay';
+import { ContactActions } from '@/components/shared/ContactActions';
 import { formatPhone } from '@/lib/formatters';
 import { toast } from '@/components/ui/Toast';
 import { useStore } from '@tanstack/react-store';
@@ -208,7 +209,15 @@ function BorrowerDetailPage() {
           />
           <div className="flex-1 min-w-0 space-y-1">
             <p className="text-lg font-semibold text-slate-900">{displayName}</p>
-            <p className="text-sm text-slate-600">{formatPhone(borrower.mobile)}</p>
+            <div className="flex items-center gap-1">
+              <p className="text-sm text-slate-600">{formatPhone(borrower.mobile)}</p>
+              <ContactActions
+                mobile={borrower.mobile}
+                name={borrower.name}
+                variant="icons"
+                className="-my-2"
+              />
+            </div>
             {borrower.area && (
               <p className="text-sm text-slate-500">{borrower.area}</p>
             )}

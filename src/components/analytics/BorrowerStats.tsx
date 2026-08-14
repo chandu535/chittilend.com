@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { NameDisplay } from '@/components/shared/NameDisplay';
+import { ContactActions } from '@/components/shared/ContactActions';
 import { useStore } from '@tanstack/react-store';
 import { uiStore } from '@/lib/stores';
 import { formatPercent } from '@/lib/formatters';
@@ -64,7 +65,10 @@ export function BorrowerStats({ data }: { data: BorrowerData[] }) {
         {sorted.map((b) => (
           <div key={b.id} className="rounded-lg border border-slate-100 p-3">
             <div className="flex justify-between items-center mb-1">
-              <NameDisplay name={b.name} nameTelugu={b.nameTelugu} className="font-medium text-sm text-slate-900" />
+              <div className="flex min-w-0 items-center gap-1">
+                <NameDisplay name={b.name} nameTelugu={b.nameTelugu} className="truncate font-medium text-sm text-slate-900" />
+                <ContactActions mobile={b.mobile} name={b.name} variant="icons" className="-my-2" />
+              </div>
               <span className={`text-xs font-semibold ${b.onTimePercent >= 80 ? 'text-emerald-600' : b.onTimePercent >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
                 {formatPercent(b.onTimePercent, { lang })}
               </span>
@@ -97,7 +101,12 @@ export function BorrowerStats({ data }: { data: BorrowerData[] }) {
           <tbody className="divide-y divide-slate-50">
             {sorted.map((b) => (
               <tr key={b.id} className="hover:bg-slate-50">
-                <td className="py-2 font-medium text-slate-900"><NameDisplay name={b.name} nameTelugu={b.nameTelugu} /></td>
+                <td className="py-2 font-medium text-slate-900">
+                  <div className="flex items-center gap-1">
+                    <NameDisplay name={b.name} nameTelugu={b.nameTelugu} />
+                    <ContactActions mobile={b.mobile} name={b.name} variant="icons" className="-my-2" />
+                  </div>
+                </td>
                 <td className="py-2 text-slate-500">{b.area}</td>
                 <td className="py-2 text-right">
                   <span className={`font-semibold ${b.onTimePercent >= 80 ? 'text-emerald-600' : b.onTimePercent >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
