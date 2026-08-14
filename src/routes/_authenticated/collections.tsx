@@ -9,6 +9,7 @@ import { ScrollPage } from '@/components/layout/PageLayout';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { Spinner } from '@/components/ui/Spinner';
 import { toast } from '@/components/ui/Toast';
+import { userFacingError } from '@/lib/userError';
 import { NameDisplay } from '@/components/shared/NameDisplay';
 import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
 import { AddEntrySheet } from '@/components/collections/AddEntrySheet';
@@ -53,7 +54,7 @@ function CollectionsPage() {
     try {
       setBook(await listCollectionEntries({ data: {} }));
     } catch (err) {
-      toast(err instanceof Error ? err.message : t('errors.generic'), 'error');
+      toast(userFacingError(err, t('errors.generic')), 'error');
     } finally {
       setLoading(false);
     }
@@ -69,7 +70,7 @@ function CollectionsPage() {
       else toast(outcome.error, 'error');
       await load();
     } catch (err) {
-      toast(err instanceof Error ? err.message : t('errors.generic'), 'error');
+      toast(userFacingError(err, t('errors.generic')), 'error');
     } finally {
       setBusyId(null);
     }
@@ -85,7 +86,7 @@ function CollectionsPage() {
       else toast(t('collections.appliedSome', { applied: result.applied, failed: result.failed }), 'info');
       await load();
     } catch (err) {
-      toast(err instanceof Error ? err.message : t('errors.generic'), 'error');
+      toast(userFacingError(err, t('errors.generic')), 'error');
     } finally {
       setApplyingAll(false);
     }
@@ -98,7 +99,7 @@ function CollectionsPage() {
       toast(t('collections.discarded'), 'success');
       await load();
     } catch (err) {
-      toast(err instanceof Error ? err.message : t('errors.generic'), 'error');
+      toast(userFacingError(err, t('errors.generic')), 'error');
     } finally {
       setBusyId(null);
     }

@@ -14,6 +14,7 @@ import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { Spinner } from '@/components/ui/Spinner';
 import { VoiceInput } from '@/components/ui/VoiceInput';
 import { toast } from '@/components/ui/Toast';
+import { userFacingError } from '@/lib/userError';
 import { formatPhone } from '@/lib/formatters';
 import { LIMITS } from '@/lib/constants';
 
@@ -51,7 +52,17 @@ export function AddEntrySheet({ onClose, onAdded }: { onClose: () => void; onAdd
   useScrollLock(true);
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex flex-col bg-canvas">
+    /*
+      Sits between the app's two bars rather than over them. Covering the whole viewport
+      made the header and the bottom nav vanish the moment + was pressed, which on a screen
+      built for someone with no training reads as the app having gone somewhere else — and
+      takes away the way back out.
+
+      Below their z-40 as well as inset from them, so a stray pixel of rounding can never
+      put this on top of a bar. The offsets are the bars' own heights: h-14 up top, h-16
+      plus the safe area below, and nothing below md, where there is no bottom bar.
+    */
+    <div className="fixed inset-x-0 top-14 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 flex flex-col bg-canvas md:bottom-0">
       <header className="flex items-center gap-2 border-b border-slate-200 bg-card px-3 py-2">
         <button
           type="button"
@@ -312,7 +323,7 @@ function EnterAmount({ kind, picked, onDone }: { kind: Kind; picked: Picked; onD
       toast(t('collections.saved'), 'success');
       await onDone();
     } catch (err) {
-      toast(err instanceof Error ? err.message : t('errors.generic'), 'error');
+      toast(userFacingError(err, t('errors.generic')), 'error');
     } finally {
       setSaving(false);
     }
