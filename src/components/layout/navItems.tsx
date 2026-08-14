@@ -85,15 +85,42 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 /**
- * What the phone's bottom bar covers. Five slots, and the middle one is the new-loan
- * button rather than a page.
+ * Issuing a loan, which is the raised button in the middle of the phone's bottom bar.
+ *
+ * Kept out of NAV_ITEMS because it is an action rather than a destination: the sidebar
+ * lists places to go, and this is a form to start.
+ */
+export const NEW_LOAN_ITEM: NavItem = {
+  to: '/loans/new',
+  labelKey: 'nav.newLoan',
+  icon: icon('M12 4.5v15m7.5-7.5h-15'),
+};
+
+/**
+ * What the phone's bottom bar covers, in the order it shows them. Five slots, and the
+ * middle one is the new-loan button rather than a page.
  *
  * Collections took the fifth slot from Borrowers, which is the trade the day book is worth:
  * a collector opens the app to record money and never to browse people. Borrowers is not
  * lost — OVERFLOW_ITEMS is derived from whatever the bar does not carry, so dropping it from
- * here puts it in the profile menu without anything else being edited.
+ * here puts it in the profile menu.
  */
 export const BOTTOM_NAV_PATHS = ['/dashboard', '/loans', '/loans/new', '/payments', '/collections'];
+
+/**
+ * The bar's own items, resolved from the paths above.
+ *
+ * This is the part that was missing, and its absence caused exactly the bug this file's
+ * header warns about. BottomNav carried a second hardcoded list of five destinations, so
+ * changing BOTTOM_NAV_PATHS moved a page *out* of the overflow menu without moving it
+ * *into* the bar — leaving the new page unreachable on a phone and the old one shown twice.
+ *
+ * With the bar rendered from here, the paths above are the single fact: one edit moves a
+ * page between the bar and the menu, and the two can no longer disagree.
+ */
+export const BOTTOM_NAV_ITEMS: NavItem[] = BOTTOM_NAV_PATHS
+  .map((path) => (path === NEW_LOAN_ITEM.to ? NEW_LOAN_ITEM : NAV_ITEMS.find((item) => item.to === path)))
+  .filter((item): item is NavItem => item !== undefined);
 
 /**
  * The pages a phone has nowhere else to reach — Analytics, Capital, Sheet, Settings, Bin.
