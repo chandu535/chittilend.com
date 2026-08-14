@@ -51,7 +51,7 @@ export const listPaymentsByLoan = createServerFn({ method: 'GET' })
  * Whatever is left after the final instalment stays on that last row rather than being
  * dropped, so an overpayment is visible instead of lost.
  */
-async function applyToSchedule(
+export async function applyToSchedule(
   loanId: string,
   fromInstalment: number,
   amount: number,
@@ -140,7 +140,7 @@ async function applyToSchedule(
  * recording one closes it. A defaulted loan is left alone — that status is a decision
  * someone made, not something arithmetic should overwrite.
  */
-async function syncLoanStatus(loanId: string): Promise<boolean> {
+export async function syncLoanStatus(loanId: string): Promise<boolean> {
   const [loan] = await db
     .select({ id: loans.id, status: loans.status, totalRepayment: loans.totalRepayment })
     .from(loans)

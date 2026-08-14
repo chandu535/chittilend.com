@@ -44,6 +44,7 @@
     "dashboard": "Dashboard",
     "loans": "Loans",
     "newLoan": "New Loan",
+    "collections": "Collections",
     "borrowers": "Borrowers",
     "payments": "Payments",
     "analytics": "Analytics",
@@ -478,5 +479,29 @@
     "light": "Light",
     "auto": "Auto",
     "dark": "Dark"
+  },
+  "collections": {
+    "title": "Collections",
+    "empty": "Nothing written down yet. Tap + to add.",
+    "add": "Add",
+    "addTitle": "Money",
+    "took": "TOOK",
+    "gave": "GAVE",
+    "tookTitle": "Money taken",
+    "gaveTitle": "Money given",
+    "searchHint": "Name, number or loan",
+    "speakName": "Say the name",
+    "amount": "Amount",
+    "saved": "Written down",
+    "minimum": "Minimum is ₹{{amount}}",
+    "done": "done",
+    "apply": "Apply",
+    "applyAll": "Apply all",
+    "discard": "Remove",
+    "discarded": "Removed",
+    "applied": "Applied to the loan",
+    "appliedCount": "{{count}} applied",
+    "appliedSome": "{{applied}} applied, {{failed}} could not be",
+    "waiting": "{{count}} waiting"
   }
 }

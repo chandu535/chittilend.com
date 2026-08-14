@@ -18,6 +18,7 @@ import { Route as AuthenticatedSheetRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCollectionsRouteImport } from './routes/_authenticated/collections'
 import { Route as AuthenticatedCapitalRouteImport } from './routes/_authenticated/capital'
 import { Route as AuthenticatedBinRouteImport } from './routes/_authenticated/bin'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
@@ -76,6 +77,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCollectionsRoute =
+  AuthenticatedCollectionsRouteImport.update({
+    id: '/collections',
+    path: '/collections',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedCapitalRoute = AuthenticatedCapitalRouteImport.update({
   id: '/capital',
   path: '/capital',
@@ -147,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/bin': typeof AuthenticatedBinRoute
   '/capital': typeof AuthenticatedCapitalRoute
+  '/collections': typeof AuthenticatedCollectionsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -169,6 +177,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/bin': typeof AuthenticatedBinRoute
   '/capital': typeof AuthenticatedCapitalRoute
+  '/collections': typeof AuthenticatedCollectionsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -193,6 +202,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/bin': typeof AuthenticatedBinRoute
   '/_authenticated/capital': typeof AuthenticatedCapitalRoute
+  '/_authenticated/collections': typeof AuthenticatedCollectionsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/bin'
     | '/capital'
+    | '/collections'
     | '/dashboard'
     | '/payments'
     | '/settings'
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/bin'
     | '/capital'
+    | '/collections'
     | '/dashboard'
     | '/payments'
     | '/settings'
@@ -262,6 +274,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics'
     | '/_authenticated/bin'
     | '/_authenticated/capital'
+    | '/_authenticated/collections'
     | '/_authenticated/dashboard'
     | '/_authenticated/payments'
     | '/_authenticated/settings'
@@ -355,6 +368,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/collections': {
+      id: '/_authenticated/collections'
+      path: '/collections'
+      fullPath: '/collections'
+      preLoaderRoute: typeof AuthenticatedCollectionsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/capital': {
       id: '/_authenticated/capital'
       path: '/capital'
@@ -446,6 +466,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedBinRoute: typeof AuthenticatedBinRoute
   AuthenticatedCapitalRoute: typeof AuthenticatedCapitalRoute
+  AuthenticatedCollectionsRoute: typeof AuthenticatedCollectionsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -462,6 +483,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedBinRoute: AuthenticatedBinRoute,
   AuthenticatedCapitalRoute: AuthenticatedCapitalRoute,
+  AuthenticatedCollectionsRoute: AuthenticatedCollectionsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,

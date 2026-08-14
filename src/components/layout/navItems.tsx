@@ -25,6 +25,13 @@ const icon = (path: string) => (
 
 export const NAV_ITEMS: NavItem[] = [
   {
+    // First, because for a collector this is the whole app. The screen is designed for
+    // someone who cannot read the rest of it, so it has to be the one they land on.
+    to: '/collections',
+    labelKey: 'nav.collections',
+    icon: icon('M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z'),
+  },
+  {
     to: '/dashboard',
     labelKey: 'nav.home',
     icon: icon('M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25'),
@@ -80,8 +87,13 @@ export const NAV_ITEMS: NavItem[] = [
 /**
  * What the phone's bottom bar covers. Five slots, and the middle one is the new-loan
  * button rather than a page.
+ *
+ * Collections took the fifth slot from Borrowers, which is the trade the day book is worth:
+ * a collector opens the app to record money and never to browse people. Borrowers is not
+ * lost — OVERFLOW_ITEMS is derived from whatever the bar does not carry, so dropping it from
+ * here puts it in the profile menu without anything else being edited.
  */
-export const BOTTOM_NAV_PATHS = ['/dashboard', '/loans', '/loans/new', '/payments', '/borrowers'];
+export const BOTTOM_NAV_PATHS = ['/dashboard', '/loans', '/loans/new', '/payments', '/collections'];
 
 /**
  * The pages a phone has nowhere else to reach — Analytics, Capital, Sheet, Settings, Bin.

@@ -29,6 +29,13 @@ export const capitalEventTypeEnum = pgEnum('capital_event_type', [
   'investment', 'collection', 'disbursement',
 ]);
 
+/** Which way the cash went, from the collector's side of the doorstep. */
+export const collectionKindEnum = pgEnum('collection_kind', ['taken', 'given']);
+
+export const collectionStatusEnum = pgEnum('collection_status', [
+  'pending', 'applied', 'discarded',
+]);
+
 // ===================== TABLES =====================
 
 // ----- USERS (Admin & Manager login accounts) -----
@@ -236,6 +243,51 @@ export const sheetSyncState = pgTable('sheet_sync_state', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ----- COLLECTION ENTRIES (the day book, before it reaches the ledger) -----
+/**
+ * What the collector wrote down, kept apart from what the ledger says.
+ *
+ * The collection screen is worked by someone who cannot read the rest of the app, on a
+ * doorstep, at speed. Letting that write straight into payments would mean a mistyped
+ * amount moved the capital pool and closed an instalment before anyone had looked at it —
+ * and reverting money is far more work than approving it.
+ *
+ * So an entry is a *claim*: this person handed me this much, or I handed them this much.
+ * It changes nothing until an admin applies it, and applying is what runs the real
+ * machinery — allocation across the schedule for money taken, a new loan for money given.
+ *
+ * Applied rows are kept rather than deleted. They are the only record of who wrote the
+ * claim and who approved it, which is the whole point of separating the two.
+ */
+export const collectionEntries = pgTable('collection_entries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  kind: collectionKindEnum('kind').notNull(),
+  borrowerId: uuid('borrower_id').notNull().references(() => borrowers.id, { onDelete: 'restrict' }),
+  /**
+   * The loan this entry concerns — set at entry time for money taken, since the collector
+   * picks the loan. Money given has no loan yet: it becomes one on apply, and this is
+   * filled in with what was created. Either way, after applying it names the loan.
+   */
+  loanId: uuid('loan_id').references(() => loans.id, { onDelete: 'set null' }),
+  amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
+  note: text('note'),
+  status: collectionStatusEnum('status').notNull().default('pending'),
+  recordedBy: uuid('recorded_by').notNull().references(() => users.id),
+  recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull().defaultNow(),
+  appliedBy: uuid('applied_by').references(() => users.id),
+  appliedAt: timestamp('applied_at', { withTimezone: true }),
+  /** Why the last apply failed, shown on the row. Cleared when one succeeds. */
+  lastError: text('last_error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  // The list is "what is still waiting", newest first, and it is the first thing the
+  // screen asks for.
+  index('collection_entries_status_idx').on(table.status, table.recordedAt),
+  index('collection_entries_borrower_idx').on(table.borrowerId),
+  index('collection_entries_loan_idx').on(table.loanId),
+]);
+
 // ===================== RELATIONS =====================
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -273,6 +325,21 @@ export const loansRelations = relations(loans, ({ one, many }) => ({
     references: [users.id],
   }),
   payments: many(payments),
+}));
+
+export const collectionEntriesRelations = relations(collectionEntries, ({ one }) => ({
+  borrower: one(borrowers, {
+    fields: [collectionEntries.borrowerId],
+    references: [borrowers.id],
+  }),
+  loan: one(loans, {
+    fields: [collectionEntries.loanId],
+    references: [loans.id],
+  }),
+  recordedByUser: one(users, {
+    fields: [collectionEntries.recordedBy],
+    references: [users.id],
+  }),
 }));
 
 export const paymentsRelations = relations(payments, ({ one }) => ({

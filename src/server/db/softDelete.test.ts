@@ -37,6 +37,10 @@ const GUARDED = [
   // writes that data into a spreadsheet that gets downloaded, mailed and kept, and no later
   // fix reaches the copies.
   'server/sheets/data.ts',
+  // The collection day book. It reads borrowers and loans to build the screen, and applies
+  // entries into both — an entry written against a binned loan would move the capital pool
+  // for a debt that is not on the books.
+  'server/functions/collections.ts',
 ];
 
 /** How many statements in each file may be exempt, and why. Pinned deliberately. */

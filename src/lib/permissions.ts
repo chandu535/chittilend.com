@@ -40,7 +40,17 @@ export type Permission =
   /** Record money into the capital pool. */
   | 'capital.write'
   /** Add or deactivate a manager. */
-  | 'users.manage';
+  | 'users.manage'
+  /**
+   * Write a line in the collection day book. Deliberately not payments.write: an entry is
+   * a claim about what happened at a doorstep, and it moves no money until it is applied.
+   */
+  | 'collections.record'
+  /**
+   * Turn those claims into real payments and real loans. This is the one that spends
+   * money, so it stays with the owner however routine the recording becomes.
+   */
+  | 'collections.apply';
 
 const PERMISSIONS: Record<Role, Permission[]> = {
   admin: [
@@ -55,10 +65,15 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     'messages.send',
     'capital.write',
     'users.manage',
+    'collections.record',
+    'collections.apply',
   ],
   // Issuing a loan is day-to-day work; extending a tenure, marking someone defaulted and
   // signing the owner's acceptance are decisions about a debt, and stay with the owner.
-  manager: ['view', 'borrowers.write', 'loans.create'],
+  // collections.record without payments.write is the point of the day book: a collector
+  // can write down every rupee they handled without being able to settle an instalment or
+  // issue a loan. What they wrote waits for an admin.
+  manager: ['view', 'borrowers.write', 'loans.create', 'collections.record'],
 };
 
 export function can(

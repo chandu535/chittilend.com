@@ -287,6 +287,115 @@ export const getLoanById = createServerFn({ method: 'GET' })
     return loan;
   });
 
+/**
+ * Brings a loan into existence: the row, its whole instalment schedule, and the
+ * disbursement it puts through the capital pool.
+ *
+ * Extracted from createLoan because there are now two ways a loan starts — someone filling
+ * in the form, and an admin approving cash a collector already handed over at a doorstep.
+ * Those must produce identical loans. Left as two code paths they would drift, and the
+ * drift would be in how a debt is calculated, which is the last place it should happen.
+ *
+ * Takes a user id rather than reading the session, so the caller owns the permission check.
+ * Both callers make one; this is not the place it belongs.
+ */
+export async function issueLoan(
+  input: {
+    borrowerId: string;
+    dateGiven: string;
+    primaryAmount: number;
+    tenureMonths: number;
+    paymentFrequency: 'monthly' | 'weekly';
+    serviceChargePercent: number;
+    markupPercent: number;
+    notes?: string | null;
+  },
+  userId: string,
+) {
+  // A loan must never be issued against a borrower who is in the Bin — it would be
+  // invisible the moment it was created, since the list hides a loan whose borrower is
+  // binned. There was no check of any kind here before.
+  const [borrower] = await db
+    .select({ id: borrowers.id })
+    .from(borrowers)
+    .where(and(eq(borrowers.id, input.borrowerId), borrowerLive))
+    .limit(1);
+  if (!borrower) throw new Error('Borrower not found');
+
+  // Server-side calculation — NEVER trust client values
+  const calc = calculateLoan(
+    input.primaryAmount,
+    input.tenureMonths,
+    input.paymentFrequency,
+    input.serviceChargePercent,
+    input.markupPercent,
+  );
+
+  const startMonth = calculateStartMonth(new Date(input.dateGiven));
+
+  const [loan] = await db
+    .insert(loans)
+    .values({
+      borrowerId: input.borrowerId,
+      dateGiven: input.dateGiven,
+      startMonth: startMonth.toISOString().split('T')[0],
+      primaryAmount: calc.primaryAmount.toFixed(2),
+      serviceChargePercent: calc.serviceChargePercent.toFixed(2),
+      serviceChargeAmount: calc.serviceChargeAmount.toFixed(2),
+      amountUserReceived: calc.amountUserReceives.toFixed(2),
+      markupPercent: calc.markupPercent.toFixed(2),
+      totalRepayment: calc.totalRepayment.toFixed(2),
+      tenureMonths: calc.tenureMonths,
+      paymentFrequency: calc.paymentFrequency,
+      installmentAmount: calc.installmentAmount.toFixed(2),
+      totalInstallments: calc.totalInstallments,
+      profitAmount: calc.profitAmount.toFixed(2),
+      status: 'active',
+      notes: input.notes || null,
+      createdBy: userId,
+    })
+    .returning();
+
+  const schedule = generatePaymentSchedule(
+    startMonth,
+    calc.totalRepayment,
+    calc.totalInstallments,
+    calc.paymentFrequency,
+  );
+
+  for (const scheduled of schedule) {
+    await db.insert(payments).values({
+      loanId: loan.id,
+      installmentNumber: scheduled.installmentNumber,
+      dueDate: scheduled.dueDate.toISOString().split('T')[0],
+      amountDue: scheduled.amountDue.toFixed(2),
+      amountPaid: '0.00',
+      status: 'pending',
+    });
+  }
+
+  // Capital pool: disbursement entry
+  // soft-delete-exempt: the capital ledger records cash that genuinely moved and its
+  // running balance cannot be recomputed, so it reads every prior entry regardless.
+  const lastEntry = await db
+    .select({ runningBalance: capitalPoolLog.runningBalance })
+    .from(capitalPoolLog)
+    .orderBy(desc(capitalPoolLog.createdAt))
+    .limit(1);
+
+  const currentBalance = lastEntry.length > 0 ? parseFloat(lastEntry[0].runningBalance) : 0;
+
+  await db.insert(capitalPoolLog).values({
+    eventType: 'disbursement',
+    amount: calc.primaryAmount.toFixed(2),
+    runningBalance: (currentBalance - calc.primaryAmount).toFixed(2),
+    referenceLoanId: loan.id,
+    recordedBy: userId,
+  });
+
+  return loan;
+}
+
 export const createLoan = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => {
     const { error, value } = createLoanSchema.validate(data, { abortEarly: false });
@@ -300,92 +409,18 @@ export const createLoan = createServerFn({ method: 'POST' })
     const user = await getAuthenticatedUser();
     requirePermission(user, 'loans.create');
 
-    // A loan must never be issued against a borrower who is in the Bin — it would be
-    // invisible the moment it was created, since the list hides a loan whose borrower is
-    // binned. There was no check of any kind here before.
-    const [borrower] = await db
-      .select({ id: borrowers.id })
-      .from(borrowers)
-      .where(and(eq(borrowers.id, data.borrowerId), borrowerLive))
-      .limit(1);
-    if (!borrower) throw new Error('Borrower not found');
-
-    // Server-side calculation — NEVER trust client values
-    const calc = calculateLoan(
-      data.primaryAmount,
-      data.tenureMonths,
-      data.paymentFrequency,
-      data.serviceChargePercent,
-      data.markupPercent,
-    );
-
-    const dateGiven = new Date(data.dateGiven);
-    const startMonth = calculateStartMonth(dateGiven);
-
-    // Insert loan
-    const [loan] = await db
-      .insert(loans)
-      .values({
-        borrowerId: data.borrowerId,
-        dateGiven: data.dateGiven instanceof Date
-          ? data.dateGiven.toISOString().split('T')[0]
-          : data.dateGiven,
-        startMonth: startMonth.toISOString().split('T')[0],
-        primaryAmount: calc.primaryAmount.toFixed(2),
-        serviceChargePercent: calc.serviceChargePercent.toFixed(2),
-        serviceChargeAmount: calc.serviceChargeAmount.toFixed(2),
-        amountUserReceived: calc.amountUserReceives.toFixed(2),
-        markupPercent: calc.markupPercent.toFixed(2),
-        totalRepayment: calc.totalRepayment.toFixed(2),
-        tenureMonths: calc.tenureMonths,
-        paymentFrequency: calc.paymentFrequency,
-        installmentAmount: calc.installmentAmount.toFixed(2),
-        totalInstallments: calc.totalInstallments,
-        profitAmount: calc.profitAmount.toFixed(2),
-        status: 'active',
-        notes: data.notes || null,
-        createdBy: user.id,
-      })
-      .returning();
-
-    // Generate and insert payment schedule
-    const schedule = generatePaymentSchedule(
-      startMonth,
-      calc.totalRepayment,
-      calc.totalInstallments,
-      calc.paymentFrequency,
-    );
-
-    for (const scheduled of schedule) {
-      await db.insert(payments).values({
-        loanId: loan.id,
-        installmentNumber: scheduled.installmentNumber,
-        dueDate: scheduled.dueDate.toISOString().split('T')[0],
-        amountDue: scheduled.amountDue.toFixed(2),
-        amountPaid: '0.00',
-        status: 'pending',
-      });
-    }
-
-    // Capital pool: disbursement entry
-    // Get current running balance
-    const lastEntry = await db
-      .select({ runningBalance: capitalPoolLog.runningBalance })
-      .from(capitalPoolLog)
-      .orderBy(desc(capitalPoolLog.createdAt))
-      .limit(1);
-
-    const currentBalance = lastEntry.length > 0
-      ? parseFloat(lastEntry[0].runningBalance)
-      : 0;
-
-    await db.insert(capitalPoolLog).values({
-      eventType: 'disbursement',
-      amount: calc.primaryAmount.toFixed(2),
-      runningBalance: (currentBalance - calc.primaryAmount).toFixed(2),
-      referenceLoanId: loan.id,
-      recordedBy: user.id,
-    });
+    const loan = await issueLoan({
+      borrowerId: data.borrowerId,
+      dateGiven: data.dateGiven instanceof Date
+        ? data.dateGiven.toISOString().split('T')[0]
+        : data.dateGiven,
+      primaryAmount: data.primaryAmount,
+      tenureMonths: data.tenureMonths,
+      paymentFrequency: data.paymentFrequency,
+      serviceChargePercent: data.serviceChargePercent,
+      markupPercent: data.markupPercent,
+      notes: data.notes,
+    }, user.id);
 
     await requestSheetSync();
     return loan;
@@ -602,6 +637,7 @@ export const searchLoans = createServerFn({ method: 'GET' })
         status: loans.status,
         totalRepayment: loans.totalRepayment,
         dateGiven: loans.dateGiven,
+        borrowerId: loans.borrowerId,
         borrowerName: borrowers.name,
         borrowerNameTelugu: borrowers.nameTelugu,
         borrowerPhotoUrl: borrowers.profilePhotoUrl,
