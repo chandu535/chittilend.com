@@ -309,13 +309,26 @@ table th {
   line-height: 1.8;
 }
 
-/* 3. Input fields: Telugu text needs more height */
-[lang="te"] input,
-[lang="te"] textarea,
-[lang="te"] select {
-  min-height: 52px;
-  font-size: 16px;
-  line-height: 1.8;
+/* 3. Input fields: Telugu text needs more height.
+
+      In `base` rather than unlayered, and that is the whole point of the rule rather than a
+      detail of it. Written unlayered this beat every Tailwind utility — layered CSS always
+      loses to unlayered, and `[lang="te"] input` outranks `.text-5xl` on specificity too —
+      so switching the app to Telugu forced *every* input in it to 16px. The amount field on
+      the collections screen is set to text-5xl, 48px, and was rendering at a third of that:
+      a collector typing 2500 at a doorstep could barely read what they had typed. Six other
+      inputs were quietly resized too.
+
+      As a base rule it does what it was always meant to do — set a comfortable default for
+      Telugu — while a size chosen deliberately at the call site still wins. */
+@layer base {
+  [lang="te"] input,
+  [lang="te"] textarea,
+  [lang="te"] select {
+    min-height: 52px;
+    font-size: 16px;
+    line-height: 1.8;
+  }
 }
 
 /* 4. Badge text: Telugu labels are wider */
