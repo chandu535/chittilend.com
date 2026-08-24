@@ -50,10 +50,17 @@ describe('phone navigation', () => {
     expect(BOTTOM_NAV_ITEMS).toContain(NEW_LOAN_ITEM);
   });
 
-  it('puts the day book in the bar and borrowers in the menu', () => {
-    // The trade this screen was added for, asserted so it cannot be undone by accident.
+  it('keeps the day book in the bar', () => {
+    // The slot the whole screen was added for. Which page sits beside it has changed once
+    // already and may again; this one is the reason the bar was rearranged at all.
     expect(BOTTOM_NAV_ITEMS.map((item) => item.to)).toContain('/collections');
-    expect(OVERFLOW_ITEMS.map((item) => item.to)).toContain('/borrowers');
+  });
+
+  it('carries borrowers in the bar and payments in the menu', () => {
+    // Swapped deliberately: the day book covers taking money at the door, so the payments
+    // list is something the owner reviews rather than something reached for on a doorstep.
+    expect(BOTTOM_NAV_ITEMS.map((item) => item.to)).toContain('/borrowers');
+    expect(OVERFLOW_ITEMS.map((item) => item.to)).toContain('/payments');
   });
 
   it('hides admin-only destinations from a manager', () => {
