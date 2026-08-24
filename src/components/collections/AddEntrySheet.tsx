@@ -166,11 +166,7 @@ function PickWho({ kind, onPick }: { kind: Kind; onPick: (p: Picked) => void }) 
     setLoading(true);
     const request = kind === 'taken'
       ? searchLoans({ data: { query: debounced, queryTelugu: candidates, limit: 25 } })
-        // A repaid loan is not somewhere money can be paid into, and offering it would
-        // produce an entry whose only possible outcome is failing at apply — on someone
-        // else's screen, hours later. Filtered here rather than in searchLoans, which the
-        // loan switcher shares and where finding a settled loan is the point.
-        .then((rows) => { if (!cancelled) setLoanHits(rows.filter((r) => r.status !== 'completed')); })
+        .then((rows) => { if (!cancelled) setLoanHits(rows); })
       : searchBorrowers({ data: { query: debounced, queryTelugu: candidates, limit: 25 } })
         .then((rows) => { if (!cancelled) setBorrowerHits(rows as BorrowerHit[]); });
 
@@ -207,6 +203,17 @@ function PickWho({ kind, onPick }: { kind: Kind; onPick: (p: Picked) => void }) 
       <div className="flex-1 overflow-y-auto overscroll-contain">
         {kind === 'taken' && loanHits.map((loan) => {
           const left = Math.max(0, parseFloat(loan.totalRepayment) - parseFloat(loan.paidAmount));
+          /*
+            A repaid loan cannot take money: apply fills the earliest instalment still owing
+            and there is none, so an entry against it could only fail later, on someone
+            else's screen.
+
+            It is shown all the same. Dropping it from the results meant a collector typing
+            the number they had just been given saw nothing at all, and a search that finds
+            nothing reads as the app being broken rather than as the debt being finished —
+            which is exactly what happened with #348.
+          */
+          const settled = loan.status === 'completed';
           return (
             <Row
               key={loan.id}
@@ -217,6 +224,7 @@ function PickWho({ kind, onPick }: { kind: Kind; onPick: (p: Picked) => void }) 
               sub={loan.borrowerArea}
               amount={left}
               amountLabel={t('loans.left')}
+              settled={settled}
               onClick={() => onPick({
                 borrowerId: loan.borrowerId,
                 loanId: loan.id,
@@ -259,7 +267,7 @@ function PickWho({ kind, onPick }: { kind: Kind; onPick: (p: Picked) => void }) 
 
 /** One tappable person. Deliberately tall: this is used one-handed, outdoors, in a hurry. */
 function Row({
-  name, nameTelugu, photoUrl, badge, sub, amount, amountLabel, onClick,
+  name, nameTelugu, photoUrl, badge, sub, amount, amountLabel, onClick, settled = false,
 }: {
   name: string;
   nameTelugu: string | null;
@@ -269,12 +277,23 @@ function Row({
   amount?: number;
   amountLabel?: string;
   onClick: () => void;
+  /**
+   * A loan with nothing left owing. Shown rather than hidden, and refused rather than
+   * offered — see the note where the results are built.
+   */
+  settled?: boolean;
 }) {
+  const { t } = useTranslation();
+
   return (
     <button
       type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-3 border-b border-slate-100 px-3 py-3 text-left transition-colors active:bg-slate-100"
+      onClick={settled ? undefined : onClick}
+      disabled={settled}
+      className={clsx(
+        'flex w-full items-center gap-3 border-b border-slate-100 px-3 py-3 text-left transition-colors',
+        settled ? 'cursor-default opacity-50' : 'active:bg-slate-100',
+      )}
     >
       <BorrowerAvatar name={name} nameTelugu={nameTelugu} photoUrl={photoUrl} size="lg" />
       <div className="min-w-0 flex-1">
@@ -284,7 +303,16 @@ function Row({
         </div>
         {sub && <p className="truncate text-sm text-slate-400">{sub}</p>}
       </div>
-      {amount !== undefined && (
+      {settled ? (
+        /* A tick, not a word. This screen is worked by someone who cannot read it, and the
+           day book already uses this mark to mean "finished" on its own rows. */
+        <div className="flex shrink-0 items-center gap-1.5 text-emerald-600">
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          <span className="text-[11px] font-semibold">{t('collections.settled')}</span>
+        </div>
+      ) : amount !== undefined && (
         <div className="shrink-0 text-right">
           <CurrencyDisplay amount={amount} className="text-[15px] font-semibold text-slate-700" />
           {amountLabel && <p className="text-[11px] text-slate-400">{amountLabel}</p>}
