@@ -190,6 +190,12 @@ function PickWho({ kind, onPick }: { kind: Kind; onPick: (p: Picked) => void }) 
           ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          // The key in the corner puts the keyboard away so the results underneath it can
+          // be seen and tapped. It deliberately does not pick the first result: these are
+          // people, the top one is a guess, and choosing the wrong person here writes money
+          // against the wrong loan.
+          enterKeyHint="search"
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); inputRef.current?.blur(); } }}
           placeholder={t('collections.searchHint')}
           aria-label={t('collections.searchHint')}
           className="min-h-12 flex-1 bg-transparent text-[17px] text-slate-900 placeholder:text-slate-400 focus:outline-none"
@@ -300,6 +306,7 @@ function EnterAmount({ kind, picked, onDone }: { kind: Kind; picked: Picked; onD
   const { t } = useTranslation();
   const [raw, setRaw] = useState('');
   const [saving, setSaving] = useState(false);
+  const amountRef = useRef<HTMLInputElement>(null);
 
   const amount = useMemo(() => Number(raw) || 0, [raw]);
   const green = kind === 'taken';
@@ -329,8 +336,25 @@ function EnterAmount({ kind, picked, onDone }: { kind: Kind; picked: Picked; onD
     }
   };
 
+  /**
+   * The key in the corner of the keyboard.
+   *
+   * It did nothing, because a lone input with no form around it has nothing to submit — and
+   * on this screen the keyboard covers the button, so there was no way to finish without
+   * dismissing the keyboard first. Submitting from the key is the shorter path, and it is
+   * the one a thumb already rests on.
+   *
+   * An amount that is not ready yet blurs instead. Doing nothing would make the key feel
+   * broken a second time; letting the keyboard go reveals both the reason and the button.
+   */
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (valid) void submit();
+    else amountRef.current?.blur();
+  };
+
   return (
-    <div className="flex flex-1 flex-col">
+    <form onSubmit={handleSubmit} className="flex flex-1 flex-col">
       {/* Who this is about, pinned. */}
       <div className="flex items-center gap-3 border-b border-slate-200 bg-card px-4 py-3">
         <BorrowerAvatar name={picked.name} nameTelugu={picked.nameTelugu} photoUrl={picked.photoUrl} size="lg" />
@@ -350,9 +374,13 @@ function EnterAmount({ kind, picked, onDone }: { kind: Kind; picked: Picked; onD
         )}>
           <span className={clsx('text-4xl font-bold', green ? 'text-emerald-700' : 'text-red-700')}>₹</span>
           <input
+            ref={amountRef}
             value={raw}
             onChange={(e) => setRaw(e.target.value.replace(/[^\d]/g, '').slice(0, 8))}
             inputMode="numeric"
+            // Labels the action key "done" rather than leaving it a bare arrow, so it reads
+            // as finishing the entry instead of moving to a field that does not exist.
+            enterKeyHint="done"
             autoFocus
             lang="en"
             aria-label={t('collections.amount')}
@@ -374,8 +402,7 @@ function EnterAmount({ kind, picked, onDone }: { kind: Kind; picked: Picked; onD
       <div className="border-t border-slate-200 bg-card p-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}>
         <div className="mx-auto w-full max-w-sm">
         <button
-          type="button"
-          onClick={submit}
+          type="submit"
           disabled={!valid || saving}
           className={clsx(
             'flex min-h-[64px] w-full items-center justify-center gap-3 rounded-2xl text-xl font-bold text-white',
@@ -394,6 +421,6 @@ function EnterAmount({ kind, picked, onDone }: { kind: Kind; picked: Picked; onD
         </button>
         </div>
       </div>
-    </div>
+    </form>
   );
 }
