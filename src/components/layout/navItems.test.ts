@@ -56,11 +56,11 @@ describe('phone navigation', () => {
     expect(BOTTOM_NAV_ITEMS.map((item) => item.to)).toContain('/collections');
   });
 
-  it('carries borrowers in the bar and payments in the menu', () => {
-    // Swapped deliberately: the day book covers taking money at the door, so the payments
-    // list is something the owner reviews rather than something reached for on a doorstep.
-    expect(BOTTOM_NAV_ITEMS.map((item) => item.to)).toContain('/borrowers');
-    expect(OVERFLOW_ITEMS.map((item) => item.to)).toContain('/payments');
+  it('carries payments in the bar and borrowers in the menu', () => {
+    // The day book and the payments list are the daily round and share the bar; a borrower
+    // is looked up now and then, so it sits in the profile menu.
+    expect(BOTTOM_NAV_ITEMS.map((item) => item.to)).toContain('/payments');
+    expect(OVERFLOW_ITEMS.map((item) => item.to)).toContain('/borrowers');
   });
 
   it('hides admin-only destinations from a manager', () => {

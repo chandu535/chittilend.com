@@ -100,15 +100,15 @@ export const NEW_LOAN_ITEM: NavItem = {
  * What the phone's bottom bar covers, in the order it shows them. Five slots, and the
  * middle one is the new-loan button rather than a page.
  *
- * Collections holds the fifth slot: a collector opens the app to record money, and that is
- * the screen they open it for. Borrowers has the fourth, and Payments moved to the profile
- * menu to make room — the day book covers taking money at the door, so the payments list is
- * something the owner reviews rather than something anyone reaches for on a doorstep.
+ * Collections and Payments both hold a slot: the day book is where money is written down at
+ * the door, and the payments list is what says who to go and see. Borrowers gives up its
+ * place to them and lives in the profile menu instead — a name is looked up now and then,
+ * where those two are the daily round.
  *
  * Nothing is lost by moving a page out of here. OVERFLOW_ITEMS is derived from whatever the
  * bar does not carry, so one edit to this array moves a page between the bar and the menu.
  */
-export const BOTTOM_NAV_PATHS = ['/dashboard', '/loans', '/loans/new', '/borrowers', '/collections'];
+export const BOTTOM_NAV_PATHS = ['/dashboard', '/loans', '/loans/new', '/payments', '/collections'];
 
 /**
  * The bar's own items, resolved from the paths above.
