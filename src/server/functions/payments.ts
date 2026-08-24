@@ -402,9 +402,16 @@ export const listOverduePayments = createServerFn({ method: 'GET' })
     requireRole(user, ['admin', 'manager']);
 
     const today = new Date().toISOString().split('T')[0];
+    // Overdue or part-paid, and nothing else. `pending` used to be here too, on the
+    // grounds that anything due and unpaid is late — but bulkUpdateOverdueStatus runs
+    // before this list and turns exactly those rows overdue, so all it added was a row
+    // wearing a "Pending" badge in a list of things to chase.
+    //
+    // Still bounded by the due date: a part payment can land on an instalment that is not
+    // due yet, when a borrower pays ahead and the surplus rolls forward, and paying early
+    // is not a reason to be chased.
     const where = and(
       or(
-        eq(payments.status, 'pending'),
         eq(payments.status, 'partial'),
         eq(payments.status, 'overdue'),
       ),

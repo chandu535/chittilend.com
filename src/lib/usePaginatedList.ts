@@ -15,8 +15,18 @@ interface Options<T> {
   /** Stable cache key for a page. Must include every filter value and the size. */
   cacheKey: (page: number, pageSize: number) => string;
   fetchPage: (page: number, pageSize: number) => Promise<PageResult<T>>;
-  /** Filter/search values. Any change resets to page 1 and clears accumulated items. */
+  /** Filter/search values. Any change resets to page 1. */
   resetKey: string;
+  /**
+   * Whether a reset is a different dataset rather than a narrower view of the same one.
+   *
+   * Filters leave the old rows up under the dimming overlay, which is what stops a search
+   * blanking the page to a skeleton on every keystroke. Tabs cannot do that: the rows are
+   * about something else, so they read as belonging to the tab just opened — switching to
+   * Overdue showed the payments collected recently until the fetch landed. Where the shapes
+   * differ as well, as on the Given tab, they would be rendered through the wrong template.
+   */
+  clearOnReset?: boolean;
   /** Rows per page in the desktop table. */
   pageSize?: number;
   /**
@@ -39,6 +49,7 @@ export function usePaginatedList<T>({
   cacheKey,
   fetchPage,
   resetKey,
+  clearOnReset = false,
   pageSize: desktopPageSize = 10,
   mobilePageSize = 10,
   ttlMs = 15_000,
@@ -109,10 +120,16 @@ export function usePaginatedList<T>({
   }, [cacheKey, fetchPage, ttlMs, pageSize]);
 
   // Any filter change, or a switch between mobile and desktop, starts over at page 1.
-  // Deliberately does NOT clear items or reset loadedOnce: the previous results stay on
-  // screen under the dimming overlay, so applying a filter never blanks the page back to
-  // a skeleton. Only the very first load of the page shows one.
+  // A filter deliberately keeps its items and loadedOnce: the previous results stay on
+  // screen under the dimming overlay, so applying one never blanks the page back to a
+  // skeleton. A caller that says clearOnReset is changing dataset rather than narrowing
+  // one, and its old rows would be read as belonging to whatever was just opened.
   useEffect(() => {
+    if (clearOnReset) {
+      setItems([]);
+      setTotal(0);
+      setTotalPages(0);
+    }
     load(1, 'replace');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey, isDesktop, chosenPageSize]);

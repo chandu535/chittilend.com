@@ -97,6 +97,8 @@ function PaymentsPage() {
     cacheKey,
     fetchPage: fetchPage as (p: number, size: number) => Promise<PageResult<PaymentRow | GivenRow>>,
     resetKey: tab,
+    // The tabs are three different lists, not three filters on one.
+    clearOnReset: true,
   });
 
   const { items: data, total, showSkeleton, refreshing } = list;
