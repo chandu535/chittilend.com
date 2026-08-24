@@ -426,6 +426,65 @@ export const createLoan = createServerFn({ method: 'POST' })
     return loan;
   });
 
+/**
+ * Every loan ever handed out, newest first.
+ *
+ * The payments screen answers "who owes what" from the instalment side. This is the other
+ * half of the same ledger — the money that went out — and it is deliberately unbounded
+ * where the recent-payments list is a rolling window. A disbursement is a fact about the
+ * business that does not stop being true after thirty days, and the whole point of the tab
+ * is being able to look back over all of them.
+ *
+ * Carries only what the row shows: who, their number, how much, and when.
+ */
+export const listGivenLoans = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => {
+    const d = (data ?? {}) as { page?: number; limit?: number };
+    return { page: d.page || 1, limit: d.limit || DEFAULTS.ITEMS_PER_PAGE };
+  })
+  .handler(async ({ data }) => {
+    const user = await getAuthenticatedUser();
+    requireRole(user, ['admin', 'manager']);
+
+    const offset = (data.page - 1) * data.limit;
+
+    const [rows, totalResult] = await Promise.all([
+      db
+        .select({
+          id: loans.id,
+          loanNumber: loans.loanNumber,
+          dateGiven: loans.dateGiven,
+          // What was physically handed over, which is what the rest of the app calls
+          // "Amount Given" — the principal less the service charge kept back from it.
+          amountGiven: loans.amountUserReceived,
+          primaryAmount: loans.primaryAmount,
+          status: loans.status,
+          borrowerName: borrowers.name,
+          borrowerNameTelugu: borrowers.nameTelugu,
+          borrowerMobile: borrowers.mobile,
+          borrowerPhotoUrl: borrowers.profilePhotoUrl,
+        })
+        .from(loans)
+        .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
+        .where(and(loanLive, borrowerLive))
+        // Two keys, because the imported ledger is month-precision on 254 rows: without the
+        // loan number as a tie-break, everything given in the same month would come back in
+        // whatever order the planner chose and the list would reshuffle between pages.
+        .orderBy(desc(loans.dateGiven), desc(loans.loanNumber))
+        .limit(data.limit)
+        .offset(offset),
+      db
+        .select({ count: count() })
+        .from(loans)
+        .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
+        .where(and(loanLive, borrowerLive)),
+    ]);
+
+    const total = totalResult[0].count;
+
+    return { items: rows, total, page: data.page, limit: data.limit, totalPages: Math.ceil(total / data.limit) };
+  });
+
 export const updateLoan = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => {
     const d = data as { id: string; notes?: string; status?: string };

@@ -17,23 +17,34 @@ import { ListError } from '@/components/shared/ListError';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { NameDisplay } from '@/components/shared/NameDisplay';
+import { BorrowerAvatar } from '@/components/shared/BorrowerAvatar';
 import { ContactActions } from '@/components/shared/ContactActions';
+import { formatPhone } from '@/lib/formatters';
 import { PaymentMarkModal } from '@/components/loans/PaymentMarkModal';
 import { useStore } from '@tanstack/react-store';
 import { can } from '@/lib/permissions';
 import { authStore } from '@/lib/stores';
 import {
-  listUpcomingPayments,
   listOverduePayments,
   listRecentPayments,
   bulkUpdateOverdueStatus,
 } from '@/server/functions/payments';
+import { listGivenLoans } from '@/server/functions/loans';
 
 export const Route = createFileRoute('/_authenticated/payments')({
   component: PaymentsPage,
 });
 
-type Tab = 'upcoming' | 'overdue' | 'recent';
+/**
+ * Recent leads because it answers the question this screen is opened with — what came in.
+ * Overdue is who to chase. Given is the other side of the ledger entirely: money that went
+ * out, kept for good rather than in a rolling window.
+ *
+ * There was an Upcoming tab. It forecast instalments not yet due, which the day book made
+ * redundant — collections are recorded at the door as they happen, so a list of what has
+ * not happened yet was a screen nobody acted on.
+ */
+type Tab = 'recent' | 'overdue' | 'given';
 
 type PaymentRow = {
   id: string;
@@ -50,25 +61,41 @@ type PaymentRow = {
   loanPrimaryAmount: string;
 };
 
+/** A disbursement. Different shape from a payment, so the two never share a row renderer. */
+type GivenRow = {
+  id: string;
+  loanNumber: number;
+  dateGiven: string;
+  amountGiven: string;
+  primaryAmount: string;
+  status: string;
+  borrowerName: string;
+  borrowerNameTelugu: string | null;
+  borrowerMobile: string;
+  borrowerPhotoUrl: string | null;
+};
+
 function PaymentsPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<Tab>('upcoming');
+  const [tab, setTab] = useState<Tab>('recent');
   const [selectedPayment, setSelectedPayment] = useState<PaymentRow | null>(null);
 
   const fetchPage = useCallback(async (page: number, limit: number) => {
     // Overdue statuses are stale until this runs, so refresh them before the first page.
     if (tab === 'overdue' && page === 1) await bulkUpdateOverdueStatus();
 
-    if (tab === 'upcoming') return listUpcomingPayments({ data: { days: 14, page, limit } });
+    if (tab === 'given') return listGivenLoans({ data: { page, limit } });
     if (tab === 'overdue') return listOverduePayments({ data: { page, limit } });
     return listRecentPayments({ data: { page, limit } });
   }, [tab]);
 
   const cacheKey = useCallback((page: number, limit: number) => `payments:${tab}:${page}:${limit}`, [tab]);
 
-  const list = usePaginatedList<PaymentRow>({
+  // One list, two row shapes. `tab` is what says which, and switching it resets the
+  // accumulated items, so a Given row can never be read as a payment or the other way round.
+  const list = usePaginatedList<PaymentRow | GivenRow>({
     cacheKey,
-    fetchPage: fetchPage as (p: number, size: number) => Promise<PageResult<PaymentRow>>,
+    fetchPage: fetchPage as (p: number, size: number) => Promise<PageResult<PaymentRow | GivenRow>>,
     resetKey: tab,
   });
 
@@ -80,15 +107,17 @@ function PaymentsPage() {
   const refresh = list.refresh;
 
   const tabs: { key: Tab; label: string; count?: number }[] = [
-    { key: 'upcoming', label: t('payments.upcoming') },
-    { key: 'overdue', label: t('payments.overdue') },
     { key: 'recent', label: t('payments.recent') },
+    { key: 'overdue', label: t('payments.overdue') },
+    { key: 'given', label: t('payments.given') },
   ];
 
   // Recent payments are history, and a manager may not mark anything, so neither gets
   // an action column.
   const user = useStore(authStore, (s) => s.user);
-  const isActionable = tab !== 'recent' && can(user, 'payments.write');
+  // Only the overdue list is actionable: recent is history, and Given is a record of money
+  // already handed over.
+  const isActionable = tab === 'overdue' && can(user, 'payments.write');
 
   return (
     <ListPage
@@ -138,7 +167,9 @@ function PaymentsPage() {
         <ListError message={list.errorMessage} onRetry={refresh} />
       ) : data.length === 0 ? (
         <EmptyState
-          title={tab === 'overdue' ? t('payments.noOverdue') : t('payments.noUpcoming')}
+          title={tab === 'overdue' ? t('payments.noOverdue')
+            : tab === 'given' ? t('payments.noGiven')
+              : t('payments.noRecent')}
         />
       ) : (
         <div className="relative">
@@ -152,9 +183,13 @@ function PaymentsPage() {
           )}
 
           <div className={clsx('space-y-4 transition-opacity', refreshing && 'opacity-50')} aria-busy={refreshing}>
+          {tab === 'given' ? (
+            <GivenList rows={data as GivenRow[]} serialStart={serialStart} />
+          ) : (
+          <>
           {/* Mobile: Card view */}
           <div className="lg:hidden space-y-3 list-container">
-            {data.map((p) => (
+            {(data as PaymentRow[]).map((p) => (
               <Card key={p.id} className="list-row">
                 <div className="flex items-center justify-between mb-2">
                   <Link
@@ -207,7 +242,7 @@ function PaymentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {data.map((p, index) => (
+                {(data as PaymentRow[]).map((p, index) => (
                   <tr
                     key={p.id}
                     className={`hover:bg-slate-50 ${p.status === 'overdue' ? 'bg-red-50/50' : ''}`}
@@ -255,6 +290,9 @@ function PaymentsPage() {
               </tbody>
             </table>
           </div>
+          </>
+          )}
+
           {!list.isDesktop && (list.hasMore ? (
             <InfiniteScroll onLoadMore={list.loadMore} hasMore={list.hasMore} loading={list.appending} />
           ) : (
@@ -276,5 +314,123 @@ function PaymentsPage() {
         />
       )}
     </ListPage>
+  );
+}
+
+/**
+ * Money that went out, one line per loan.
+ *
+ * Only what the request asked for: who, their number, how much, and when. No status, no
+ * instalments, no progress — the loans list already answers all of that, and this is a
+ * record of a disbursement rather than a view of a debt.
+ *
+ * Every loan is here, however old. That is the point of the tab: the recent-payments list
+ * is a thirty-day window, and a disbursement does not stop being a fact after thirty days.
+ */
+function GivenList({ rows, serialStart }: { rows: GivenRow[]; serialStart: number }) {
+  const { t } = useTranslation();
+
+  return (
+    <>
+      {/* Mobile: card view */}
+      <div className="lg:hidden space-y-3 list-container">
+        {rows.map((g) => (
+          <Card key={g.id} className="list-row">
+            <div className="flex items-start gap-3">
+              <BorrowerAvatar
+                name={g.borrowerName}
+                nameTelugu={g.borrowerNameTelugu}
+                photoUrl={g.borrowerPhotoUrl}
+                size="md"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="shrink-0 text-[13px] font-bold tabular text-brand">#{g.loanNumber}</span>
+                  <Link
+                    to="/loans/$loanId"
+                    params={{ loanId: g.id }}
+                    className="min-w-0 font-medium text-slate-900 hover:text-brand"
+                  >
+                    <NameDisplay
+                      name={g.borrowerName}
+                      nameTelugu={g.borrowerNameTelugu}
+                      className="block truncate"
+                    />
+                  </Link>
+                </div>
+                <div className="flex items-center gap-1">
+                  <p className="truncate text-sm text-slate-400">{formatPhone(g.borrowerMobile)}</p>
+                  <ContactActions
+                    mobile={g.borrowerMobile}
+                    name={g.borrowerName}
+                    variant="icons"
+                    className="-my-2"
+                  />
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                {/* Red, because this is the app's colour for money leaving — the same
+                    reading the day book gives a "gave" row. */}
+                <CurrencyDisplay amount={parseFloat(g.amountGiven)} className="font-semibold text-red-600" />
+                <DateDisplay date={g.dateGiven} className="block text-xs text-slate-400" />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop: table view */}
+      <div className="hidden lg:block overflow-x-auto overscroll-x-contain">
+        <table className="w-full min-w-[680px] text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 text-left text-slate-500">
+              <th className="pb-3 font-medium whitespace-nowrap w-12">{t('common.serial')}</th>
+              <th className="pb-3 font-medium whitespace-nowrap w-20">{t('loans.loanNo')}</th>
+              <th className="pb-3 font-medium whitespace-nowrap">{t('borrowers.name')}</th>
+              <th className="pb-3 font-medium whitespace-nowrap">{t('borrowers.mobile')}</th>
+              <th className="pb-3 font-medium whitespace-nowrap">{t('loans.amountGiven')}</th>
+              <th className="pb-3 font-medium whitespace-nowrap">{t('loans.dateGiven')}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.map((g, index) => (
+              <tr key={g.id} className="hover:bg-slate-50">
+                <td className="py-3 text-sm text-slate-400 tabular-nums">{serialStart + index + 1}</td>
+                <td className="py-3 font-bold tabular text-brand">#{g.loanNumber}</td>
+                <td className="py-3">
+                  <div className="flex items-center gap-2.5">
+                    <BorrowerAvatar
+                      name={g.borrowerName}
+                      nameTelugu={g.borrowerNameTelugu}
+                      photoUrl={g.borrowerPhotoUrl}
+                      size="sm"
+                    />
+                    <Link
+                      to="/loans/$loanId"
+                      params={{ loanId: g.id }}
+                      className="font-medium text-slate-900 hover:text-brand"
+                    >
+                      <NameDisplay name={g.borrowerName} nameTelugu={g.borrowerNameTelugu} />
+                    </Link>
+                  </div>
+                </td>
+                <td className="py-3 text-slate-600">
+                  <div className="flex items-center gap-1">
+                    <span className="tabular">{formatPhone(g.borrowerMobile)}</span>
+                    <ContactActions mobile={g.borrowerMobile} name={g.borrowerName} variant="icons" />
+                  </div>
+                </td>
+                <td className="py-3">
+                  <CurrencyDisplay amount={parseFloat(g.amountGiven)} className="font-semibold text-red-600" />
+                </td>
+                <td className="py-3">
+                  <DateDisplay date={g.dateGiven} className="text-slate-600" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

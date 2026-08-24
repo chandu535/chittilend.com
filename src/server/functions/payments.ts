@@ -392,29 +392,6 @@ async function paginatedPayments(
   };
 }
 
-export const listUpcomingPayments = createServerFn({ method: 'GET' })
-  .inputValidator((data: unknown) => {
-    const d = data as { days?: number; page?: number; limit?: number };
-    return { days: d.days || 7, page: d.page || 1, limit: d.limit || DEFAULTS.ITEMS_PER_PAGE };
-  })
-  .handler(async ({ data }) => {
-    const user = await getAuthenticatedUser();
-    requireRole(user, ['admin', 'manager']);
-
-    const today = new Date().toISOString().split('T')[0];
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + data.days);
-    const futureDateStr = futureDate.toISOString().split('T')[0];
-
-    const where = and(
-      or(eq(payments.status, 'pending'), eq(payments.status, 'partial')),
-      gte(payments.dueDate, today),
-      lte(payments.dueDate, futureDateStr),
-    );
-
-    return paginatedPayments(where, payments.dueDate, 'asc', data.page, data.limit);
-  });
-
 export const listOverduePayments = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => {
     const d = (data ?? {}) as { page?: number; limit?: number };
