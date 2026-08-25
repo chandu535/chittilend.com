@@ -12,6 +12,7 @@ import { AutoCalcPreview } from '@/components/loans/AutoCalcPreview';
 import { CurrencyDisplay } from '@/components/shared/CurrencyDisplay';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { NameDisplay } from '@/components/shared/NameDisplay';
+import { DEFAULTS } from '@/lib/constants';
 import { toast } from '@/components/ui/Toast';
 import { searchBorrowers } from '@/server/functions/borrowers';
 import { createLoan } from '@/server/functions/loans';
@@ -251,6 +252,30 @@ function NewLoanPage() {
               leftIcon={<span className="text-slate-500 text-sm">₹</span>}
             />
 
+            {/* Frequency above the count, because it decides what the count means — and
+                choosing it resets that count to this frequency's own default. Twelve weekly
+                and five monthly are different products rather than the same length said two
+                ways, so converting the number on screen would produce an arrangement nobody
+                offers. */}
+            <Select
+              label={t('loans.frequency')}
+              value={frequency}
+              onChange={(e) => {
+                const next = e.target.value as 'monthly' | 'weekly';
+                setFrequency(next);
+                // This field is months for both frequencies — calculateLoan turns a
+                // weekly tenure into months x 4 — so the instalment default is converted
+                // rather than assigned. Twelve weekly instalments is three months of them.
+                setTenureMonths(next === 'weekly'
+                  ? Math.round(DEFAULTS.INSTALMENTS.weekly / 4)
+                  : DEFAULTS.INSTALMENTS.monthly);
+              }}
+              options={[
+                { value: 'monthly', label: t('loans.monthly') },
+                { value: 'weekly', label: t('loans.weekly') },
+              ]}
+            />
+
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('loans.tenure')}</label>
@@ -258,7 +283,7 @@ function NewLoanPage() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => setTenureMonths((t) => Math.max(1, t - 1))}
+                    onClick={() => setTenureMonths((n) => Math.max(1, n - 1))}
                     disabled={tenureMonths <= 1}
                   >
                     -
@@ -269,7 +294,7 @@ function NewLoanPage() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => setTenureMonths((t) => Math.min(60, t + 1))}
+                    onClick={() => setTenureMonths((n) => Math.min(60, n + 1))}
                     disabled={tenureMonths >= 60}
                   >
                     +
@@ -278,16 +303,6 @@ function NewLoanPage() {
                 </div>
               </div>
             </div>
-
-            <Select
-              label={t('loans.frequency')}
-              value={frequency}
-              onChange={(e) => setFrequency(e.target.value as 'monthly' | 'weekly')}
-              options={[
-                { value: 'monthly', label: t('loans.monthly') },
-                { value: 'weekly', label: t('loans.weekly') },
-              ]}
-            />
 
             <DatePicker
               label={t('loans.dateGiven')}

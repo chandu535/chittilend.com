@@ -9,8 +9,8 @@ import { requireRole, requirePermission } from '../middleware/roleGuard';
 import { loanSearchCondition, loanSearchRelevance } from '../db/search';
 import { borrowerLive, loanLive } from '../db/softDelete';
 import { calculateLoan, calculateStartMonth, generatePaymentSchedule } from '@/lib/calculations';
-import { respreadSchedule, shiftDueDate, type ScheduleStatus } from '@/lib/schedule';
-import { DEFAULTS } from '@/lib/constants';
+import { allocateReceipts, respreadSchedule, shiftDueDate, type ScheduleStatus } from '@/lib/schedule';
+import { DEFAULTS, LIMITS } from '@/lib/constants';
 
 type NextPayment = {
   id: string;
@@ -483,6 +483,170 @@ export const listGivenLoans = createServerFn({ method: 'GET' })
     const total = totalResult[0].count;
 
     return { items: rows, total, page: data.page, limit: data.limit, totalPages: Math.ceil(total / data.limit) };
+  });
+
+/**
+ * Rewrites a loan's terms, and everything that follows from them.
+ *
+ * The amount, the frequency, the start date and the number of instalments are not four
+ * independent fields — each one changes the schedule, and the schedule is what the borrower
+ * actually owes month by month. So this recomputes the whole loan the way createLoan would
+ * have, rather than patching columns: a loan corrected here is indistinguishable from one
+ * entered correctly to begin with.
+ *
+ * Money already collected is never touched. It is laid across the new instalments by
+ * allocateReceipts — earliest first, each instalment taking the date of the receipt that
+ * cleared it — so the receipts stay facts while only the plan changes. An edit can therefore
+ * reopen a settled loan or settle an open one, and both are correct: the status follows the
+ * money, as it does everywhere else.
+ *
+ * The capital disbursement follows the principal, because the pool recorded what was handed
+ * over and a corrected principal means a corrected handover.
+ */
+export const updateLoanTerms = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => {
+    const d = data as {
+      id?: string;
+      primaryAmount?: number;
+      paymentFrequency?: string;
+      totalInstallments?: number;
+      dateGiven?: string;
+      notes?: string | null;
+    };
+
+    if (!d.id) throw new Error('Loan ID is required');
+
+    const amount = Number(d.primaryAmount);
+    if (!Number.isFinite(amount) || amount < LIMITS.MIN_LOAN_AMOUNT || amount > LIMITS.MAX_LOAN_AMOUNT) {
+      throw new Error(`Amount must be between ₹${LIMITS.MIN_LOAN_AMOUNT.toLocaleString('en-IN')} and ₹${LIMITS.MAX_LOAN_AMOUNT.toLocaleString('en-IN')}`);
+    }
+
+    const frequency = d.paymentFrequency;
+    if (frequency !== 'monthly' && frequency !== 'weekly') throw new Error('Frequency must be monthly or weekly');
+
+    const count = Number(d.totalInstallments);
+    // The ceiling is the same one addInstallments enforces: high enough for any real
+    // arrangement, low enough that a typo cannot write thousands of rows.
+    if (!Number.isInteger(count) || count < 1 || count > 120) {
+      throw new Error('Instalments must be between 1 and 120');
+    }
+
+    if (!d.dateGiven || !/^\d{4}-\d{2}-\d{2}$/.test(d.dateGiven)) throw new Error('Date given is required');
+
+    return {
+      id: d.id,
+      primaryAmount: amount,
+      paymentFrequency: frequency,
+      totalInstallments: count,
+      dateGiven: d.dateGiven,
+      notes: d.notes ?? null,
+    };
+  })
+  .handler(async ({ data }) => {
+    const user = await getAuthenticatedUser();
+    requirePermission(user, 'loans.write');
+
+    const loan = await db.query.loans.findFirst({
+      where: and(eq(loans.id, data.id), loanLive),
+      with: { payments: { orderBy: (p, { asc }) => [asc(p.installmentNumber)] } },
+    });
+    if (!loan) throw new Error('Loan not found');
+
+    // The house terms stay as they were on this loan. They are policy rather than
+    // per-loan detail, and changing them is not what this screen is for.
+    const svc = parseFloat(loan.serviceChargePercent);
+    const markup = parseFloat(loan.markupPercent);
+
+    const handedOver = data.primaryAmount * (1 - svc / 100);
+    const repayable = data.primaryAmount * (1 + markup / 100);
+    const instalment = repayable / data.totalInstallments;
+
+    // Re-narrowed: the validator proves this is one of the two, but the literal type does
+    // not survive the server-function boundary, which serialises its input.
+    const frequency = data.paymentFrequency as 'monthly' | 'weekly';
+
+    const startMonth = calculateStartMonth(new Date(data.dateGiven));
+    const schedule = generatePaymentSchedule(startMonth, repayable, data.totalInstallments, frequency);
+
+    // Every rupee that actually arrived, with the day it arrived on. A waived instalment
+    // carries no money, so it contributes nothing here — it is forgiven, not paid.
+    const receipts = loan.payments
+      .filter((p) => parseFloat(p.amountPaid) > 0)
+      .map((p) => ({ amount: parseFloat(p.amountPaid), date: p.paidDate as string | null }));
+
+    const allocated = allocateReceipts(
+      schedule.map((s) => ({ installmentNumber: s.installmentNumber, amountDue: s.amountDue })),
+      receipts,
+    );
+
+    const collected = allocated.reduce((sum, r) => sum + r.amountPaid, 0);
+    const settled = collected >= repayable - 0.01;
+
+    const [disbursement] = await db
+      .select({ id: capitalPoolLog.id })
+      .from(capitalPoolLog)
+      .where(and(eq(capitalPoolLog.referenceLoanId, loan.id), eq(capitalPoolLog.eventType, 'disbursement')))
+      .limit(1);
+
+    /*
+      One batch, which Neon runs as a single transaction. The old instalments are deleted
+      and the new ones inserted, so a half-applied edit would leave the loan with a partial
+      schedule owing less than it does — the same reason addInstallments batches.
+    */
+    const writes = [
+      db.delete(payments).where(eq(payments.loanId, loan.id)),
+
+      ...allocated.map((row, i) => db.insert(payments).values({
+        loanId: loan.id,
+        installmentNumber: row.installmentNumber,
+        dueDate: schedule[i].dueDate.toISOString().split('T')[0],
+        amountDue: row.amountDue.toFixed(2),
+        amountPaid: row.amountPaid.toFixed(2),
+        paidDate: row.paidDate,
+        status: row.status === 'waived' ? 'pending' as const : row.status,
+        paymentMethod: row.amountPaid > 0 ? 'cash' as const : null,
+        recordedBy: row.amountPaid > 0 ? user.id : null,
+      })),
+
+      db.update(loans).set({
+        dateGiven: data.dateGiven,
+        startMonth: startMonth.toISOString().split('T')[0],
+        primaryAmount: data.primaryAmount.toFixed(2),
+        serviceChargeAmount: (data.primaryAmount * (svc / 100)).toFixed(2),
+        amountUserReceived: handedOver.toFixed(2),
+        totalRepayment: repayable.toFixed(2),
+        installmentAmount: instalment.toFixed(2),
+        totalInstallments: data.totalInstallments,
+        profitAmount: (repayable - data.primaryAmount).toFixed(2),
+        paymentFrequency: frequency,
+        // Months are what the column means, so a weekly loan reports its length in months.
+        tenureMonths: frequency === 'monthly'
+          ? data.totalInstallments
+          : Math.ceil(data.totalInstallments / 4),
+        // A defaulted loan stays defaulted: that is somebody's decision about a borrower,
+        // not something arithmetic should overwrite. Everything else follows the money.
+        status: loan.status === 'defaulted' ? 'defaulted' as const : settled ? 'completed' as const : 'active' as const,
+        notes: data.notes,
+        updatedAt: new Date(),
+      }).where(and(eq(loans.id, loan.id), loanLive)),
+
+      ...(disbursement
+        ? [db.update(capitalPoolLog)
+            .set({ amount: data.primaryAmount.toFixed(2) })
+            .where(eq(capitalPoolLog.id, disbursement.id))]
+        : []),
+    ] as const;
+
+    await db.batch(writes as unknown as [typeof writes[number], ...typeof writes[number][]]);
+
+    await requestSheetSync();
+
+    const [updated] = await db
+      .select()
+      .from(loans)
+      .where(and(eq(loans.id, data.id), loanLive))
+      .limit(1);
+    return updated;
   });
 
 export const updateLoan = createServerFn({ method: 'POST' })

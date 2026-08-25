@@ -3,6 +3,15 @@ export const APP_SCROLL_ID = 'app-scroll';
 
 export const DEFAULTS = {
   TENURE_MONTHS: 5,
+  /**
+   * How many instalments a loan gets when nobody says otherwise, per frequency.
+   *
+   * Weekly is twelve rather than the twenty a five-month tenure would imply. The two
+   * frequencies are different products in practice — a weekly loan is a shorter, smaller
+   * arrangement — so switching between them starts from each one's own norm rather than
+   * converting the count that was on screen.
+   */
+  INSTALMENTS: { monthly: 5, weekly: 12 } as const,
   SERVICE_CHARGE_PERCENT: 1,
   MARKUP_PERCENT: 25,
   PAYMENT_FREQUENCY: 'monthly' as const,

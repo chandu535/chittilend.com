@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   RespreadError,
+  allocateReceipts,
   respreadSchedule,
   shiftDueDate,
   type ScheduleRow,
@@ -227,5 +228,116 @@ describe('shiftDueDate', () => {
   it('adds weeks', () => {
     expect(shiftDueDate('2026-07-01', 1, 'weekly')).toBe('2026-07-08');
     expect(shiftDueDate('2026-07-29', 1, 'weekly')).toBe('2026-08-05');
+  });
+});
+
+/**
+ * Editing a loan's terms rebuilds its instalments, and the money already collected has to
+ * land on the new ones. The receipts are facts; the schedule is a plan, and only the plan
+ * is being edited — so the one thing this must never do is change how much was collected.
+ */
+describe('allocateReceipts', () => {
+  const slots = (count: number, each: number) =>
+    Array.from({ length: count }, (_, i) => ({ installmentNumber: i + 1, amountDue: each }));
+
+  const collected = (rows: { amountPaid: number }[]) =>
+    rows.reduce((sum, r) => sum + r.amountPaid, 0);
+
+  it('never changes how much was collected, whatever the new shape', () => {
+    const receipts = [
+      { amount: 5000, date: '2026-04-01' },
+      { amount: 5000, date: '2026-06-01' },
+      { amount: 5000, date: '2026-07-01' },
+    ];
+
+    // The same ₹15,000 across every reshaping an edit could produce.
+    for (const [count, each] of [[5, 5000], [12, 2083.33], [3, 8333.33], [20, 1250]] as const) {
+      const rows = allocateReceipts(slots(count, each), receipts);
+      expect(collected(rows), `${count} x ${each}`).toBeCloseTo(15000, 2);
+    }
+  });
+
+  it('fills the earliest instalments first', () => {
+    const rows = allocateReceipts(slots(5, 5000), [
+      { amount: 5000, date: '2026-04-01' },
+      { amount: 5000, date: '2026-05-01' },
+    ]);
+    expect(rows.map((r) => r.status)).toEqual(['paid', 'paid', 'pending', 'pending', 'pending']);
+  });
+
+  it('splits one receipt across several smaller instalments', () => {
+    // The weekly case: one monthly payment now covers more than one instalment.
+    const rows = allocateReceipts(slots(12, 2000), [{ amount: 5000, date: '2026-04-01' }]);
+    expect(rows[0]).toMatchObject({ amountPaid: 2000, status: 'paid' });
+    expect(rows[1]).toMatchObject({ amountPaid: 2000, status: 'paid' });
+    expect(rows[2]).toMatchObject({ amountPaid: 1000, status: 'partial' });
+    expect(rows[3]).toMatchObject({ amountPaid: 0, status: 'pending' });
+  });
+
+  it('gathers several receipts into one larger instalment', () => {
+    // And the reverse: switching weekly to monthly makes each instalment bigger.
+    const rows = allocateReceipts(slots(2, 6000), [
+      { amount: 2000, date: '2026-04-01' },
+      { amount: 2000, date: '2026-04-08' },
+      { amount: 2000, date: '2026-04-15' },
+    ]);
+    expect(rows[0]).toMatchObject({ amountPaid: 6000, status: 'paid' });
+    // The date of the receipt that finished it, not the one that started it.
+    expect(rows[0].paidDate).toBe('2026-04-15');
+  });
+
+  it('gives each instalment the date of the receipt that cleared it', () => {
+    const rows = allocateReceipts(slots(3, 5000), [
+      { amount: 5000, date: '2026-04-01' },
+      { amount: 5000, date: '2026-06-01' },
+    ]);
+    expect(rows.map((r) => r.paidDate)).toEqual(['2026-04-01', '2026-06-01', null]);
+  });
+
+  it('keeps an overpayment on the last instalment rather than dropping it', () => {
+    const rows = allocateReceipts(slots(2, 5000), [
+      { amount: 5000, date: '2026-04-01' },
+      { amount: 8000, date: '2026-05-01' },
+    ]);
+    expect(collected(rows)).toBeCloseTo(13000, 2);
+    expect(rows[1].amountPaid).toBeCloseTo(8000, 2);
+    expect(rows[1].status).toBe('paid');
+  });
+
+  it('applies the oldest money first however the receipts arrive', () => {
+    const rows = allocateReceipts(slots(2, 5000), [
+      { amount: 5000, date: '2026-06-01' },
+      { amount: 5000, date: '2026-04-01' },
+    ]);
+    expect(rows.map((r) => r.paidDate)).toEqual(['2026-04-01', '2026-06-01']);
+  });
+
+  it('leaves an untouched loan entirely pending', () => {
+    const rows = allocateReceipts(slots(5, 5000), []);
+    expect(rows.every((r) => r.status === 'pending' && r.amountPaid === 0)).toBe(true);
+    expect(rows.every((r) => r.paidDate === null)).toBe(true);
+  });
+
+  it('ignores a receipt of nothing', () => {
+    const rows = allocateReceipts(slots(2, 5000), [
+      { amount: 0, date: '2026-04-01' },
+      { amount: 5000, date: '2026-05-01' },
+    ]);
+    expect(rows[0]).toMatchObject({ amountPaid: 5000, status: 'paid', paidDate: '2026-05-01' });
+  });
+
+  it('reproduces what the repair script did to loan #348', () => {
+    // ₹20,000 principal, ₹25,000 repayable, five instalments, four real receipts.
+    const rows = allocateReceipts(slots(5, 5000), [
+      { amount: 5000, date: '2026-04-01' },
+      { amount: 5000, date: '2026-06-01' },
+      { amount: 5000, date: '2026-07-01' },
+      { amount: 10000, date: '2026-08-01' },
+    ]);
+    expect(collected(rows)).toBeCloseTo(25000, 2);
+    expect(rows.every((r) => r.status === 'paid')).toBe(true);
+    expect(rows.map((r) => r.paidDate)).toEqual([
+      '2026-04-01', '2026-06-01', '2026-07-01', '2026-08-01', '2026-08-01',
+    ]);
   });
 });

@@ -20,6 +20,7 @@ import { ContactActions } from '@/components/shared/ContactActions';
 import { PaymentTimeline } from '@/components/loans/PaymentTimeline';
 import { PaymentMarkModal } from '@/components/loans/PaymentMarkModal';
 import { AddInstallmentsModal } from '@/components/loans/AddInstallmentsModal';
+import { EditLoanModal } from '@/components/loans/EditLoanModal';
 import { LoanSwitcher } from '@/components/loans/LoanSwitcher';
 // Acceptance removed.
 // import { LoanAgreementCard } from '@/components/loans/LoanAgreementCard';
@@ -63,6 +64,7 @@ function LoanDetailPage() {
   const [confirmActive, setConfirmActive] = useState(false);
   const [statusChanging, setStatusChanging] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
+  const [editingTerms, setEditingTerms] = useState(false);
   const [notesValue, setNotesValue] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
   // Messaging disabled.
@@ -267,6 +269,13 @@ function LoanDetailPage() {
 
           {menuOpen && (
             <div className="absolute right-0 top-12 z-20 w-52 bg-card rounded-xl shadow-lg border border-slate-100 py-1.5">
+              {canWriteLoans && (
+                <ActionMenuItem
+                  label={t('loans.editLoan')}
+                  icon="✏️"
+                  onClick={() => { setEditingTerms(true); setMenuOpen(false); }}
+                />
+              )}
               <ActionMenuItem
                 label={t('loans.editNotes')}
                 icon="✏️"
@@ -561,6 +570,24 @@ function LoanDetailPage() {
           payment={selectedPayment}
           onClose={() => setSelectedPayment(null)}
           onSuccess={() => { setSelectedPayment(null); fetchLoan(); }}
+        />
+      )}
+
+      {editingTerms && (
+        <EditLoanModal
+          loan={{
+            id: loan.id,
+            primaryAmount: loan.primaryAmount,
+            serviceChargePercent: loan.serviceChargePercent,
+            markupPercent: loan.markupPercent,
+            paymentFrequency: loan.paymentFrequency,
+            totalInstallments: loan.totalInstallments,
+            dateGiven: loan.dateGiven,
+            notes: loan.notes,
+            payments: loan.payments.map((p) => ({ amountPaid: p.amountPaid, paidDate: p.paidDate })),
+          }}
+          onClose={() => setEditingTerms(false)}
+          onSaved={() => { setEditingTerms(false); fetchLoan(); }}
         />
       )}
 

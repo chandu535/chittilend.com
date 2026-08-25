@@ -258,3 +258,88 @@ export function shiftDueDate(from: string, offset: number, frequency: 'monthly' 
 
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
+
+/** One receipt: what arrived, and the day it arrived. */
+export interface Receipt {
+  amount: number;
+  date: string | null;
+}
+
+export interface AllocatedRow {
+  installmentNumber: number;
+  amountDue: number;
+  amountPaid: number;
+  status: ScheduleStatus;
+  /** The date of the receipt that cleared this instalment, or null while nothing has. */
+  paidDate: string | null;
+}
+
+/**
+ * Lays money already collected across a schedule that has just been rebuilt.
+ *
+ * Editing a loan's amount, frequency or start date replaces its instalments entirely, and
+ * the receipts have to land somewhere. They land the way they land everywhere else in this
+ * ledger: earliest instalment first, surplus carried forward, and each instalment taking
+ * the date of the receipt that cleared it — so monthly cash flow, and the capital ledger
+ * built from it, still read correctly afterwards.
+ *
+ * What it must never do is change how much was collected. The receipts are facts; the
+ * schedule is a plan, and only the plan is being edited. Anything beyond the final
+ * instalment stays on that last row rather than being dropped, which is how the rest of the
+ * app keeps an overpayment visible.
+ *
+ * Pure, so the rule can be pinned down without a database — and it is the same rule
+ * scripts/repair-loan-principal.ts applies, which is why it lives here rather than there.
+ */
+export function allocateReceipts(
+  instalments: { installmentNumber: number; amountDue: number }[],
+  receipts: Receipt[],
+): AllocatedRow[] {
+  const ordered = [...receipts]
+    .filter((r) => r.amount > EPSILON)
+    // Oldest first: the earliest money clears the earliest instalment.
+    .sort((a, b) => String(a.date ?? '').localeCompare(String(b.date ?? '')));
+
+  let cursor = 0;
+  // How much of the receipt under the cursor has already been spent.
+  let spent = 0;
+
+  const rows: AllocatedRow[] = instalments.map((slot) => {
+    let filled = 0;
+    let paidDate: string | null = null;
+
+    while (filled < slot.amountDue - EPSILON && cursor < ordered.length) {
+      const available = ordered[cursor].amount - spent;
+      const take = Math.min(slot.amountDue - filled, available);
+      filled += take;
+      spent += take;
+      paidDate = ordered[cursor].date;
+      if (spent >= ordered[cursor].amount - EPSILON) { cursor++; spent = 0; }
+    }
+
+    return {
+      installmentNumber: slot.installmentNumber,
+      amountDue: round2(slot.amountDue),
+      amountPaid: round2(filled),
+      status: filled >= slot.amountDue - EPSILON ? 'paid' : filled > EPSILON ? 'partial' : 'pending',
+      paidDate: filled > EPSILON ? paidDate : null,
+    };
+  });
+
+  // Whatever is left over after the last instalment. Kept on that row so an overpayment
+  // stays visible rather than disappearing from the loan it was paid into.
+  let leftover = 0;
+  while (cursor < ordered.length) {
+    leftover += ordered[cursor].amount - spent;
+    cursor++;
+    spent = 0;
+  }
+  if (leftover > EPSILON && rows.length) {
+    const last = rows[rows.length - 1];
+    last.amountPaid = round2(last.amountPaid + leftover);
+    last.status = 'paid';
+    if (!last.paidDate) last.paidDate = ordered[ordered.length - 1]?.date ?? null;
+  }
+
+  return rows;
+}
