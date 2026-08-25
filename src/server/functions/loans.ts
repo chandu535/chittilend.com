@@ -21,6 +21,41 @@ type NextPayment = {
   status: 'pending' | 'partial' | 'overdue';
 };
 
+/**
+ * How the loans list is ordered, as the database sees it.
+ *
+ * This rule used to live in the browser, sorting whichever rows a page happened to hold.
+ * That is only an ordering if you can see everything: with 437 loans in four buckets, the
+ * rows fetched at page size 10 and at page size 50 sort into different first pages, so
+ * changing the page size reshuffled the list. Ordering is a property of the data, not of
+ * how much of it was asked for, so it belongs in the query beside the LIMIT it survives.
+ *
+ * Four bands, in the order somebody working the book cares about them:
+ *
+ *   0  something due on or before the end of this month — the collections round
+ *   1  a loan issued this month, not yet due
+ *   2  running, due later, or with no instalment left to collect
+ *   3  settled, which is history
+ *
+ * "This month" is IST. The server runs on UTC, where the last five and a half hours of the
+ * Indian day still read as yesterday — and a loan sliding between bands at 18:30 would look
+ * like the list reordering itself.
+ */
+const displayPriority = sql`(
+  CASE
+    WHEN ${loans.status} = 'completed' THEN 3
+    WHEN (SELECT p.due_date FROM payments p
+          WHERE p.loan_id = ${loans.id} AND p.status NOT IN ('paid','waived')
+          ORDER BY p.installment_number ASC LIMIT 1) IS NULL THEN 2
+    WHEN (SELECT p.due_date FROM payments p
+          WHERE p.loan_id = ${loans.id} AND p.status NOT IN ('paid','waived')
+          ORDER BY p.installment_number ASC LIMIT 1)
+         <= (date_trunc('month', (now() AT TIME ZONE 'Asia/Kolkata')) + interval '1 month - 1 day')::date THEN 0
+    WHEN ${loans.dateGiven} < date_trunc('month', (now() AT TIME ZONE 'Asia/Kolkata'))::date THEN 2
+    ELSE 1
+  END
+)`;
+
 export const listLoans = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => {
     const d = data as {
@@ -163,8 +198,9 @@ export const listLoans = createServerFn({ method: 'GET' })
           .where(liveFullWhere)
           .orderBy(
             ...(relevance ? [desc(relevance)] : []),
-            sql`(SELECT CASE WHEN p.status = 'overdue' THEN 0 ELSE 1 END FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1) ASC NULLS LAST`,
+            displayPriority,
             desc(loans.createdAt),
+            desc(loans.loanNumber),
           )
           .limit(data.limit)
           .offset(offset),
@@ -213,8 +249,9 @@ export const listLoans = createServerFn({ method: 'GET' })
         .innerJoin(borrowers, eq(loans.borrowerId, borrowers.id))
         .where(liveWhere)
         .orderBy(
-          sql`(SELECT CASE WHEN p.status = 'overdue' THEN 0 ELSE 1 END FROM payments p WHERE p.loan_id=${loans.id} AND p.status NOT IN ('paid','waived') ORDER BY p.installment_number ASC LIMIT 1) ASC NULLS LAST`,
+          displayPriority,
           desc(loans.createdAt),
+          desc(loans.loanNumber),
         )
         .limit(data.limit)
         .offset(offset),

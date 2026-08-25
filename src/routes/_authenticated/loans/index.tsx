@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useStickyState } from '@/lib/useStickyFilters';
 import { listLoans } from '@/server/functions/loans';
 import { Button } from '@/components/ui/Button';
@@ -61,20 +61,6 @@ type LoanItem = {
   paidInstallments: number;
   dateGiven: string;
 };
-
-function loanDisplayPriority(loan: LoanItem): number {
-  if (loan.status === 'completed') return 3;
-  if (!loan.nextPayment) return 2;
-
-  const today = new Date();
-  const endOfCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  const dueDate = new Date(loan.nextPayment.dueDate + 'T00:00:00');
-  if (dueDate <= endOfCurrentMonth) return 0;
-
-  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  if (new Date(loan.dateGiven + 'T00:00:00') < currentMonthStart) return 2;
-  return 1;
-}
 
 function LoansPage() {
   const { t } = useTranslation();
@@ -141,13 +127,16 @@ function LoansPage() {
     { value: 'defaulted', label: t('loans.statusDefaulted') },
     { value: 'extended', label: t('loans.statusExtended') },
   ];
-  const sortedLoans = useMemo(() => {
-    // Precompute the priority so the comparator does not recalculate dates O(n log n) times.
-    return items
-      .map((loan) => ({ loan, priority: loanDisplayPriority(loan) }))
-      .sort((a, b) => (a.priority - b.priority) || (a.loan.loanNumber - b.loan.loanNumber))
-      .map((entry) => entry.loan);
-  }, [items]);
+  /*
+    The server orders these, and nothing re-orders them here.
+
+    This page used to sort each page by an urgency rule of its own. A sort can only order
+    what it can see, so with 437 loans across four bands the rows fetched at page size 10
+    and at page size 50 produced different first pages — changing the page size reshuffled
+    the list. The rule now lives in the query, where it applies to every loan before the
+    LIMIT decides which ones come back.
+  */
+  const sortedLoans = items;
 
   return (
     <ListPage
