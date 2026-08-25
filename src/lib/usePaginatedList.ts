@@ -129,6 +129,12 @@ export function usePaginatedList<T>({
       setItems([]);
       setTotal(0);
       setTotalPages(0);
+      // And this list has never been loaded, because as far as the reader is concerned it
+      // is a different one. Without it `showSkeleton` stays false — it is `loading &&
+      // !loadedOnce` — so an emptied list renders as "nothing here" for the length of the
+      // fetch and then fills in. Saying there is no data and then producing some is worse
+      // than the stale rows this clearing was added to prevent.
+      loadedOnce.current = false;
     }
     load(1, 'replace');
     // eslint-disable-next-line react-hooks/exhaustive-deps
