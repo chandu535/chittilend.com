@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { clsx } from 'clsx';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -30,6 +30,7 @@ import {
 } from '@/lib/binRules';
 import { useStore } from '@tanstack/react-store';
 import { authStore } from '@/lib/stores';
+import { useStickyState } from '@/lib/useStickyFilters';
 import { listBinnedBorrowers, listBinnedLoans } from '@/server/functions/bin';
 
 export const Route = createFileRoute('/_authenticated/bin')({
@@ -94,7 +95,7 @@ const borrowerOf = (loan: BinnedLoan): BorrowerFacts => ({
 
 function BinPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<Tab>('loans');
+  const [tab, setTab] = useStickyState<Tab>('bin:tab', 'loans');
   const user = useStore(authStore, (s) => s.user);
   const canPurge = can(user, 'bin.purge');
 

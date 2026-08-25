@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Pagination } from '@/components/ui/Pagination';
 import { InfiniteScroll, EndOfList } from '@/components/ui/InfiniteScroll';
 import { usePaginatedList, type PageResult } from '@/lib/usePaginatedList';
+import { useStickyState } from '@/lib/useStickyFilters';
 import { clsx } from 'clsx';
 import { ListPage } from '@/components/layout/PageLayout';
 import { ListError } from '@/components/shared/ListError';
@@ -78,7 +79,7 @@ type GivenRow = {
 
 function PaymentsPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<Tab>('recent');
+  const [tab, setTab] = useStickyState<Tab>('payments:tab', 'recent');
   const [selectedPayment, setSelectedPayment] = useState<PaymentRow | null>(null);
 
   const fetchPage = useCallback(async (page: number, limit: number) => {

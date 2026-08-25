@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useStickyState } from '@/lib/useStickyFilters';
 import { listLoans } from '@/server/functions/loans';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -77,9 +78,11 @@ function loanDisplayPriority(loan: LoanItem): number {
 
 function LoansPage() {
   const { t } = useTranslation();
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('all');
-  const [borrower, setBorrower] = useState<BorrowerOption | null>(null);
+  // Sticky: filtering to one borrower, opening a loan and coming back should not throw the
+  // filter away — that is the whole shape of a collections round.
+  const [search, setSearch] = useStickyState('loans:search', '');
+  const [status, setStatus] = useStickyState('loans:status', 'all');
+  const [borrower, setBorrower] = useStickyState<BorrowerOption | null>('loans:borrower', null);
   // Debounced so typing does not fire a request per keystroke.
   const debouncedSearch = useDebouncedValue(search, 300);
   // Typed in English, this is the Telugu reading of it — searched alongside, and shown

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useCallback } from 'react';
+import { useStickyState } from '@/lib/useStickyFilters';
 import { listBorrowers, listAreas } from '@/server/functions/borrowers';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -30,8 +31,8 @@ export const Route = createFileRoute('/_authenticated/borrowers/')({
 
 function BorrowersPage() {
   const { t } = useTranslation();
-  const [search, setSearch] = useState('');
-  const [area, setArea] = useState('all');
+  const [search, setSearch] = useStickyState('borrowers:search', '');
+  const [area, setArea] = useStickyState('borrowers:area', 'all');
   const [areas, setAreas] = useState<string[]>([]);
   const debouncedSearch = useDebouncedValue(search, 300);
   // Typed in English, this is the Telugu reading of it — searched alongside, and shown
