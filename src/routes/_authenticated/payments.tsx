@@ -58,6 +58,7 @@ type PaymentRow = {
   borrowerName: string;
   borrowerNameTelugu: string | null;
   borrowerMobile: string;
+  borrowerPhotoUrl: string | null;
   loanPrimaryAmount: string;
 };
 
@@ -193,15 +194,25 @@ function PaymentsPage() {
           <div className="lg:hidden space-y-3 list-container">
             {(data as PaymentRow[]).map((p) => (
               <Card key={p.id} className="list-row">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2.5 mb-2">
+                  <BorrowerAvatar
+                    name={p.borrowerName}
+                    nameTelugu={p.borrowerNameTelugu}
+                    photoUrl={p.borrowerPhotoUrl}
+                    size="md"
+                  />
                   <Link
                     to="/loans/$loanId"
                     params={{ loanId: p.loanId }}
-                    className="font-medium text-slate-900 hover:text-brand"
+                    className="min-w-0 flex-1 font-medium text-slate-900 hover:text-brand"
                   >
-                    <NameDisplay name={p.borrowerName} nameTelugu={p.borrowerNameTelugu} />
+                    <NameDisplay
+                      name={p.borrowerName}
+                      nameTelugu={p.borrowerNameTelugu}
+                      className="block truncate"
+                    />
                   </Link>
-                  <div className="flex items-center gap-1">
+                  <div className="flex shrink-0 items-center gap-1">
                     <ContactActions mobile={p.borrowerMobile} name={p.borrowerName} variant="icons" />
                     <Badge status={p.status}>{t(`payments.${p.status}`)}</Badge>
                   </div>
@@ -251,19 +262,27 @@ function PaymentsPage() {
                   >
                     <td className="py-3 text-sm text-slate-400 tabular-nums">{serialStart + index + 1}</td>
                     <td className="py-3">
-                      <Link
-                        to="/loans/$loanId"
-                        params={{ loanId: p.loanId }}
-                        className="font-medium text-slate-900 hover:text-brand"
-                      >
-                        <NameDisplay name={p.borrowerName} nameTelugu={p.borrowerNameTelugu} />
-                      </Link>
-                      <ContactActions
-                        mobile={p.borrowerMobile}
-                        name={p.borrowerName}
-                        variant="icons"
-                        className="-my-2 ml-1 inline-flex align-middle"
-                      />
+                      <div className="flex items-center gap-2.5">
+                        <BorrowerAvatar
+                          name={p.borrowerName}
+                          nameTelugu={p.borrowerNameTelugu}
+                          photoUrl={p.borrowerPhotoUrl}
+                          size="sm"
+                        />
+                        <Link
+                          to="/loans/$loanId"
+                          params={{ loanId: p.loanId }}
+                          className="font-medium text-slate-900 hover:text-brand"
+                        >
+                          <NameDisplay name={p.borrowerName} nameTelugu={p.borrowerNameTelugu} />
+                        </Link>
+                        <ContactActions
+                          mobile={p.borrowerMobile}
+                          name={p.borrowerName}
+                          variant="icons"
+                          className="-my-2"
+                        />
+                      </div>
                     </td>
                     <td className="py-3 text-slate-600">
                       #{p.installmentNumber}

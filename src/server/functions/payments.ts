@@ -358,6 +358,7 @@ async function paginatedPayments(
         borrowerName: borrowers.name,
         borrowerNameTelugu: borrowers.nameTelugu,
         borrowerMobile: borrowers.mobile,
+        borrowerPhotoUrl: borrowers.profilePhotoUrl,
         loanPrimaryAmount: loans.primaryAmount,
       })
       .from(payments)
@@ -383,6 +384,7 @@ async function paginatedPayments(
       borrowerName: r.borrowerName,
       borrowerNameTelugu: r.borrowerNameTelugu,
       borrowerMobile: r.borrowerMobile,
+      borrowerPhotoUrl: r.borrowerPhotoUrl,
       loanPrimaryAmount: r.loanPrimaryAmount,
     })),
     total,
