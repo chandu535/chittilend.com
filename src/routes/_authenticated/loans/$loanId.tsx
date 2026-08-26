@@ -328,37 +328,52 @@ function LoanDetailPage() {
 
       {/* ── Section 1: Borrower ── */}
       <Card>
-        <Link
-          to="/borrowers/$borrowerId"
-          params={{ borrowerId: loan.borrower.id }}
-          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-        >
-          <BorrowerAvatar
-            name={loan.borrower.name}
-            nameTelugu={loan.borrower.nameTelugu}
-            photoUrl={loan.borrower.profilePhotoUrl}
-            size="md"
-          />
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-slate-900">{borrowerDisplayName}</p>
-            <div className="flex items-center gap-1">
+        {/*
+          The row opens the borrower, and Call and WhatsApp are links of their own — so they
+          are siblings here rather than nested. An anchor inside an anchor is invalid HTML:
+          the browser's parser lifts the inner one out to repair it, which leaves the
+          server's markup and React's tree disagreeing about the shape of the page, and
+          hydration fails on this screen.
+
+          stopPropagation does not help, because this is the HTML parser rather than the
+          click. The Link takes the avatar and the name; the icons follow it.
+        */}
+        <div className="flex items-center gap-3">
+          <Link
+            to="/borrowers/$borrowerId"
+            params={{ borrowerId: loan.borrower.id }}
+            className="flex min-w-0 flex-1 items-center gap-3 hover:opacity-80 transition-opacity"
+          >
+            <BorrowerAvatar
+              name={loan.borrower.name}
+              nameTelugu={loan.borrower.nameTelugu}
+              photoUrl={loan.borrower.profilePhotoUrl}
+              size="md"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-slate-900">{borrowerDisplayName}</p>
               <p className="text-sm text-slate-500">{formatPhone(loan.borrower.mobile)}</p>
-              {/* ContactActions stops the click itself, which matters here: the whole row
-                  is a Link to the borrower, so without that a tap on Call would navigate
-                  instead of dialling. */}
-              <ContactActions
-                mobile={loan.borrower.mobile}
-                name={loan.borrower.name}
-                variant="icons"
-                className="-my-2"
-              />
+              {loan.borrower.area && <p className="text-xs text-slate-400">{loan.borrower.area}</p>}
             </div>
-            {loan.borrower.area && <p className="text-xs text-slate-400">{loan.borrower.area}</p>}
-          </div>
-          <svg className="h-4 w-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          </Link>
+
+          <ContactActions
+            mobile={loan.borrower.mobile}
+            name={loan.borrower.name}
+            variant="icons"
+            className="-my-2"
+          />
+
+          {/* Decoration, not a control: the row is already the link, and a second one here
+              would just be the same destination twice for anybody tabbing through. */}
+          <svg
+            aria-hidden="true"
+            className="h-4 w-4 shrink-0 text-slate-400"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
-        </Link>
+        </div>
         {/* WhatsApp messaging is switched off — see the note in server/functions/payments.ts.
             The reminder and warning buttons stood here; the handlers and the senders behind
             them are intact, so restoring this is uncommenting the block.
