@@ -52,7 +52,8 @@
     "capital": "Capital Pool",
     "logout": "Logout",
     "bin": "Bin",
-    "sheet": "Sheet"
+    "sheet": "Sheet",
+    "ask": "Ask"
   },
   "auth": {
     "login": "Login",
@@ -509,6 +510,22 @@
     "applied": "Applied to the loan",
     "appliedCount": "{{count}} applied",
     "appliedSome": "{{applied}} applied, {{failed}} could not be",
-    "waiting": "{{count}} waiting"
+    "waiting": "{{count}} waiting",
+    "readAloud": "Read aloud",
+    "readBack": "Speak entries aloud",
+    "readBackHint": "Says each entry back after it is added.",
+    "voiceNone": "No voice available on this device"
+  },
+  "ask": {
+    "title": "Ask",
+    "hint": "Ask about your loans, in Telugu or English.",
+    "placeholder": "Ask a question…",
+    "speak": "Ask your question",
+    "send": "Send",
+    "thinking": "Looking…",
+    "showQuery": "Show the query",
+    "hideQuery": "Hide the query",
+    "readNames": "Read {{count}} names aloud",
+    "stopReading": "Stop"
   }
 }

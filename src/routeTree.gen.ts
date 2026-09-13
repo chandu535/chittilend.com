@@ -21,6 +21,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCollectionsRouteImport } from './routes/_authenticated/collections'
 import { Route as AuthenticatedCapitalRouteImport } from './routes/_authenticated/capital'
 import { Route as AuthenticatedBinRouteImport } from './routes/_authenticated/bin'
+import { Route as AuthenticatedAskRouteImport } from './routes/_authenticated/ask'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedLoansIndexRouteImport } from './routes/_authenticated/loans/index'
 import { Route as AuthenticatedBorrowersIndexRouteImport } from './routes/_authenticated/borrowers/index'
@@ -93,6 +94,11 @@ const AuthenticatedBinRoute = AuthenticatedBinRouteImport.update({
   path: '/bin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAskRoute = AuthenticatedAskRouteImport.update({
+  id: '/ask',
+  path: '/ask',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/ask': typeof AuthenticatedAskRoute
   '/bin': typeof AuthenticatedBinRoute
   '/capital': typeof AuthenticatedCapitalRoute
   '/collections': typeof AuthenticatedCollectionsRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/ask': typeof AuthenticatedAskRoute
   '/bin': typeof AuthenticatedBinRoute
   '/capital': typeof AuthenticatedCapitalRoute
   '/collections': typeof AuthenticatedCollectionsRoute
@@ -200,6 +208,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
+  '/_authenticated/ask': typeof AuthenticatedAskRoute
   '/_authenticated/bin': typeof AuthenticatedBinRoute
   '/_authenticated/capital': typeof AuthenticatedCapitalRoute
   '/_authenticated/collections': typeof AuthenticatedCollectionsRoute
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/analytics'
+    | '/ask'
     | '/bin'
     | '/capital'
     | '/collections'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/analytics'
+    | '/ask'
     | '/bin'
     | '/capital'
     | '/collections'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/_authenticated/analytics'
+    | '/_authenticated/ask'
     | '/_authenticated/bin'
     | '/_authenticated/capital'
     | '/_authenticated/collections'
@@ -389,6 +401,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBinRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/ask': {
+      id: '/_authenticated/ask'
+      path: '/ask'
+      fullPath: '/ask'
+      preLoaderRoute: typeof AuthenticatedAskRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/analytics': {
       id: '/_authenticated/analytics'
       path: '/analytics'
@@ -464,6 +483,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
+  AuthenticatedAskRoute: typeof AuthenticatedAskRoute
   AuthenticatedBinRoute: typeof AuthenticatedBinRoute
   AuthenticatedCapitalRoute: typeof AuthenticatedCapitalRoute
   AuthenticatedCollectionsRoute: typeof AuthenticatedCollectionsRoute
@@ -481,6 +501,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
+  AuthenticatedAskRoute: AuthenticatedAskRoute,
   AuthenticatedBinRoute: AuthenticatedBinRoute,
   AuthenticatedCapitalRoute: AuthenticatedCapitalRoute,
   AuthenticatedCollectionsRoute: AuthenticatedCollectionsRoute,
