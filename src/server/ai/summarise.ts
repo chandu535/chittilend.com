@@ -251,11 +251,21 @@ export function answerFacts(rows: Row[], override?: {
   countPhrase: string | null;
   totalPhrase: string | null;
   sampleNames: string[];
+  /**
+   * The rows themselves, for a small result.
+   *
+   * Only the name and the money used to be passed on, so a question about anything else had
+   * no answer available: asked which date a loan was taken, it read the name and the amount
+   * back while the date sat in the table underneath. Dates, phone numbers and loan numbers
+   * are values to be repeated rather than figures to be worked out, so handing them over
+   * costs nothing and is the difference between answering and changing the subject.
+   */
+  detail: string | null;
 } {
   if (!rows.length) {
     return {
       rowCount: 0, truncated: false,
-      answerPhrase: null, countPhrase: null, totalPhrase: null, sampleNames: [],
+      answerPhrase: null, countPhrase: null, totalPhrase: null, sampleNames: [], detail: null,
     };
   }
 
@@ -274,7 +284,7 @@ export function answerFacts(rows: Row[], override?: {
 
     return {
       rowCount: 1, truncated: false,
-      answerPhrase: phrase, countPhrase: null, totalPhrase: null, sampleNames: [],
+      answerPhrase: phrase, countPhrase: null, totalPhrase: null, sampleNames: [], detail: null,
     };
   }
   const nameCol = nameColumn(columns);
@@ -313,5 +323,23 @@ export function answerFacts(rows: Row[], override?: {
     sampleNames: nameCol
       ? [...new Set(rows.map((r) => String(r[nameCol] ?? '').trim()).filter(Boolean))].slice(0, 3)
       : [],
+    detail: rowDetail(rows),
   };
+}
+
+/**
+ * A handful of rows, written out for the model to read from.
+ *
+ * Capped at five: beyond that the question is about the shape of the answer rather than any
+ * one row, and a long list in the prompt invites the model to start summarising it — which
+ * is where invented totals come from. The screen holds the full list either way.
+ */
+function rowDetail(rows: Row[]): string | null {
+  if (!rows.length || rows.length > 5) return null;
+  return rows
+    .map((row) => Object.entries(row)
+      .filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '')
+      .map(([column, value]) => `${column}: ${String(value).trim()}`)
+      .join(', '))
+    .join('\n');
 }

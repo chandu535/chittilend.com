@@ -29,6 +29,8 @@ export interface AnswerFacts {
   totalPhrase: string | null;
   /** A few names, so it can mention one where that reads naturally. */
   sampleNames: string[];
+  /** The rows themselves, for a small result — dates, numbers, anything asked about. */
+  detail?: string | null;
   /** The deterministic sentence, used verbatim if the model's is untrustworthy. */
   fallback: string;
 }
@@ -63,7 +65,11 @@ natural spoken sentences, as a person would answer a question.
 ABSOLUTE RULES
 - Never calculate, add, estimate, or infer a number. Not even a simple one.
 - Use ONLY the number phrases given to you, copied exactly, character for character.
-- Never write digits. Numbers appear only as the Telugu words you were handed.
+- Never write a number you were not given. Amounts appear only as the Telugu words handed
+  to you. A date, phone number or loan number may be written in digits, but ONLY by copying
+  it exactly from the rows below — never one you worked out or remembered.
+- Answer the question that was asked. If it asks when, say the date; if it asks which loan,
+  say the number. Do not fall back on the name and the amount when something else was asked.
 - If no rows were found, say only that you could not find it — "దీనికి answer నా దగ్గర లేదు",
   "అది నాకు దొరకలేదు". NEVER turn an empty result into a fact: do not say nobody owes
   anything, or everyone has paid, or there is nothing to collect. Finding nothing means
@@ -74,7 +80,9 @@ ABSOLUTE RULES
 
 Speak plainly, the way somebody would answer across a table.`;
 
-/** Any run of digits. Every number in a spoken reply must be a Telugu word. */
+/** Runs of digits, so each can be checked against what the model was actually given. */
+const DIGIT_RUN = /[0-9০-৯౦-౯]+/g;
+/** Any digit at all, for replies that were handed no figures to repeat. */
 const HAS_DIGITS = /[0-9০-৯౦-౯]/;
 
 export async function phraseAnswer(facts: AnswerFacts): Promise<string> {
@@ -86,6 +94,7 @@ export async function phraseAnswer(facts: AnswerFacts): Promise<string> {
     facts.truncated ? 'The list was cut short: say the figures are at least this much.' : null,
     facts.totalPhrase ? `Total amount (use exactly): ${facts.totalPhrase}` : null,
     facts.sampleNames.length ? `Some of the names: ${facts.sampleNames.slice(0, 3).join(', ')}` : null,
+    facts.detail ? `The rows themselves — copy any date or number from here, exactly:\n${facts.detail}` : null,
   ].filter(Boolean).join('\n');
 
   let reply: string;
@@ -109,13 +118,47 @@ export async function phraseAnswer(facts: AnswerFacts): Promise<string> {
  */
 function trustworthy(reply: string, facts: AnswerFacts): boolean {
   if (!reply || reply.length > 400) return false;
-  if (HAS_DIGITS.test(reply)) return false;
+
+  /*
+    A digit is allowed only if it was handed over.
+
+    Blanket-banning them was right while the only figures were amounts, which are always
+    given as Telugu words — and wrong the moment the rows came too, because a question about
+    a date can only be answered with one. So each run of digits has to appear in what the
+    model was actually shown. A copied date passes; an invented total does not, which is the
+    case this check exists for.
+  */
+  const given = facts.detail ?? '';
+  for (const run of reply.match(DIGIT_RUN) ?? []) {
+    if (!given.includes(run)) return false;
+  }
   // The lone answer is the whole reply's reason for existing; without it the sentence is
   // about something else. This is the check that would have caught "one borrower" being
   // said over a table reading 180.
   if (facts.answerPhrase && !reply.includes(facts.answerPhrase)) return false;
-  if (facts.totalPhrase && !reply.includes(facts.totalPhrase)) return false;
-  if (facts.countPhrase && facts.rowCount > 1 && !reply.includes(facts.countPhrase)) return false;
+
+  /*
+    The computed figures have to come back — but only when the reply is about them.
+
+    Demanding them unconditionally threw away every correct answer to a question that was
+    not about money: asked which date a loan was taken, the model said the date, the total
+    was missing, and the check rejected it in favour of a sentence that repeated the name and
+    the amount instead. Exactly the behaviour being fixed.
+
+    So where the model was shown the rows and asked something specific, the total is required
+    only if it brings money up at all — a reply mentioning రూపాయలు must mention the right
+    number of them. Where it was shown no rows, the figures are all it has and all it can be
+    talking about, so they are required outright.
+  */
+  const specific = Boolean(facts.detail);
+  const mentionsMoney = reply.includes('రూపాయలు');
+
+  if (facts.totalPhrase && (!specific || mentionsMoney) && !reply.includes(facts.totalPhrase)) {
+    return false;
+  }
+  if (facts.countPhrase && !specific && facts.rowCount > 1 && !reply.includes(facts.countPhrase)) {
+    return false;
+  }
   return true;
 }
 

@@ -17,10 +17,15 @@ import { join } from 'node:path';
 const SOURCE = readFileSync(join(__dirname, 'reply.ts'), 'utf8');
 
 describe('the guard on a phrased answer', () => {
-  it('rejects any reply containing a digit', () => {
-    // A digit means the model wrote a number itself rather than repeating one it was given.
-    expect(SOURCE).toMatch(/HAS_DIGITS[\s\S]*?test\(reply\)/);
-    expect(SOURCE).toMatch(/if \(HAS_DIGITS\.test\(reply\)\) return false/);
+  it('rejects any digit the model was not shown', () => {
+    /*
+      Banning digits outright was right while the only figures were amounts — always given
+      as Telugu words — and wrong once the rows came too, because a question about a date
+      can only be answered with one. Each run is now checked against what was handed over:
+      a copied date passes, an invented total does not.
+    */
+    expect(SOURCE).toMatch(/for \(const run of reply\.match\(DIGIT_RUN\)/);
+    expect(SOURCE).toMatch(/if \(!given\.includes\(run\)\) return false/);
   });
 
   it('rejects a reply that does not contain the answer it was handed', () => {
@@ -45,7 +50,18 @@ describe('the guard on a phrased answer', () => {
 
   it('forbids the model from calculating, in the words it is given', () => {
     expect(SOURCE).toMatch(/Never calculate/i);
-    expect(SOURCE).toMatch(/Never write digits/i);
+    expect(SOURCE).toMatch(/Never write a number you were not given/i);
+  });
+
+  it('tells it to answer what was asked, not fall back on the name and amount', () => {
+    // Asked which date a loan was taken, it read the name and the amount back instead.
+    expect(SOURCE).toMatch(/Answer the question that was asked/i);
+    expect(SOURCE).toMatch(/Do not fall back on the name and the amount/i);
+  });
+
+  it('still bans digits outright where nothing was handed over to copy', () => {
+    // phraseRefusal is given no rows at all, so any digit in it is invented.
+    expect(SOURCE).toMatch(/!HAS_DIGITS\.test\(said\)/);
   });
 });
 
@@ -141,5 +157,41 @@ describe('the assistant\'s own voice', () => {
   it('still refuses to invent a number when it cannot answer', () => {
     // It has been given no figures here, so any digit in the reply is one it made up.
     expect(SRC).toMatch(/!HAS_DIGITS\.test\(said\)/);
+  });
+});
+
+/**
+ * Answering the question that was asked.
+ *
+ * Asked which date a loan was taken, it replied with the name and the amount — twice — while
+ * the date sat in the table underneath. The facts only ever carried a name and a figure, so
+ * a question about anything else had nothing to answer from.
+ *
+ * Handing the rows over fixed that and broke the guard, which demanded the computed total
+ * back in every reply: the correct date answer had no total in it and was thrown away for
+ * the name-and-amount sentence being fixed. The requirement is now scoped to replies that
+ * are actually about money.
+ */
+describe('questions that are not about money', () => {
+  const SRC = readFileSync(join(__dirname, 'reply.ts'), 'utf8');
+
+  it('hands over the rows for a small result', () => {
+    expect(SRC).toMatch(/detail\?: string \| null/);
+    expect(SRC).toMatch(/copy any date or number from here, exactly/i);
+  });
+
+  it('requires the total only when the reply brings money up', () => {
+    expect(SRC).toMatch(/const mentionsMoney = reply\.includes\('రూపాయలు'\)/);
+    expect(SRC).toMatch(/\(!specific \|\| mentionsMoney\)/);
+  });
+
+  it('still requires it outright when no rows were shown', () => {
+    // With nothing to copy from, the computed figures are all the reply can be about.
+    expect(SRC).toMatch(/const specific = Boolean\(facts\.detail\)/);
+  });
+
+  it('still refuses a digit that was never handed over', () => {
+    // A copied date passes; an invented total does not, which is the case this exists for.
+    expect(SRC).toMatch(/if \(!given\.includes\(run\)\) return false/);
   });
 });
