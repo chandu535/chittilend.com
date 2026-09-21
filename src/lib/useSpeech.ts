@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { pickVoice, entrySentence, type EntrySpeech, type VoiceChoice, type VoiceLike } from './speech';
+import { pickVoice, type VoiceChoice, type VoiceLike } from './speech';
 
 /**
- * Saying a day-book line out loud.
+ * Saying something out loud.
  *
  * The thin half on purpose. Everything that could be wrong — which voice, which language,
  * which words — lives in speech.ts and teluguNumbers.ts where it is tested; this is the part
@@ -73,33 +73,6 @@ export function useSpeech() {
   }, []);
 
   /**
-   * Speaks one entry, or does nothing.
-   *
-   * Silent rather than wrong in three cases: no usable voice on the device, read-back turned
-   * off, or the browser refusing. A wrong reading of an amount is worse than no reading —
-   * the whole point is that it can be checked against the cash in hand.
-   */
-  const speakEntry = useCallback((entry: Omit<EntrySpeech, 'lang'>) => {
-    if (!choice || !isReadBackOn()) return;
-
-    try {
-      const utterance = new SpeechSynthesisUtterance(
-        entrySentence({ ...entry, lang: choice.lang }),
-      );
-      utterance.voice = choice.voice;
-      utterance.lang = choice.voice.lang;
-      // Slower than default: these are numbers, and they only get said once.
-      utterance.rate = 0.9;
-
-      // Two entries added quickly would otherwise queue and overlap into one long mumble.
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      // A phone that will not speak is not a reason to fail the entry that was just saved.
-    }
-  }, [choice]);
-
-  /**
    * Says a sentence that is already written.
    *
    * The assistant phrases its own answers, so unlike a day-book line there is nothing to
@@ -167,7 +140,6 @@ export function useSpeech() {
   }, [choice]);
 
   return {
-    speakEntry,
     speakText,
     speakList,
     reading,

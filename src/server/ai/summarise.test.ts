@@ -183,3 +183,62 @@ describe('rowSentences', () => {
       .toEqual(['సురేష్, రెండు వేల ఐదు వందలు']);
   });
 });
+
+/**
+ * Choosing which column is the answer.
+ *
+ * This heuristic has been wrong three times, always by including something it should not:
+ * `amount_paid` excluded for ending in "id", `amount_owed_this_month` excluded for
+ * containing "month", and `due_date` *included* for containing "due" — that last one put a
+ * date where the amount belonged, so every spoken line was a bare name.
+ *
+ * The shapes below are what the model actually returns for the questions people ask, taken
+ * from real runs rather than imagined.
+ */
+describe('picking the money column out of a real result', () => {
+  const unpaid = [
+    { name: 'Subha', mobile: '8247050250', loan_number: 16, due_date: '2026-09-01',
+      amount_due: '2500.00', amount_paid: '0.00', outstanding: '2500.00' },
+    { name: 'Ramesh', mobile: '9999999999', loan_number: 17, due_date: '2026-09-01',
+      amount_due: '5000.00', amount_paid: '1000.00', outstanding: '4000.00' },
+  ];
+
+  it('never mistakes a date for an amount', () => {
+    // due_date carries the word "due". Chosen ahead of the real column it produced lines
+    // with a name and nothing else, because a date does not parse as a number.
+    const lines = rowSentences(unpaid);
+    expect(lines[0]).toContain('రెండు వేల ఐదు వందలు');
+    expect(lines[1]).toContain('నాలుగు వేలు');
+  });
+
+  it('answers with what is owed, not what was collected', () => {
+    /*
+      Three money columns come back for "who has not paid": what was due, what was paid,
+      and the difference. Totalling the wrong one answers the opposite question — and
+      totalling all three gave a sentence with three totals and no way to tell them apart.
+    */
+    const said = summariseRows(unpaid);
+    expect(said).toContain('ఆరు వేల ఐదు వందలు');   // 2500 + 4000, what is owed
+    expect(said).not.toContain('వెయ్యి రూపాయలు');   // not 1000, what was paid
+    expect(said.match(/మొత్తం/g) ?? []).toHaveLength(1);
+  });
+
+  it('reads a lone aggregate as the answer itself', () => {
+    expect(summariseRows([{ total_collected: '70000' }])).toBe('డెబ్బై వేలు రూపాయలు.');
+  });
+
+  it('does not total a per-group count', () => {
+    // "which area has the most loans" returns counts, not money.
+    expect(summariseRows([{ area: 'Bhimavaram', loan_count: '7' }, { area: 'Palakollu', loan_count: '3' }]))
+      .toBe('రెండు ఫలితాలు.');
+  });
+
+  it('skips a money column that holds nothing numeric', () => {
+    // A derived column that came back all NULL must not win on position alone.
+    const rows = [
+      { name: 'x', amount_due: '1000', projected_balance: null },
+      { name: 'y', amount_due: '1500', projected_balance: null },
+    ];
+    expect(summariseRows(rows)).toContain('రెండు వేల ఐదు వందలు');
+  });
+});

@@ -21,7 +21,6 @@ import {
   listCollectionEntries,
 } from '@/server/functions/collections';
 import { formatPhone } from '@/lib/formatters';
-import { useSpeech, isReadBackOn, setReadBackOn } from '@/lib/useSpeech';
 
 export const Route = createFileRoute('/_authenticated/collections')({
   component: CollectionsPage,
@@ -51,12 +50,6 @@ function CollectionsPage() {
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [applyingAll, setApplyingAll] = useState(false);
-  // Lifted here rather than called per row: the hook subscribes to voiceschanged, and
-  // twenty rows would mean twenty listeners for one shared answer.
-  const { speakEntry, available: canSpeak, voiceLabel } = useSpeech();
-  // Mirrors the stored preference so the icon re-renders; speakEntry re-reads the store
-  // itself, so this state is only ever about what the button looks like.
-  const [speaking, setSpeaking] = useState(isReadBackOn());
 
   const load = useCallback(async () => {
     try {
@@ -122,42 +115,6 @@ function CollectionsPage() {
   return (
     <ScrollPage>
       <div className="mx-auto max-w-2xl">
-        {/*
-          Sound on or off, and — when the phone has no voice at all — the only place that
-          says so. Settings is admin-only and this preference is per device, so the person
-          who wants the talking to stop could not otherwise reach the switch.
-
-          Left visible but disabled where there is no voice. That is not a dead control: it
-          is the answer to "why is it not speaking", on the phone where the question comes
-          up. The per-row replay button is hidden in the same case, because that one really
-          would do nothing.
-        */}
-        <div className="mb-2 flex justify-end">
-          <button
-            type="button"
-            disabled={!canSpeak}
-            onClick={() => { const next = !speaking; setReadBackOn(next); setSpeaking(next); }}
-            aria-pressed={canSpeak && speaking}
-            aria-label={canSpeak ? t('collections.readBack') : t('collections.voiceNone')}
-            title={canSpeak ? `${t('collections.readBackHint')} — ${voiceLabel}` : t('collections.voiceNone')}
-            className={clsx(
-              'flex h-11 w-11 items-center justify-center rounded-full transition-colors',
-              !canSpeak && 'text-slate-300',
-              canSpeak && speaking && 'text-brand hover:bg-primary/10',
-              canSpeak && !speaking && 'text-slate-400 hover:bg-slate-100',
-            )}
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
-              {canSpeak && speaking ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M22 9l-6 6m0-6l6 6" />
-              )}
-            </svg>
-          </button>
-        </div>
-
         {/* The apply bar, for an admin with something waiting. Above the list because it is
             the only thing on this screen that spends money. */}
         {canApply && (book?.pendingCount ?? 0) > 0 && (
@@ -200,13 +157,6 @@ function CollectionsPage() {
                 first={i === 0}
                 canApply={canApply}
                 busy={busyId === entry.id}
-                canSpeak={canSpeak}
-                onSpeak={() => speakEntry({
-                  name: entry.borrowerName,
-                  nameTelugu: entry.borrowerNameTelugu,
-                  amount: parseFloat(entry.amount),
-                  kind: entry.kind,
-                })}
                 onApply={() => applyOne(entry.id)}
                 onDiscard={() => discard(entry.id)}
               />
@@ -241,14 +191,12 @@ function CollectionsPage() {
  * part a collector needs to verify against the cash in their hand.
  */
 function EntryRow({
-  entry, first, canApply, busy, canSpeak, onSpeak, onApply, onDiscard,
+  entry, first, canApply, busy, onApply, onDiscard,
 }: {
   entry: Entry;
   first: boolean;
   canApply: boolean;
   busy: boolean;
-  canSpeak: boolean;
-  onSpeak: () => void;
   onApply: () => void;
   onDiscard: () => void;
 }) {
@@ -290,25 +238,6 @@ function EntryRow({
             />
           </div>
         </div>
-
-        {/* Says the row aloud again. Not a convenience: the reading after saving happens
-            once, and someone who cannot read the row has no other way back to it. Hidden
-            where the device has no voice, rather than offered as a button that does
-            nothing. */}
-        {canSpeak && (
-          <button
-            type="button"
-            onClick={onSpeak}
-            aria-label={t('collections.readAloud')}
-            title={t('collections.readAloud')}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 active:bg-slate-200"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13" />
-            </svg>
-          </button>
-        )}
 
         <div className="shrink-0 text-right">
           <p className={clsx('text-[19px] font-bold tabular', green ? 'text-emerald-600' : 'text-red-600')}>

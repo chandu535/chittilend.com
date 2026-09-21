@@ -510,11 +510,7 @@
     "applied": "Applied to the loan",
     "appliedCount": "{{count}} applied",
     "appliedSome": "{{applied}} applied, {{failed}} could not be",
-    "waiting": "{{count}} waiting",
-    "readAloud": "Read aloud",
-    "readBack": "Speak entries aloud",
-    "readBackHint": "Says each entry back after it is added.",
-    "voiceNone": "No voice available on this device"
+    "waiting": "{{count}} waiting"
   },
   "ask": {
     "title": "Ask",

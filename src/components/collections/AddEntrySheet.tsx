@@ -17,7 +17,6 @@ import { toast } from '@/components/ui/Toast';
 import { userFacingError } from '@/lib/userError';
 import { formatPhone } from '@/lib/formatters';
 import { LIMITS } from '@/lib/constants';
-import { useSpeech } from '@/lib/useSpeech';
 
 type Kind = 'taken' | 'given';
 type LoanHit = Awaited<ReturnType<typeof searchLoans>>[number];
@@ -336,7 +335,6 @@ function EnterAmount({ kind, picked, onDone }: { kind: Kind; picked: Picked; onD
   const [raw, setRaw] = useState('');
   const [saving, setSaving] = useState(false);
   const amountRef = useRef<HTMLInputElement>(null);
-  const { speakEntry } = useSpeech();
 
   const amount = useMemo(() => Number(raw) || 0, [raw]);
   const green = kind === 'taken';
@@ -358,17 +356,6 @@ function EnterAmount({ kind, picked, onDone }: { kind: Kind; picked: Picked; onD
         },
       });
       toast(t('collections.saved'), 'success');
-      /*
-        Said before the sheet closes, because this is the only confirmation that reaches
-        someone who cannot read the toast. Name, amount, direction — the line that was just
-        written, so it can be checked against the cash still in hand.
-      */
-      speakEntry({
-        name: picked.name,
-        nameTelugu: picked.nameTelugu,
-        amount,
-        kind,
-      });
       await onDone();
     } catch (err) {
       toast(userFacingError(err, t('errors.generic')), 'error');

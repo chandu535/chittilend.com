@@ -1,12 +1,11 @@
 import { createServerFn } from '@tanstack/react-start';
-import { sql } from 'drizzle-orm';
-import { db } from '../db';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole } from '../middleware/roleGuard';
 import { askModel, extractSql, ModelUnavailable } from '../ai/groq';
 import { guardSql } from '../ai/sqlGuard';
 import { SCHEMA_PROMPT } from '../ai/schemaPrompt';
 import { summariseRows, rowSentences } from '../ai/summarise';
+import { runReadonlyQuery, ReadonlyDbUnavailable, type Row } from '../ai/readonlyDb';
 
 /**
  * Asking the ledger a question in words.
@@ -21,17 +20,11 @@ import { summariseRows, rowSentences } from '../ai/summarise';
  * this feature's real failure mode, not anything dramatic — and the only defence against it
  * is that somebody can read what actually ran.
  *
- * Dev only for now. Pointing this at production needs the read-only Postgres role first:
- * SELECT granted on the business tables, nothing granted on users or sessions. The check in
- * sqlGuard.ts is standing in for permissions the database should be enforcing itself.
+ * Two barriers, not one. sqlGuard reads the text and refuses anything that is not a single
+ * SELECT; the connection it then runs on is a role that holds SELECT on five tables, nothing
+ * on users or sessions, and cannot write at all. The first is a good habit. The second is
+ * the one that holds when the first turns out to have a blind spot.
  */
-
-/**
- * A value as it comes back over the wire. Postgres numerics arrive as strings, which is
- * wanted here — nothing rounds them on the way to the screen.
- */
-export type Cell = string | number | boolean | null;
-export type Row = Record<string, Cell>;
 
 export interface AskResult {
   answer: string;
@@ -95,9 +88,13 @@ export const askLedger = createServerFn({ method: 'POST' })
 
     let rows: Row[];
     try {
-      const result = await db.execute(sql.raw(guarded.sql));
-      rows = (result as unknown as { rows: Row[] }).rows ?? [];
+      rows = await runReadonlyQuery(guarded.sql);
     } catch (err) {
+      if (err instanceof ReadonlyDbUnavailable) {
+        // Never falls back to the owner connection. A missing read-only role is a reason
+        // to answer nothing, not a reason to run generated SQL somewhere more powerful.
+        return { ...empty, sql: guarded.sql, error: err.message };
+      }
       // Almost always a column the model invented. Worth showing plainly rather than
       // dressing up, because the query above it is the explanation.
       return {

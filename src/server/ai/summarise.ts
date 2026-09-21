@@ -25,11 +25,16 @@ type Row = Record<string, Cell>;
 /**
  * Columns worth totalling.
  *
+ * The vocabulary has to cover words the model invents, not just the schema's own: it names
+ * derived columns itself, and `outstanding` — the answer to "who has not paid" — was missing
+ * here, so the total came from `amount_paid` and reported what had been collected when the
+ * question was about what had not.
+ *
  * Money, by name. `loan_number` and `installment_number` are numeric and adding them up
  * would produce a confident, meaningless figure, so identifiers and counts are excluded
  * before anything is summed.
  */
-const MONEY = /amount|total|owed|balance|paid|due|profit|repayment|principal/i;
+const MONEY = /amount|total|owed|outstanding|remaining|pending|balance|paid|collected|due|profit|repayment|principal|sum|rupees/i;
 
 /*
   Only what could collide with a money word, and nothing more.
@@ -39,11 +44,18 @@ const MONEY = /amount|total|owed|balance|paid|due|profit|repayment|principal/i;
   excluded `amount_owed_this_month`, which the model names itself and which held ₹67,041.
   Both produced a sentence that said how many rows and never mentioned the money.
 
-  A column is only considered at all if it carries a money word, so `start_month`,
-  `tenure_months`, `mobile` and `loan_number` never reach this test. What does reach it:
-  `total_installments` is a count wearing the word "total", `installment_number` is an
-  index, and the percent columns are rates. `installment_amount` is genuinely money and
-  must survive, which is why the plural is matched and the singular is not.
+  A column is only considered at all if it carries a money word, so `mobile` and
+  `loan_number` never reach this test. What does reach it: `total_installments` is a count
+  wearing the word "total", `installment_number` is an index, and the percent columns are
+  rates. `installment_amount` is genuinely money and must survive, which is why the plural
+  is matched and the singular is not.
+
+  `due_date` also reaches it, carrying the word "due", and is deliberately *not* excluded
+  here. The obvious patch — banning "date" and "month" — is the bug this list already had
+  twice: it takes `amount_owed_this_month` with it, which is a column the model invents and
+  which holds the actual answer. A date is ruled out by its value instead, in
+  principalMoneyColumn, where a column holding nothing that parses as a number is skipped.
+  Names are a poor way to tell an amount from a date; values are not.
 */
 const NOT_MONEY = /number|count|percent|installments|(^|_)id$|_id$/i;
 
@@ -84,8 +96,8 @@ export function summariseRows(rows: Row[]): string {
 
   const parts = [`${teluguNumberWords(rows.length)} ఫలితాలు`];
 
-  // Totals for every money column, added here rather than described to a model.
-  for (const column of columns.filter(isMoneyColumn)) {
+  const column = principalMoneyColumn(rows, columns);
+  if (column) {
     let sum = 0;
     let seen = 0;
     for (const row of rows) {
@@ -97,6 +109,27 @@ export function summariseRows(rows: Row[]): string {
   }
 
   return `${parts.join(', ')}.`;
+}
+
+/**
+ * The one money column worth reading out.
+ *
+ * A query about who has not paid comes back with amount_due, amount_paid and the
+ * difference, and totalling all three produced a sentence with three totals in it and no
+ * way to tell which was which — "eight results, total seven thousand five hundred, total
+ * one thousand" is worse than saying nothing.
+ *
+ * The last one wins. Models put the figure the question actually asked for at the end of
+ * the select list, after the raw columns it was derived from, so the trailing money column
+ * is the answer and the ones before it are its working. Columns holding nothing numeric
+ * are skipped, so a NULL-heavy derived column cannot win by position alone.
+ */
+function principalMoneyColumn(rows: Row[], columns: string[]): string | null {
+  const candidates = columns.filter(isMoneyColumn);
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    if (rows.some((row) => asNumber(row[candidates[i]]) !== null)) return candidates[i];
+  }
+  return null;
 }
 
 /** Where a person's name might be, most Telugu-ish first. */
@@ -129,7 +162,7 @@ export function rowSentences(rows: Row[]): string[] {
   const nameCol = nameColumn(columns);
   if (!nameCol) return [];
 
-  const moneyCol = columns.find(isMoneyColumn) ?? null;
+  const moneyCol = principalMoneyColumn(rows, columns);
 
   return rows.flatMap((row) => {
     const name = row[nameCol];
