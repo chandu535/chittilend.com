@@ -1,4 +1,4 @@
-import { teluguNumberWords } from '@/lib/teluguNumbers';
+import { teluguNumberWords, teluguPeople } from '@/lib/teluguNumbers';
 
 /**
  * Describing a result set, without letting a model near the arithmetic.
@@ -77,6 +77,7 @@ export function summariseRows(rows: Row[]): string {
   if (!rows.length) return 'ఏమీ దొరకలేదు.';
 
   const columns = Object.keys(rows[0]);
+  const nameCol = nameColumn(columns);
 
   /*
     A single number is the whole answer, not a row count. "ఎంత మంది అప్పుదారులు ఉన్నారు"
@@ -94,7 +95,18 @@ export function summariseRows(rows: Row[]): string {
     if (text !== null && text !== undefined) return `${String(text)}.`;
   }
 
-  const parts = [`${teluguNumberWords(rows.length)} ఫలితాలు`];
+  /*
+    People, when the answer is about people.
+
+    "Who has not paid this month" comes back as one row per unpaid instalment — 73 rows for
+    65 people, because somebody two months behind appears twice. Reading out the row count
+    answers a question nobody asked, and overstates how many doors there are to knock on.
+  */
+  const count = nameCol
+    ? new Set(rows.map((r) => String(r[nameCol] ?? '').trim()).filter(Boolean)).size
+    : rows.length;
+
+  const parts = [nameCol ? teluguPeople(count) : `${teluguNumberWords(count)} ఫలితాలు`];
 
   const column = principalMoneyColumn(rows, columns);
   if (column) {
@@ -164,13 +176,26 @@ export function rowSentences(rows: Row[]): string[] {
 
   const moneyCol = principalMoneyColumn(rows, columns);
 
-  return rows.flatMap((row) => {
-    const name = row[nameCol];
-    if (name === null || name === undefined || String(name).trim() === '') return [];
+  /*
+    One line per person, not per row.
+
+    The same borrower can hold several of the rows a query returns — two unpaid instalments,
+    or two loans — and reading the name twice sounds like two different people owing two
+    different amounts. Their amounts are added instead, so the line says what that person
+    owes in total, which is the number a collector is going to ask them for.
+  */
+  const byPerson = new Map<string, number | null>();
+  for (const row of rows) {
+    const name = String(row[nameCol] ?? '').trim();
+    if (!name) continue;
 
     const amount = moneyCol ? asNumber(row[moneyCol]) : null;
-    return [amount === null
-      ? String(name).trim()
-      : `${String(name).trim()}, ${teluguNumberWords(amount)}`];
-  });
+    const running = byPerson.get(name);
+    if (!byPerson.has(name)) byPerson.set(name, amount);
+    else if (amount !== null) byPerson.set(name, (running ?? 0) + amount);
+  }
+
+  return [...byPerson].map(([name, amount]) => (amount === null
+    ? name
+    : `${name}, ${teluguNumberWords(amount)}`));
 }

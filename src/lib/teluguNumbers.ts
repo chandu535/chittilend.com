@@ -101,3 +101,24 @@ export function teluguNumberWords(value: number): string {
 
   return rest ? `${head} ${underLakh(rest)}` : head;
 }
+
+/**
+ * A count of people, which Telugu does not say the way it says a count of things.
+ *
+ * "ఒకటి మంది" is not Telugu. Small numbers of people have their own words — ఒకరు for one,
+ * ఇద్దరు for two — and only past a handful does the plain number with మంది take over. The
+ * assistant answers "who has not paid" with a count of people more often than anything
+ * else, so getting this wrong would be the most-heard mistake it makes.
+ */
+const PEOPLE: Record<number, string> = {
+  1: 'ఒకరు',
+  2: 'ఇద్దరు',
+  3: 'ముగ్గురు',
+  4: 'నలుగురు',
+  5: 'ఐదుగురు',
+};
+
+export function teluguPeople(count: number): string {
+  const n = Math.round(Math.abs(count));
+  return PEOPLE[n] ?? `${teluguNumberWords(n)} మంది`;
+}

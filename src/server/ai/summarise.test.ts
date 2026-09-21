@@ -23,7 +23,8 @@ describe('summariseRows', () => {
       const said = summariseRows(instalments(8, '2500.00'));
       // ఇరవై వేలు — twenty thousand, not the ₹57,191 a model produced from these rows.
       expect(said).toContain('ఇరవై వేలు');
-      expect(said).toContain('ఎనిమిది ఫలితాలు');
+      // Counted as people, because the rows carry names.
+      expect(said).toContain('ఎనిమిది మంది');
     });
 
     it('gives the same answer every time it is asked', () => {
@@ -77,7 +78,7 @@ describe('summariseRows', () => {
     it('does not call a single row a total', () => {
       // One value is already visible in the row; announcing it as a sum adds nothing.
       const said = summariseRows([{ name: 'x', amount_owed: '2500' }]);
-      expect(said).toBe('ఒకటి ఫలితాలు.');
+      expect(said).toBe('ఒకరు.');
     });
   });
 
@@ -240,5 +241,56 @@ describe('picking the money column out of a real result', () => {
       { name: 'y', amount_due: '1500', projected_balance: null },
     ];
     expect(summariseRows(rows)).toContain('రెండు వేల ఐదు వందలు');
+  });
+});
+
+/**
+ * Counting people, and counting them once each.
+ *
+ * "Who has not paid this month" returns one row per unpaid instalment, so somebody two
+ * months behind appears twice. Reported as rows it overstated how many doors there are to
+ * knock on — 73 results for 65 people — and read their name out twice, as though two
+ * people owed two separate amounts.
+ */
+describe('rows that are about people', () => {
+  const twoInstalments = [
+    { name: 'సురేష్', amount_owed: '2500' },
+    { name: 'సురేష్', amount_owed: '2500' },
+    { name: 'అమ్మాజీ', amount_owed: '5000' },
+  ];
+
+  it('counts people, not rows', () => {
+    expect(summariseRows(twoInstalments)).toContain('ఇద్దరు');
+  });
+
+  it('still totals every row, not one per person', () => {
+    // The money owed is ₹10,000 across three instalments; deduping names must not lose any.
+    expect(summariseRows(twoInstalments)).toContain('పది వేలు');
+  });
+
+  it('says a name once, with what that person owes in total', () => {
+    expect(rowSentences(twoInstalments)).toEqual([
+      'సురేష్, ఐదు వేలు',
+      'అమ్మాజీ, ఐదు వేలు',
+    ]);
+  });
+
+  it('uses the human-counting forms Telugu actually has', () => {
+    // "ఒకటి మంది" is not Telugu; one person is ఒకరు.
+    const person = (name: string) => ({ name, mobile: '9000000000' });
+    expect(summariseRows([person('a')])).toBe('ఒకరు.');
+    expect(summariseRows([person('a'), person('b')])).toBe('ఇద్దరు.');
+    expect(summariseRows([person('a'), person('b'), person('c')])).toBe('ముగ్గురు.');
+  });
+
+  it('reads a lone name as the name, not as a count of one', () => {
+    // A single value is the answer to the question asked. "ఒకరు" would throw away
+    // the only thing the query returned.
+    expect(summariseRows([{ name: 'సురేష్' }])).toBe('సురేష్.');
+  });
+
+  it('counts results, not people, when no name came back', () => {
+    expect(summariseRows([{ area: 'x', loan_count: '7' }, { area: 'y', loan_count: '3' }]))
+      .toBe('రెండు ఫలితాలు.');
   });
 });
