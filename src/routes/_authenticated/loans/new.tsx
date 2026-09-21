@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, redirect } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ScrollPage } from '@/components/layout/PageLayout';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { BorrowerCreateFlow } from '@/components/borrowers/BorrowerCreateFlow';
@@ -18,6 +18,9 @@ import { searchBorrowers } from '@/server/functions/borrowers';
 import { createLoan } from '@/server/functions/loans';
 import { calculateLoan, calculateStartMonth, generatePaymentSchedule } from '@/lib/calculations';
 import { can } from '@/lib/permissions';
+import { VoiceInput } from '@/components/ui/VoiceInput';
+import { useTeluguSearchTerm } from '@/lib/useTeluguSearchTerm';
+import { useDebouncedValue } from '@/lib/useDebouncedValue';
 
 export const Route = createFileRoute('/_authenticated/loans/new')({
   // Typing the URL is not a way around a hidden button.
@@ -41,6 +44,13 @@ function NewLoanPage() {
   const [borrowerQuery, setBorrowerQuery] = useState('');
   const [borrowerResults, setBorrowerResults] = useState<Array<{ id: string; name: string; nameTelugu: string | null; mobile: string; area: string | null }>>([]);
   const [selectedBorrower, setSelectedBorrower] = useState<{ id: string; name: string; nameTelugu: string | null; mobile: string; area: string | null } | null>(null);
+  const debouncedQuery = useDebouncedValue(borrowerQuery, 300);
+  // Typed in English, this is the Telugu reading of it — searched alongside, and shown in
+  // the field so it is clear what else is being looked for. Most names here are stored in
+  // Telugu, so without this an English keyboard could not reach them.
+  const { telugu: teluguTerm, candidates: teluguCandidates } = useTeluguSearchTerm(borrowerQuery);
+  const debouncedTelugu = useDebouncedValue(teluguCandidates.join('|'), 300);
+  const teluguTerms = debouncedTelugu ? debouncedTelugu.split('|') : [];
 
 
   // Step 2: Amount
@@ -62,19 +72,36 @@ function NewLoanPage() {
     return generatePaymentSchedule(startMonth, calc.totalRepayment, calc.totalInstallments, frequency);
   }, [calc, dateGiven, frequency]);
 
-  const handleBorrowerSearch = async (query: string) => {
-    setBorrowerQuery(query);
-    if (query.length < 1) {
+  /*
+    Driven by an effect rather than fired from the keystroke.
+
+    The Telugu reading of what was typed does not arrive with the keystroke — the local
+    table answers at once and Google Input Tools replaces it a moment later — so a search
+    that ran on change would always send the reading from the previous letter, and a spoken
+    name would search nothing at all. Watching the terms instead means every refinement
+    re-runs the search, which is what the borrowers list has always done and what this
+    screen was missing.
+  */
+  useEffect(() => {
+    // Picking a borrower fills the box with their name, which would otherwise search for
+    // the person already chosen and reopen the list behind the selected card.
+    if (selectedBorrower) return;
+
+    const query = debouncedQuery.trim();
+    if (!query && !teluguTerms.length) {
       setBorrowerResults([]);
       return;
     }
-    try {
-      const results = await searchBorrowers({ data: { query } });
-      setBorrowerResults(results);
-    } catch {
-      setBorrowerResults([]);
-    }
-  };
+
+    let cancelled = false;
+    searchBorrowers({ data: { query, queryTelugu: teluguTerms } })
+      .then((results) => { if (!cancelled) setBorrowerResults(results); })
+      .catch(() => { if (!cancelled) setBorrowerResults([]); });
+
+    return () => { cancelled = true; };
+    // teluguTerms is rebuilt each render; the joined string is the stable value to watch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery, debouncedTelugu, selectedBorrower]);
 
   const handleSubmit = async () => {
     if (!selectedBorrower || !calc) return;
@@ -181,7 +208,23 @@ function NewLoanPage() {
                   <Input
                     placeholder={t('common.search')}
                     value={borrowerQuery}
-                    onChange={(e) => handleBorrowerSearch(e.target.value)}
+                    onChange={(e) => setBorrowerQuery(e.target.value)}
+                    rightSlot={
+                      <>
+                        {teluguTerm && (
+                          <span
+                            className="pointer-events-none max-w-[6rem] truncate rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-brand"
+                            title={teluguTerm}
+                          >
+                            {teluguTerm}
+                          </span>
+                        )}
+                        {/* Speaking the name is the fast way in. Most borrowers here are
+                            stored in Telugu, and typing Telugu on a phone is slow even for
+                            someone who reads it. */}
+                        <VoiceInput size="sm" onResult={setBorrowerQuery} />
+                      </>
+                    }
                   />
                   {borrowerResults.length > 0 && (
                     <ul className="rounded-lg border border-slate-200 divide-y divide-slate-100 max-h-48 overflow-y-auto">
