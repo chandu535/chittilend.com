@@ -212,3 +212,49 @@ export function rowSentences(rows: Row[]): string[] {
     ? name
     : `${name}, ${teluguNumberWords(amount)}`));
 }
+
+/**
+ * The pieces of a result, for the sentence that gets spoken.
+ *
+ * Computed here so the model never has to. It is handed these already written out and may
+ * only repeat them.
+ */
+export function answerFacts(rows: Row[]): {
+  rowCount: number;
+  countPhrase: string | null;
+  totalPhrase: string | null;
+  sampleNames: string[];
+} {
+  if (!rows.length) {
+    return { rowCount: 0, countPhrase: null, totalPhrase: null, sampleNames: [] };
+  }
+
+  const columns = Object.keys(rows[0]);
+  const nameCol = nameColumn(columns);
+  const moneyCol = principalMoneyColumn(rows, columns);
+
+  const people = nameCol
+    ? new Set(rows.map((r) => String(r[nameCol] ?? '').trim()).filter(Boolean)).size
+    : rows.length;
+
+  let total: number | null = null;
+  if (moneyCol) {
+    let sum = 0;
+    let seen = 0;
+    for (const row of rows) {
+      const value = asNumber(row[moneyCol]);
+      if (value !== null) { sum += value; seen++; }
+    }
+    // A single figure is the answer itself, not a total of anything.
+    if (seen) total = sum;
+  }
+
+  return {
+    rowCount: rows.length,
+    countPhrase: nameCol ? teluguPeople(people) : `${teluguNumberWords(rows.length)} ఫలితాలు`,
+    totalPhrase: total === null ? null : `${teluguNumberWords(total)} రూపాయలు`,
+    sampleNames: nameCol
+      ? [...new Set(rows.map((r) => String(r[nameCol] ?? '').trim()).filter(Boolean))].slice(0, 3)
+      : [],
+  };
+}

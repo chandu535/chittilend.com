@@ -4,7 +4,8 @@ import { requireRole } from '../middleware/roleGuard';
 import { askModel, extractSql, ModelUnavailable } from '../ai/groq';
 import { guardSql } from '../ai/sqlGuard';
 import { SCHEMA_PROMPT } from '../ai/schemaPrompt';
-import { summariseRows, rowSentences } from '../ai/summarise';
+import { summariseRows, rowSentences, answerFacts } from '../ai/summarise';
+import { phraseAnswer } from '../ai/reply';
 import { runReadonlyQuery, ReadonlyDbUnavailable, type Row } from '../ai/readonlyDb';
 
 /**
@@ -58,11 +59,26 @@ const REFUSAL = 'CANNOT_ANSWER';
 
 export const askLedger = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => {
-    const d = data as { question?: string };
+    const d = data as { question?: string; history?: { question: string; answer: string }[] };
     const question = (d.question ?? '').trim();
     if (!question) throw new Error('Ask a question first');
     if (question.length > 500) throw new Error('That question is too long');
-    return { question };
+    /*
+      The last few exchanges, so a follow-up has something to refer back to.
+
+      Without them every question stood alone, and "అందులో ఎక్కువ ఎవరు" — who among them
+      owes most — had no them. The model saw a question about nobody and answered about
+      nobody. Three turns is enough for the way people actually ask: a broad question,
+      then two narrowings of it.
+    */
+    const history = (d.history ?? [])
+      .filter((h) => h && typeof h.question === 'string')
+      .slice(-3)
+      .map((h) => ({
+        question: String(h.question).slice(0, 300),
+        answer: String(h.answer ?? '').slice(0, 300),
+      }));
+    return { question, history };
   })
   .handler(async ({ data }): Promise<AskResult> => {
     const user = await getAuthenticatedUser();
@@ -73,9 +89,13 @@ export const askLedger = createServerFn({ method: 'POST' })
 
     let generated: string;
     try {
+      const asked = data.history.length
+        ? `${data.history.map((h) => `Earlier question: ${h.question}\nWhat was found: ${h.answer}`).join('\n\n')}\n\nNow answer this, which may refer back to the above: ${data.question}`
+        : data.question;
+
       generated = extractSql(await askModel({
         system: SCHEMA_PROMPT,
-        user: data.question,
+        user: asked,
         temperature: 0,
       }));
     } catch (err) {
@@ -120,8 +140,20 @@ export const askLedger = createServerFn({ method: 'POST' })
 
     const columns = rows.length ? Object.keys(rows[0]) : [];
 
+    /*
+      Spoken as an answer rather than reported as a result set. The figures are computed
+      here and handed over already written out; the model only puts a sentence round them,
+      and anything it returns carrying a digit is thrown away for the plain version.
+    */
+    const plain = summariseRows(rows);
+    const spoken = await phraseAnswer({
+      question: data.question,
+      fallback: plain,
+      ...answerFacts(rows),
+    });
+
     return {
-      answer: summariseRows(rows),
+      answer: spoken,
       columns,
       rows,
       lines: rowSentences(rows),

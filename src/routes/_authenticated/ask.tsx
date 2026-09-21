@@ -70,7 +70,17 @@ function AskPage() {
     setQuestion('');
     setAsking(true);
     try {
-      const result = await askLedger({ data: { question: asked } });
+      /*
+        The last few exchanges go with the question, so a follow-up can refer back to them.
+        Without this "అందులో ఎక్కువ ఎవరు" — who among them owes most — reached the model
+        as a question about nobody, and was answered accordingly.
+      */
+      const history = turns
+        .filter((turn) => turn.result && !turn.result.error)
+        .slice(-3)
+        .map((turn) => ({ question: turn.question, answer: turn.result!.answer }));
+
+      const result = await askLedger({ data: { question: asked, history } });
       setTurns((prev) => [...prev, { question: asked, result }]);
       /*
         Headline first, then the names.

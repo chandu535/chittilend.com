@@ -31,8 +31,7 @@ loans(id uuid, loan_number int, borrower_id uuid, date_given date, start_month d
   loans whose date_given falls in that period.
   status in ('active','completed','defaulted','extended'). In practice only 'active' and
   'completed' are ever used: 'defaulted' is set by hand and nobody sets it, so filtering on
-  it always returns nothing. Somebody who has "stopped paying" or "is not paying" is a
-  borrower with instalments long overdue — find them through payments.due_date, not status.
+  it always returns nothing.
   payment_frequency in ('monthly','weekly').
 
 payments(id uuid, loan_id uuid, installment_number int, due_date date,
@@ -54,22 +53,30 @@ RULES
 
 1. Soft deletes are real rows. Always require borrowers.deleted_at IS NULL and
    loans.deleted_at IS NULL on any table you join. Forgetting this counts binned records.
-2. Dates are Indian. Use (now() AT TIME ZONE 'Asia/Kolkata')::date for "today", and
-   date_trunc('month', (now() AT TIME ZONE 'Asia/Kolkata')::date) for "this month".
-   The server runs on UTC, where the last five and a half hours of the Indian day are still
-   yesterday.
-3. "Not paid" means status NOT IN ('paid','waived'). It must include 'partial' — somebody who
+2. Dates are Indian. Use (now() AT TIME ZONE 'Asia/Kolkata')::date for "today". The server
+   runs on UTC, where the last five and a half hours of the Indian day are still yesterday.
+
+3. A named period is a window, not a cutoff. "This month" (ఈ నెల) means the instalment falls
+   inside this month and no other:
+       date_trunc('month', p.due_date) = date_trunc('month', (now() AT TIME ZONE 'Asia/Kolkata')::date)
+   It does NOT mean everything unpaid up to now. Getting this wrong roughly triples the
+   answer, because it drags in every month that came before.
+
+4. Only when no period is named does "stopped paying" or "not paying" (కట్టలేదు, మానేసిన)
+   mean everything still owed: p.status NOT IN ('paid','waived') AND p.due_date <= today.
+   If a period is named, the period wins.
+5. "Not paid" means status NOT IN ('paid','waived'). It must include 'partial' — somebody who
    paid half has not paid. Do not write status IN ('pending','overdue').
-4. Money still owed on an instalment is (amount_due - amount_paid), never amount_due alone.
-5. Counting people means COUNT(DISTINCT borrowers.id). Counting instalments means COUNT(*).
+6. Money still owed on an instalment is (amount_due - amount_paid), never amount_due alone.
+7. Counting people means COUNT(DISTINCT borrowers.id). Counting instalments means COUNT(*).
    These give different answers and the question usually means people.
-6. Return the columns a person would want to see: name, mobile, loan_number, the amount, the
+8. Return the columns a person would want to see: name, mobile, loan_number, the amount, the
    date. Not just an id. When the question asks for a list, order it sensibly.
-7. Never use created_at to answer a question about when something happened. Every row in
+9. Never use created_at to answer a question about when something happened. Every row in
    this database was imported on the same day, so "this year" or "last month" measured by
    created_at returns the entire ledger. Use date_given for loans, paid_date or due_date for
    payments, event_date for the capital pool.
-8. Never read the users or sessions tables. They hold passwords and login tokens and have
+10. Never read the users or sessions tables. They hold passwords and login tokens and have
    nothing to do with money.
 
 OUTPUT
