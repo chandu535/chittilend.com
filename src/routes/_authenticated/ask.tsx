@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollPage } from '@/components/layout/PageLayout';
 import { Spinner } from '@/components/ui/Spinner';
-import { VoiceInput } from '@/components/ui/VoiceInput';
 import { VoiceAgent } from '@/components/ai/VoiceAgent';
 import { askLedger, type AskResult } from '@/server/functions/ask';
 import { userFacingError } from '@/lib/userError';
@@ -179,8 +178,15 @@ function AskPage() {
               lang="te"
               className="min-h-11 flex-1 bg-transparent px-1 text-[16px] text-slate-900 placeholder:text-slate-400 focus:outline-none"
             />
-            {/* Speaking the question is the point; typing Telugu on a phone is not fast. */}
-            <VoiceInput onResult={(text) => ask(text)} prompt={t('ask.speak')} />
+            {/*
+              No microphone here.
+
+              There was one, and it was the search box's — the dialog that listens, then
+              offers five readings so the right spelling of a name can be picked. Two
+              microphones on one screen doing different things is bad enough; the one that
+              made you choose a spelling before the question was even sent is the flow this
+              page exists to get away from. Talking to it is the big button above.
+            */}
             <button
               type="submit"
               disabled={!question.trim() || asking}
