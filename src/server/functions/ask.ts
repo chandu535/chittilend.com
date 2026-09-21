@@ -41,7 +41,17 @@ export interface AskResult {
   lines: string[];
   /** Shown to the user. The point is that it can be checked. */
   sql: string | null;
+  /**
+   * An i18n key rather than a sentence.
+   *
+   * The screen is read in Telugu and these were coming back in English — "That cannot be
+   * answered from the ledger" under a Telugu question, which is no message at all to the
+   * person this was built for. The server does not know which language is on, so it names
+   * the problem and the screen says it.
+   */
   error: string | null;
+  /** The raw reason, for an error no key covers — a Postgres message, usually. */
+  errorDetail?: string | null;
 }
 
 const REFUSAL = 'CANNOT_ANSWER';
@@ -59,7 +69,7 @@ export const askLedger = createServerFn({ method: 'POST' })
     // Read-only, but it reads the whole book — the same bar as seeing the loans list.
     requireRole(user, ['admin', 'manager']);
 
-    const empty = { answer: '', columns: [], rows: [], lines: [], sql: null };
+    const empty = { answer: '', columns: [], rows: [], lines: [], sql: null, errorDetail: null };
 
     let generated: string;
     try {
@@ -71,19 +81,22 @@ export const askLedger = createServerFn({ method: 'POST' })
     } catch (err) {
       return {
         ...empty,
-        error: err instanceof ModelUnavailable ? err.message : 'Could not reach the model',
+        error: 'ask.errors.model',
+        errorDetail: err instanceof ModelUnavailable ? err.message : null,
       };
     }
 
     if (generated.toUpperCase().includes(REFUSAL)) {
-      return { ...empty, error: 'That cannot be answered from the ledger' };
+      return { ...empty, error: 'ask.errors.cannotAnswer' };
     }
 
     const guarded = guardSql(generated);
     if (!guarded.ok) {
       // The rejected query is still shown: a refusal the user cannot see is indistinguishable
       // from a bug, and this one is usually the model misreading the question.
-      return { ...empty, sql: generated, error: guarded.reason };
+      // The guard's reason is shown as detail: it names a specific refusal, and the query
+      // it refused is on screen beside it.
+      return { ...empty, sql: generated, error: 'ask.errors.refused', errorDetail: guarded.reason };
     }
 
     let rows: Row[];
@@ -93,14 +106,15 @@ export const askLedger = createServerFn({ method: 'POST' })
       if (err instanceof ReadonlyDbUnavailable) {
         // Never falls back to the owner connection. A missing read-only role is a reason
         // to answer nothing, not a reason to run generated SQL somewhere more powerful.
-        return { ...empty, sql: guarded.sql, error: err.message };
+        return { ...empty, sql: guarded.sql, error: 'ask.errors.noConnection' };
       }
       // Almost always a column the model invented. Worth showing plainly rather than
       // dressing up, because the query above it is the explanation.
       return {
         ...empty,
         sql: guarded.sql,
-        error: err instanceof Error ? err.message.split('\n')[0] : 'That query did not run',
+        error: 'ask.errors.queryFailed',
+        errorDetail: err instanceof Error ? err.message.split('\n')[0] : null,
       };
     }
 

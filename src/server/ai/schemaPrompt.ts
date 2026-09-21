@@ -29,7 +29,10 @@ loans(id uuid, loan_number int, borrower_id uuid, date_given date, start_month d
   primary_amount is what was lent. total_repayment is what must come back.
   profit_amount is the markup on the loan. For profit over a period, sum profit_amount for
   loans whose date_given falls in that period.
-  status in ('active','completed','defaulted','extended').
+  status in ('active','completed','defaulted','extended'). In practice only 'active' and
+  'completed' are ever used: 'defaulted' is set by hand and nobody sets it, so filtering on
+  it always returns nothing. Somebody who has "stopped paying" or "is not paying" is a
+  borrower with instalments long overdue — find them through payments.due_date, not status.
   payment_frequency in ('monthly','weekly').
 
 payments(id uuid, loan_id uuid, installment_number int, due_date date,

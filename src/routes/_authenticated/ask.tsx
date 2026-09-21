@@ -202,7 +202,14 @@ function TurnBlock({ turn, canSpeak, reading, onReplay, onReadList }: {
 
       {result?.error && (
         <div className="space-y-1.5">
-          <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">{result.error}</p>
+          <div className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <p>{t(result.error)}</p>
+            {/* The specific reason, when there is one worth reading — a refusal or a
+                Postgres complaint. English, because that is what it is. */}
+            {result.errorDetail && (
+              <p className="mt-0.5 text-xs text-amber-700/80">{result.errorDetail}</p>
+            )}
+          </div>
           {result.sql && <SqlBlock sql={result.sql} />}
         </div>
       )}

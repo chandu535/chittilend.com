@@ -106,6 +106,19 @@ export function summariseRows(rows: Row[]): string {
     ? new Set(rows.map((r) => String(r[nameCol] ?? '').trim()).filter(Boolean)).size
     : rows.length;
 
+  /*
+    One person is their name, not "one person".
+
+    "Who owes us the most" comes back as a single row, and answering it with ఒకరు states
+    the number of answers instead of the answer — with the name sitting in the table
+    immediately below, which makes it worse rather than merely unhelpful. Asked for a name,
+    say the name.
+  */
+  if (nameCol && count === 1) {
+    const [only] = rowSentences(rows);
+    if (only) return `${only}.`;
+  }
+
   const parts = [nameCol ? teluguPeople(count) : `${teluguNumberWords(count)} ఫలితాలు`];
 
   const column = principalMoneyColumn(rows, columns);

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { summariseRows, rowSentences } from './summarise';
+import { teluguPeople } from '@/lib/teluguNumbers';
 
 /**
  * The spoken half of an answer, and the reason it is not written by a model.
@@ -76,9 +77,11 @@ describe('summariseRows', () => {
     });
 
     it('does not call a single row a total', () => {
-      // One value is already visible in the row; announcing it as a sum adds nothing.
+      // One value is already visible in the row; announcing it as a sum adds nothing. And
+      // with a single person the answer is their name, not a count of them.
       const said = summariseRows([{ name: 'x', amount_owed: '2500' }]);
-      expect(said).toBe('ఒకరు.');
+      expect(said).toBe('x, రెండు వేల ఐదు వందలు.');
+      expect(said).not.toContain('మొత్తం');
     });
   });
 
@@ -276,11 +279,13 @@ describe('rows that are about people', () => {
   });
 
   it('uses the human-counting forms Telugu actually has', () => {
-    // "ఒకటి మంది" is not Telugu; one person is ఒకరు.
+    // "ఒకటి మంది" is not Telugu; one person is ఒకరు, two are ఇద్దరు. A single person is
+    // answered by name instead, so the counting starts at two.
     const person = (name: string) => ({ name, mobile: '9000000000' });
-    expect(summariseRows([person('a')])).toBe('ఒకరు.');
     expect(summariseRows([person('a'), person('b')])).toBe('ఇద్దరు.');
     expect(summariseRows([person('a'), person('b'), person('c')])).toBe('ముగ్గురు.');
+    expect(teluguPeople(1)).toBe('ఒకరు');
+    expect(teluguPeople(9)).toBe('తొమ్మిది మంది');
   });
 
   it('reads a lone name as the name, not as a count of one', () => {
@@ -292,5 +297,25 @@ describe('rows that are about people', () => {
   it('counts results, not people, when no name came back', () => {
     expect(summariseRows([{ area: 'x', loan_count: '7' }, { area: 'y', loan_count: '3' }]))
       .toBe('రెండు ఫలితాలు.');
+  });
+});
+
+describe('when the answer is one person', () => {
+  it('says their name, not that there is one of them', () => {
+    /*
+      "Who owes us the most" returns a single row. Answered with ఒకరు it stated the number
+      of answers rather than the answer — with the name in the table directly beneath it,
+      which makes it worse than unhelpful.
+    */
+    const said = summariseRows([{
+      name: 'చిత్తారపు బుల్లెమ్మ', mobile: '9676635691', loan_number: 454, amount_owed: '62500.00',
+    }]);
+    expect(said).toBe('చిత్తారపు బుల్లెమ్మ, అరవై రెండు వేల ఐదు వందలు.');
+    expect(said).not.toContain('ఒకరు');
+  });
+
+  it('goes back to counting once there are two', () => {
+    expect(summariseRows([{ name: 'A', amount_owed: '1000' }, { name: 'B', amount_owed: '2000' }]))
+      .toContain('ఇద్దరు');
   });
 });

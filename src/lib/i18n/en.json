@@ -522,6 +522,13 @@
     "showQuery": "Show the query",
     "hideQuery": "Hide the query",
     "readNames": "Read {{count}} names aloud",
-    "stopReading": "Stop"
+    "stopReading": "Stop",
+    "errors": {
+      "cannotAnswer": "That cannot be answered from the ledger.",
+      "refused": "That query was not allowed.",
+      "queryFailed": "That query did not run.",
+      "model": "Could not reach the assistant.",
+      "noConnection": "The assistant has no read-only database connection."
+    }
   }
 }
