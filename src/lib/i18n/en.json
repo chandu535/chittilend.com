@@ -529,6 +529,14 @@
       "queryFailed": "That query did not run.",
       "model": "Could not reach the assistant.",
       "noConnection": "The assistant has no read-only database connection."
+    },
+    "voice": {
+      "idle": "Tap to ask",
+      "listening": "Listening…",
+      "thinking": "Looking…",
+      "speaking": "Answering…",
+      "tapToTalk": "Tap and speak",
+      "permission": "Microphone permission is needed"
     }
   }
 }

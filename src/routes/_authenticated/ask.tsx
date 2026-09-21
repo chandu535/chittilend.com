@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ScrollPage } from '@/components/layout/PageLayout';
 import { Spinner } from '@/components/ui/Spinner';
 import { VoiceInput } from '@/components/ui/VoiceInput';
+import { VoiceAgent } from '@/components/ai/VoiceAgent';
 import { askLedger, type AskResult } from '@/server/functions/ask';
 import { userFacingError } from '@/lib/userError';
 import { useSpeech } from '@/lib/useSpeech';
@@ -132,6 +133,14 @@ function AskPage() {
               onReplay={() => turn.result?.answer && speakText(turn.result.answer)}
             />
           ))}
+
+          {/* Hands-free. One press starts a conversation rather than a dictation, and the
+              question goes on its own when you stop talking. */}
+          {canSpeak && (
+            <div className="flex justify-center py-4">
+              <VoiceAgent onAsk={ask} busy={asking} speaking={reading} onInterrupt={cancel} />
+            </div>
+          )}
 
           {asking && (
             <div className="flex items-center gap-2 text-sm text-slate-400">
