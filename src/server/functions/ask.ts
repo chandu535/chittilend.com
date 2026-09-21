@@ -5,7 +5,7 @@ import { askModel, extractSql, ModelUnavailable } from '../ai/groq';
 import { SCHEMA_PROMPT } from '../ai/schemaPrompt';
 import { summariseRows, rowSentences, answerFacts, nameColumnOf, moneyColumnOf } from '../ai/summarise';
 import { guardSql } from '../ai/sqlGuard';
-import { phraseAnswer } from '../ai/reply';
+import { phraseAnswer, phraseRefusal } from '../ai/reply';
 import { runReadonlyQuery, ReadonlyDbUnavailable, type Row } from '../ai/readonlyDb';
 
 /**
@@ -107,7 +107,15 @@ export const askLedger = createServerFn({ method: 'POST' })
     }
 
     if (generated.toUpperCase().includes(REFUSAL)) {
-      return { ...empty, error: 'ask.errors.cannotAnswer' };
+      /*
+        Answered in its own voice rather than refused in the interface's.
+
+        "నీ పేరేంటి" came back as "That cannot be answered from the ledger", in English,
+        because the refusal was a UI string and the app was set to English. The assistant
+        speaks Telugu whichever language the screen is in — and being asked its name is not
+        a failure to answer, it has one.
+      */
+      return { ...empty, error: null, answer: await phraseRefusal(data.question) };
     }
 
     const guarded = guardSql(generated);

@@ -94,7 +94,8 @@ describe('summariseRows', () => {
     });
 
     it('handles an empty result', () => {
-      expect(summariseRows([])).toBe('ఏమీ దొరకలేదు.');
+      // Said the way it would be said, and never as a claim that nothing is owed.
+      expect(summariseRows([])).toBe('దీనికి answer నా దగ్గర లేదు.');
     });
 
     it('totals a money column whatever the model decided to call it', () => {

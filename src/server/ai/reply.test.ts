@@ -106,3 +106,40 @@ describe('what an empty result is allowed to mean', () => {
     expect(SRC).toMatch(/at least that much, not exactly/i);
   });
 });
+
+/**
+ * Who it is, and how it talks.
+ *
+ * Asked "నీ పేరేంటి" it replied "That cannot be answered from the ledger" — in English,
+ * because the refusal was an interface string and the app was set to English. Two faults in
+ * one sentence: it answers in its own voice whatever the screen is set to, and being asked
+ * its name is not a failure to answer.
+ */
+describe('the assistant\'s own voice', () => {
+  const SRC = readFileSync(join(__dirname, 'reply.ts'), 'utf8');
+
+  it('knows its name', () => {
+    expect(SRC).toMatch(/శ్రీపే/);
+    expect(SRC).toMatch(/SriPay/);
+  });
+
+  it('answers a question about itself rather than refusing it', () => {
+    expect(SRC).toMatch(/phraseRefusal/);
+    expect(SRC).toMatch(/If they asked who you are/i);
+  });
+
+  it('never claims to be a person', () => {
+    expect(SRC).toMatch(/Never claim to be a person/i);
+  });
+
+  it('speaks the way people speak, not the way Telugu is written', () => {
+    // The literary register is what the model reaches for unasked, and nobody says it aloud.
+    expect(SRC).toMatch(/not the way it is written/i);
+    expect(SRC).toMatch(/English words that everybody uses/i);
+  });
+
+  it('still refuses to invent a number when it cannot answer', () => {
+    // It has been given no figures here, so any digit in the reply is one it made up.
+    expect(SRC).toMatch(/!HAS_DIGITS\.test\(said\)/);
+  });
+});

@@ -74,7 +74,8 @@ function asNumber(value: Cell): number | null {
 }
 
 export function summariseRows(rows: Row[]): string {
-  if (!rows.length) return 'ఏమీ దొరకలేదు.';
+  // Spoken the way it would be said, not the way it would be written.
+  if (!rows.length) return 'దీనికి answer నా దగ్గర లేదు.';
 
   const columns = Object.keys(rows[0]);
   const nameCol = nameColumn(columns);

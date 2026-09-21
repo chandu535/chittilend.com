@@ -33,7 +33,29 @@ export interface AnswerFacts {
   fallback: string;
 }
 
-const SYSTEM = `You are answering questions about a small lending business, out loud, in Telugu.
+const IDENTITY = `You are శ్రీపే (SriPay), the assistant inside a small lending business's app.
+If you are asked who or what you are, say your name is శ్రీపే and that you help with the
+loans, the borrowers and the money in this book. Never claim to be a person.`;
+
+/**
+ * How it talks.
+ *
+ * Everyday spoken Telugu, with the English words people actually use in the middle of it —
+ * answer, amount, total, month, loan. Written Telugu has a separate literary register and
+ * that is what the model reaches for unasked: correct, and nothing like how anyone in this
+ * business speaks. A sentence read aloud should sound like the person across the table, not
+ * like a form.
+ */
+const REGISTER = `Speak the way people actually speak Telugu here, not the way it is written
+in books. Use the English words that everybody uses in the middle of Telugu sentences —
+answer, amount, total, month, count, loan, phone — rather than hunting for a pure Telugu
+equivalent nobody says out loud. Keep it short and plain.`;
+
+const SYSTEM = `${IDENTITY}
+
+${REGISTER}
+
+You are answering questions about a small lending business, out loud, in Telugu.
 
 You are given facts that are already correct. Your only job is to say them as one or two
 natural spoken sentences, as a person would answer a question.
@@ -42,7 +64,7 @@ ABSOLUTE RULES
 - Never calculate, add, estimate, or infer a number. Not even a simple one.
 - Use ONLY the number phrases given to you, copied exactly, character for character.
 - Never write digits. Numbers appear only as the Telugu words you were handed.
-- If no rows were found, say only that you could not find it — "నాకు ఏమీ కనబడలేదు",
+- If no rows were found, say only that you could not find it — "దీనికి answer నా దగ్గర లేదు",
   "అది నాకు దొరకలేదు". NEVER turn an empty result into a fact: do not say nobody owes
   anything, or everyone has paid, or there is nothing to collect. Finding nothing means
   the search found nothing, which is not the same as there being nothing.
@@ -95,4 +117,41 @@ function trustworthy(reply: string, facts: AnswerFacts): boolean {
   if (facts.totalPhrase && !reply.includes(facts.totalPhrase)) return false;
   if (facts.countPhrase && facts.rowCount > 1 && !reply.includes(facts.countPhrase)) return false;
   return true;
+}
+
+/**
+ * What it says when the question was not about the ledger at all.
+ *
+ * "నీ పేరేంటి" used to come back as "That cannot be answered from the ledger" — in English,
+ * because the refusal was a UI string and the app was in English mode. Two things wrong with
+ * that. The assistant should answer in its own voice whichever language the screen is set to,
+ * and being asked its name is not a failure to answer — it has a name.
+ */
+export async function phraseRefusal(question: string): Promise<string> {
+  try {
+    const reply = await askModel({
+      system: `${IDENTITY}
+
+${REGISTER}
+
+Somebody has asked you something you cannot answer from the loan book.
+
+If they asked who you are, what your name is, or what you can do, answer that — you are శ్రీపే
+and you help with the loans, borrowers and money in this book.
+
+Otherwise say plainly that you do not have an answer for it, the way you would across a
+table: "దీనికి answer నా దగ్గర లేదు". Do not apologise at length, do not explain databases,
+do not guess. One short sentence. Reply with the sentence only.`,
+      user: question,
+      temperature: 0.3,
+      maxTokens: 120,
+    });
+    const said = reply.trim();
+    // Same rule as an answer: no digits, since it has been given no numbers to report.
+    return said && said.length <= 300 && !HAS_DIGITS.test(said)
+      ? said
+      : 'దీనికి answer నా దగ్గర లేదు.';
+  } catch {
+    return 'దీనికి answer నా దగ్గర లేదు.';
+  }
 }
