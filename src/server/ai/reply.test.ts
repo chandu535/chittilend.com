@@ -23,6 +23,11 @@ describe('the guard on a phrased answer', () => {
     expect(SOURCE).toMatch(/if \(HAS_DIGITS\.test\(reply\)\) return false/);
   });
 
+  it('rejects a reply that does not contain the answer it was handed', () => {
+    // This is the check that would have caught "one borrower" spoken over a table of 180.
+    expect(SOURCE).toMatch(/!reply\.includes\(facts\.answerPhrase\)/);
+  });
+
   it('rejects a reply that drops or replaces the total it was handed', () => {
     /*
       The dangerous case is replacement rather than omission: a substituted figure reads

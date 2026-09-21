@@ -237,15 +237,45 @@ export function answerFacts(rows: Row[], override?: {
 }): {
   rowCount: number;
   truncated: boolean;
+  /**
+   * The whole answer, where the query returned exactly one.
+   *
+   * "How many borrowers are there" comes back as a single cell holding 180, and the facts
+   * built below described it as "one result" — which is true of the shape of the reply and
+   * says nothing about the number in it. The model was never handed the 180, so it said
+   * there was one borrower while the table beside it read 180. Whatever else is sent, this
+   * is the answer and has to come back in the sentence.
+   */
+  answerPhrase: string | null;
   countPhrase: string | null;
   totalPhrase: string | null;
   sampleNames: string[];
 } {
   if (!rows.length) {
-    return { rowCount: 0, truncated: false, countPhrase: null, totalPhrase: null, sampleNames: [] };
+    return {
+      rowCount: 0, truncated: false,
+      answerPhrase: null, countPhrase: null, totalPhrase: null, sampleNames: [],
+    };
   }
 
   const columns = Object.keys(rows[0]);
+
+  /*
+    A single cell is the entire answer, and it is taken from the same branch summariseRows
+    uses so the two cannot describe the same result differently. They did, once, and the
+    spoken half was the one that was wrong.
+  */
+  if (rows.length === 1 && columns.length === 1 && !override?.truncated) {
+    const only = asNumber(rows[0][columns[0]]);
+    const phrase = only !== null
+      ? (isMoneyColumn(columns[0]) ? `${teluguNumberWords(only)} రూపాయలు` : teluguNumberWords(only))
+      : String(rows[0][columns[0]] ?? '').trim() || null;
+
+    return {
+      rowCount: 1, truncated: false,
+      answerPhrase: phrase, countPhrase: null, totalPhrase: null, sampleNames: [],
+    };
+  }
   const nameCol = nameColumn(columns);
   const moneyCol = principalMoneyColumn(rows, columns);
 
@@ -276,6 +306,7 @@ export function answerFacts(rows: Row[], override?: {
   return {
     rowCount: override?.people ?? rows.length,
     truncated: Boolean(override?.truncated),
+    answerPhrase: null,
     countPhrase: nameCol ? teluguPeople(people) : `${teluguNumberWords(rows.length)} ఫలితాలు`,
     totalPhrase: total === null ? null : `${teluguNumberWords(total)} రూపాయలు`,
     sampleNames: nameCol

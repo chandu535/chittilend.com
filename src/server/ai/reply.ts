@@ -20,6 +20,10 @@ export interface AnswerFacts {
   /** What was asked, so the reply answers it rather than describing the rows. */
   question: string;
   rowCount: number;
+  /** The whole answer, where there is a single one. Must come back in the sentence. */
+  answerPhrase: string | null;
+  /** True when the rows were capped, so figures are "at least" rather than exact. */
+  truncated?: boolean;
   /** Already rendered in Telugu words. The model may only repeat these. */
   countPhrase: string | null;
   totalPhrase: string | null;
@@ -55,7 +59,9 @@ export async function phraseAnswer(facts: AnswerFacts): Promise<string> {
   const given = [
     `Question: ${facts.question}`,
     `Rows found: ${facts.rowCount}`,
+    facts.answerPhrase ? `THE ANSWER (say exactly this): ${facts.answerPhrase}` : null,
     facts.countPhrase ? `How many people (use exactly): ${facts.countPhrase}` : null,
+    facts.truncated ? 'The list was cut short: say the figures are at least this much.' : null,
     facts.totalPhrase ? `Total amount (use exactly): ${facts.totalPhrase}` : null,
     facts.sampleNames.length ? `Some of the names: ${facts.sampleNames.slice(0, 3).join(', ')}` : null,
   ].filter(Boolean).join('\n');
@@ -82,6 +88,10 @@ export async function phraseAnswer(facts: AnswerFacts): Promise<string> {
 function trustworthy(reply: string, facts: AnswerFacts): boolean {
   if (!reply || reply.length > 400) return false;
   if (HAS_DIGITS.test(reply)) return false;
+  // The lone answer is the whole reply's reason for existing; without it the sentence is
+  // about something else. This is the check that would have caught "one borrower" being
+  // said over a table reading 180.
+  if (facts.answerPhrase && !reply.includes(facts.answerPhrase)) return false;
   if (facts.totalPhrase && !reply.includes(facts.totalPhrase)) return false;
   if (facts.countPhrase && facts.rowCount > 1 && !reply.includes(facts.countPhrase)) return false;
   return true;

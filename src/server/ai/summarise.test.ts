@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { summariseRows, rowSentences } from './summarise';
+import { summariseRows, rowSentences, answerFacts } from './summarise';
 import { teluguPeople } from '@/lib/teluguNumbers';
 
 /**
@@ -317,5 +317,48 @@ describe('when the answer is one person', () => {
   it('goes back to counting once there are two', () => {
     expect(summariseRows([{ name: 'A', amount_owed: '1000' }, { name: 'B', amount_owed: '2000' }]))
       .toContain('ఇద్దరు');
+  });
+});
+
+/**
+ * The spoken answer and the table have to agree.
+ *
+ * They did not. Asked how many borrowers there are, the table read 180 and the voice said
+ * "ఒక మంది" — one person. The facts handed to the phrasing model described the *shape* of
+ * the result, "one result", and never included the 180 at all, so it answered the only
+ * number it had been given. The guard had nothing to check it against and let it through.
+ */
+describe('answerFacts and the plain summary agreeing', () => {
+  it('sends the number, not the row count, when one cell is the answer', () => {
+    const facts = answerFacts([{ borrower_count: '180' }]);
+    expect(facts.answerPhrase).toBe('నూట ఎనభై');
+    // "ఒకటి ఫలితాలు" is what used to go instead, and is what was said aloud.
+    expect(facts.countPhrase).toBeNull();
+  });
+
+  it('says rupees where the lone value is money', () => {
+    expect(answerFacts([{ total_collected: '70000' }]).answerPhrase).toBe('డెబ్బై వేలు రూపాయలు');
+  });
+
+  it('passes a lone piece of text through as the answer', () => {
+    expect(answerFacts([{ area: 'Bhimavaram' }]).answerPhrase).toBe('Bhimavaram');
+  });
+
+  it('never disagrees with the plain summary about a lone value', () => {
+    // The two describe the same result; if they can differ, the spoken one is the half that
+    // gets believed and nothing on screen contradicts it.
+    const cases: Record<string, string>[] = [
+      { borrower_count: '180' }, { total_collected: '70000' }, { n: '7' },
+    ];
+    for (const row of cases) {
+      const facts = answerFacts([row]);
+      expect(summariseRows([row])).toBe(`${facts.answerPhrase}.`);
+    }
+  });
+
+  it('goes back to counting when there is more than one row', () => {
+    const facts = answerFacts([{ name: 'a', amount_owed: '1000' }, { name: 'b', amount_owed: '2000' }]);
+    expect(facts.answerPhrase).toBeNull();
+    expect(facts.countPhrase).toBe('ఇద్దరు');
   });
 });
