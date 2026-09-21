@@ -81,15 +81,33 @@ export function useSpeech() {
    */
   const speakText = useCallback((text: string) => {
     if (!choice || !isReadBackOn() || !text.trim()) return;
+
+    runRef.current += 1;
+    const run = runRef.current;
+
     try {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.voice = choice.voice;
       utterance.lang = choice.voice.lang;
       utterance.rate = 0.9;
+
+      /*
+        Reporting that it is speaking is not decoration — the voice agent waits on it before
+        turning the microphone back on. This did not set it, so a one-sentence answer left
+        `reading` false the whole time it was being read; the agent decided its turn was
+        over, opened the microphone, heard the phone finishing the sentence, and asked the
+        answer back as a question. Then answered that. The loop the owner watched run.
+      */
+      const done = () => { if (run === runRef.current) setReading(false); };
+      utterance.onend = done;
+      utterance.onerror = done;
+
       window.speechSynthesis.cancel();
+      setReading(true);
       window.speechSynthesis.speak(utterance);
     } catch {
-      // Same as above: a silent phone is not a failed answer.
+      // A silent phone is not a failed answer.
+      setReading(false);
     }
   }, [choice]);
 

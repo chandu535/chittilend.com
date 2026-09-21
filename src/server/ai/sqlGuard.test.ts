@@ -99,7 +99,25 @@ describe('guardSql', () => {
   describe('bounding the result', () => {
     it('adds a limit when the query has none', () => {
       const r = ok('SELECT name FROM borrowers');
-      expect(r.ok && r.sql).toMatch(/LIMIT 200$/);
+      expect(r.ok && r.sql).toMatch(/LIMIT 500$/);
+    });
+
+    it('keeps the uncapped query, so totals are not taken from one page', () => {
+      /*
+        The cap was 200, and "who owes us money" matches 256 instalments — so the total was
+        added up over the first page and came out ₹1,68,250 short, stated as fact. Totals
+        come from an aggregate over this instead.
+      */
+      const r = ok('SELECT name FROM borrowers');
+      expect(r.ok && r.unbounded).toBe('SELECT name FROM borrowers');
+      expect(r.ok && r.unbounded).not.toMatch(/LIMIT/);
+      expect(r.ok && r.limit).toBe(500);
+    });
+
+    it('reports no cap of its own when the query brought one', () => {
+      // Nothing was truncated by us, so the caller must not claim the total is partial.
+      const r = ok('SELECT name FROM borrowers LIMIT 5');
+      expect(r.ok && r.limit).toBe(0);
     });
 
     it('leaves an existing limit alone', () => {
@@ -115,7 +133,7 @@ describe('guardSql', () => {
       */
       const r = ok('SELECT b.name, l.status FROM borrowers b JOIN loans l ON true');
       expect(r.ok && r.sql).toMatch(/^SELECT b\.name/);
-      expect(r.ok && r.sql).toMatch(/LIMIT 200$/);
+      expect(r.ok && r.sql).toMatch(/LIMIT 500$/);
     });
 
     it('drops a trailing semicolon rather than refusing over it', () => {

@@ -74,9 +74,29 @@ export function VoiceAgent({ onAsk, busy, speaking, onInterrupt }: VoiceAgentPro
   */
   useEffect(() => {
     if (!engaged || busy || speaking || listening) return;
+
     const timer = setTimeout(() => {
-      if (engagedRef.current) { sentRef.current = null; start(); }
-    }, 400);
+      if (!engagedRef.current) return;
+
+      /*
+        Asked twice, because the flag alone was not enough.
+
+        The React state saying it has stopped speaking and the engine having actually
+        stopped are not the same moment, and the gap is where the microphone catches the
+        tail of the sentence — then transcribes it, asks it as a question, and answers that.
+        speechSynthesis.speaking is the engine's own answer, so it is checked here too, and
+        the wait is long enough that a trailing word has finished before anything listens.
+      */
+      try {
+        if (window.speechSynthesis?.speaking || window.speechSynthesis?.pending) return;
+      } catch {
+        // No engine to ask; the flag stands on its own.
+      }
+
+      sentRef.current = null;
+      start();
+    }, 900);
+
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engaged, busy, speaking, listening]);

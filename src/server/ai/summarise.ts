@@ -157,6 +157,16 @@ function principalMoneyColumn(rows: Row[], columns: string[]): string | null {
   return null;
 }
 
+/** The name column of a result, for callers that need to aggregate over it. */
+export function nameColumnOf(columns: string[]): string | null {
+  return nameColumn(columns);
+}
+
+/** The money column worth totalling, for the same reason. */
+export function moneyColumnOf(rows: Row[], columns: string[]): string | null {
+  return principalMoneyColumn(rows, columns);
+}
+
 /** Where a person's name might be, most Telugu-ish first. */
 const NAME_COLUMNS = ['name_telugu', 'borrower_name_telugu', 'name', 'borrower_name'];
 
@@ -219,23 +229,36 @@ export function rowSentences(rows: Row[]): string[] {
  * Computed here so the model never has to. It is handed these already written out and may
  * only repeat them.
  */
-export function answerFacts(rows: Row[]): {
+export function answerFacts(rows: Row[], override?: {
+  /** True totals from an aggregate over the whole query, when the rows were capped. */
+  people?: number;
+  total?: number | null;
+  truncated?: boolean;
+}): {
   rowCount: number;
+  truncated: boolean;
   countPhrase: string | null;
   totalPhrase: string | null;
   sampleNames: string[];
 } {
   if (!rows.length) {
-    return { rowCount: 0, countPhrase: null, totalPhrase: null, sampleNames: [] };
+    return { rowCount: 0, truncated: false, countPhrase: null, totalPhrase: null, sampleNames: [] };
   }
 
   const columns = Object.keys(rows[0]);
   const nameCol = nameColumn(columns);
   const moneyCol = principalMoneyColumn(rows, columns);
 
-  const people = nameCol
+  /*
+    Counted over everything the question matched, not over the page that came back.
+
+    A capped query gives a truthful page and an untruthful total, and the untruthful one is
+    the part that gets spoken. Where the caller has run an aggregate over the whole query,
+    its figures win.
+  */
+  const people = override?.people ?? (nameCol
     ? new Set(rows.map((r) => String(r[nameCol] ?? '').trim()).filter(Boolean)).size
-    : rows.length;
+    : rows.length);
 
   let total: number | null = null;
   if (moneyCol) {
@@ -248,9 +271,11 @@ export function answerFacts(rows: Row[]): {
     // A single figure is the answer itself, not a total of anything.
     if (seen) total = sum;
   }
+  if (override && 'total' in override) total = override.total ?? total;
 
   return {
-    rowCount: rows.length,
+    rowCount: override?.people ?? rows.length,
+    truncated: Boolean(override?.truncated),
     countPhrase: nameCol ? teluguPeople(people) : `${teluguNumberWords(rows.length)} ఫలితాలు`,
     totalPhrase: total === null ? null : `${teluguNumberWords(total)} రూపాయలు`,
     sampleNames: nameCol

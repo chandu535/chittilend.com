@@ -2,9 +2,9 @@ import { createServerFn } from '@tanstack/react-start';
 import { getAuthenticatedUser } from '../middleware/auth';
 import { requireRole } from '../middleware/roleGuard';
 import { askModel, extractSql, ModelUnavailable } from '../ai/groq';
-import { guardSql } from '../ai/sqlGuard';
 import { SCHEMA_PROMPT } from '../ai/schemaPrompt';
-import { summariseRows, rowSentences, answerFacts } from '../ai/summarise';
+import { summariseRows, rowSentences, answerFacts, nameColumnOf, moneyColumnOf } from '../ai/summarise';
+import { guardSql } from '../ai/sqlGuard';
 import { phraseAnswer } from '../ai/reply';
 import { runReadonlyQuery, ReadonlyDbUnavailable, type Row } from '../ai/readonlyDb';
 
@@ -145,11 +145,44 @@ export const askLedger = createServerFn({ method: 'POST' })
       here and handed over already written out; the model only puts a sentence round them,
       and anything it returns carrying a digit is thrown away for the plain version.
     */
+    /*
+      When the page was capped, the totals come from the whole query instead.
+
+      Counting and adding what came back is only honest while everything came back. "Who owes
+      us money" matches 256 instalments; capped at the page size the answer was ₹1,68,250
+      short, stated as a fact, with nothing to show it had been cut. One aggregate over the
+      same query — still a SELECT, still on the read-only role — gives the real figures while
+      the screen keeps showing a page.
+    */
+    const truncated = guarded.limit > 0 && rows.length >= guarded.limit;
+    let override: { people?: number; total?: number | null; truncated: boolean } | undefined;
+
+    if (truncated) {
+      const nameCol = nameColumnOf(columns);
+      const moneyCol = moneyColumnOf(rows, columns);
+      const people = nameCol ? `COUNT(DISTINCT t.${quoteIdent(nameCol)})` : 'COUNT(*)';
+      const total = moneyCol ? `SUM(t.${quoteIdent(moneyCol)}::numeric)` : 'NULL';
+      try {
+        const [agg] = await runReadonlyQuery(
+          `SELECT ${people} AS __people, ${total} AS __total FROM (${guarded.unbounded}) t`,
+        );
+        override = {
+          people: Number(agg?.__people ?? rows.length),
+          total: agg?.__total === null || agg?.__total === undefined ? null : Number(agg.__total),
+          truncated: true,
+        };
+      } catch {
+        // The aggregate is a nicety; a page with an honest "at least" beats no answer.
+        override = { truncated: true };
+      }
+    }
+
+    const facts = answerFacts(rows, override);
     const plain = summariseRows(rows);
     const spoken = await phraseAnswer({
       question: data.question,
       fallback: plain,
-      ...answerFacts(rows),
+      ...facts,
     });
 
     return {
@@ -161,3 +194,15 @@ export const askLedger = createServerFn({ method: 'POST' })
       error: null,
     };
   });
+
+/**
+ * Wraps a column name so it can go into the aggregate above.
+ *
+ * The name came from Postgres itself — it is a column of a result already returned — so this
+ * is belt and braces rather than the load-bearing check. Quoting it means a column the model
+ * chose to call "order" or "select" still works, and a doubled quote cannot end the
+ * identifier early.
+ */
+function quoteIdent(name: string): string {
+  return `"${name.replace(/"/g, '""')}"`;
+}

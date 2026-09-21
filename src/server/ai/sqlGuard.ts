@@ -17,7 +17,22 @@
  */
 
 export type GuardResult =
-  | { ok: true; sql: string }
+  | {
+      ok: true;
+      /** What to run: the query with a row cap, so one bad join cannot pull the ledger. */
+      sql: string;
+      /**
+       * The same query without that cap.
+       *
+       * A capped query gives a truthful page and an untruthful total — the caller counts and
+       * adds what came back, which is only ever the first two hundred rows. Totals are taken
+       * from this instead, wrapped in an aggregate, so the figures cover everything the
+       * question actually matched while the screen still shows a page of it.
+       */
+      unbounded: string;
+      /** The cap that was applied, so the caller can tell a full page from a truncated one. */
+      limit: number;
+    }
   | { ok: false; reason: string };
 
 /** Anything that writes, changes structure, grants rights, or reaches outside the query. */
@@ -38,8 +53,16 @@ const FORBIDDEN = [
  */
 const OFF_LIMITS = ['users', 'sessions', 'pg_shadow', 'pg_authid', 'pg_user', 'pg_roles'];
 
-/** Never return an unbounded result: a stray cross join would otherwise pull the ledger. */
-const MAX_ROWS = 200;
+/**
+ * How many rows come back.
+ *
+ * Raised from two hundred, which was quietly wrong rather than merely stingy: "who owes us
+ * money" matches 256 instalments, so the answer was totalled over the first 200 and came out
+ * ₹1,68,250 short with nothing on screen to say it had been cut. The cap is still needed —
+ * one bad join should not pull the ledger through a phone — so the totals are taken from an
+ * aggregate over the whole query instead, and this now only governs how much is displayed.
+ */
+const MAX_ROWS = 500;
 
 export function guardSql(raw: string): GuardResult {
   const sql = raw.trim().replace(/;+\s*$/, '').trim();
@@ -83,7 +106,8 @@ export function guardSql(raw: string): GuardResult {
 
   // Appended rather than wrapped in a subquery: wrapping breaks the moment two joined
   // tables both select a column called `name`, which on this schema is most queries.
-  const bounded = /\blimit\s+\d+/.test(bare) ? sql : `${sql} LIMIT ${MAX_ROWS}`;
+  const alreadyLimited = /\blimit\s+\d+/.test(bare);
+  const bounded = alreadyLimited ? sql : `${sql} LIMIT ${MAX_ROWS}`;
 
-  return { ok: true, sql: bounded };
+  return { ok: true, sql: bounded, unbounded: sql, limit: alreadyLimited ? 0 : MAX_ROWS };
 }

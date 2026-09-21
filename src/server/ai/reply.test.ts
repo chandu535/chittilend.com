@@ -76,3 +76,28 @@ describe('the schema prompt', () => {
     expect(PROMPT).toMatch(/Never read the users or sessions tables/);
   });
 });
+
+/**
+ * An empty result is not a fact about the world.
+ *
+ * The instruction here used to say the opposite — turn no rows into "nobody has stopped
+ * paying", "everyone has paid this month" — which reads well and is a lie whenever the query
+ * was simply wrong. The owner could see people who owed money while being told there were
+ * none.
+ */
+describe('what an empty result is allowed to mean', () => {
+  const SRC = readFileSync(join(__dirname, 'reply.ts'), 'utf8');
+
+  it('forbids turning nothing found into nothing owed', () => {
+    expect(SRC).toMatch(/NEVER turn an empty result into a fact/i);
+    expect(SRC).toMatch(/do not say nobody owes/i);
+  });
+
+  it('says finding nothing is not the same as there being nothing', () => {
+    expect(SRC).toMatch(/not the same as there being nothing/i);
+  });
+
+  it('makes a truncated total an "at least", never an exact one', () => {
+    expect(SRC).toMatch(/at least that much, not exactly/i);
+  });
+});
